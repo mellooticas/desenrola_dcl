@@ -1,0 +1,646 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase/client'
+
+// ================================================================
+// TIPOS BASEADOS NAS VIEWS REAIS DO SEU BANCO
+// ================================================================
+
+export interface DashboardKPIs {
+  total_pedidos: number
+  entregues: number
+  lead_time_medio: number
+  pedidos_atrasados: number
+  ticket_medio: number
+  sla_compliance: number
+  labs_ativos: number
+  valor_total_vendas: number
+  custo_total_lentes: number
+  margem_percentual: number
+}
+
+export interface RankingLaboratorio {
+  posicao: number
+  laboratorio_nome: string
+  laboratorio_codigo: string | null
+  total_pedidos: number
+  pedidos_ultima_semana: number
+  sla_compliance: number
+  lead_time_medio: number
+  ticket_medio: number
+  faturamento_total: number
+  pedidos_atrasados: number
+  pedidos_risco: number
+  monofocais: number
+  multifocais: number
+  transitions: number
+  tempo_resposta_horas: number | null
+  score_geral: number
+  status_risco: 'BAIXO' | 'MÉDIO' | 'ALTO'
+  tendencia: 'SUBINDO' | 'DESCENDO' | 'ESTÁVEL'
+}
+
+export interface AlertaCritico {
+  tipo_alerta: string
+  prioridade: 'CRÍTICA' | 'ALTA' | 'MÉDIA'
+  laboratorio_nome: string
+  problema: string
+  pedidos_afetados: number
+  valor_risco: number
+  indicador_numerico: number
+  acao_sugerida: string
+  prazo_acao: string
+  responsavel: string
+  ordem_prioridade: number
+}
+
+export interface AnaliseFinanceira {
+  categoria: string
+  volume_pedidos: number
+  faturamento_total: number
+  ticket_medio: number
+  sla_compliance: number
+  laboratorio_mais_usado: string
+}
+
+// ================================================================
+// HOOKS QUE USAM DADOS REAIS DO BANCO
+// ================================================================
+
+// Hook para KPIs principais - USA DADOS REAIS
+export function useDashboardKPIs() {
+  return useQuery({
+    queryKey: ['dashboard', 'kpis'], 
+    queryFn: async (): Promise<DashboardKPIs> => {
+      try {
+        // Tentar buscar da view primeiro
+        const { data: viewData, error: viewError } = await supabase
+          .from('v_kpis_dashboard')
+          .select('*')
+          .single()
+        
+        if (!viewError && viewData) {
+          return viewData
+        }
+        
+        console.warn('View v_kpis_dashboard não encontrada, usando API...')
+        // Se view não existir, usar API
+        const response = await fetch('/api/dashboard/kpis')
+        if (!response.ok) throw new Error('Falha ao carregar KPIs')
+        return response.json()
+        
+      } catch (error) {
+        console.error('Erro ao buscar KPIs:', error)
+        throw error
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000
+  })
+}
+
+// Hook para ranking de laboratórios - USA DADOS REAIS
+export function useRankingLaboratorios(limit = 20, statusRisco?: string) {
+  return useQuery({
+    queryKey: ['dashboard', 'ranking-laboratorios', limit, statusRisco],
+    queryFn: async (): Promise<RankingLaboratorio[]> => {
+      try {
+        let query = supabase
+          .from('v_ranking_laboratorios')
+          .select('*')
+          .order('posicao', { ascending: true })
+          .limit(limit)
+        
+        if (statusRisco) {
+          query = query.eq('status_risco', statusRisco)
+        }
+        
+        const { data, error } = await query
+        
+        if (error) {
+          console.error('Erro ao buscar ranking:', error)
+          throw error
+        }
+        
+        return data || []
+      } catch (error) {
+        console.error('Erro ao buscar ranking de laboratórios:', error)
+        throw error
+      }
+    },
+    staleTime: 10 * 60 * 1000
+  })
+}
+
+// Hook para alertas críticos - USA DADOS REAIS
+export function useAlertasCriticos(prioridade?: string) {
+  return useQuery({
+    queryKey: ['dashboard', 'alertas-criticos', prioridade],
+    queryFn: async (): Promise<AlertaCritico[]> => {
+      try {
+        let query = supabase
+          .from('v_alertas_criticos')
+          .select('*')
+          .order('ordem_prioridade', { ascending: true })
+        
+        if (prioridade) {
+          query = query.eq('prioridade', prioridade)
+        }
+        
+        const { data, error } = await query
+        
+        if (error) {
+          console.error('Erro ao buscar alertas:', error)
+          throw error
+        }
+        
+        return data || []
+      } catch (error) {
+        console.error('Erro ao buscar alertas críticos:', error)
+        throw error
+      }
+    },
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 2 * 60 * 1000
+  })
+}
+
+// Hook para análise financeira - USA DADOS REAIS
+export function useAnaliseFinanceira() {
+  return useQuery({
+    queryKey: ['dashboard', 'analise-financeira'],
+    queryFn: async (): Promise<AnaliseFinanceira[]> => {
+      try {
+        const { data, error } = await supabase
+          .from('v_analise_financeira')
+          .select('*')
+          .order('faturamento_total', { ascending: false })
+        
+        if (error) {
+          console.error('Erro ao buscar análise financeira:', error)
+          throw error
+        }
+        
+        return data || []
+      } catch (error) {
+        console.error('Erro ao buscar análise financeira:', error)
+        throw error
+      }
+    },
+    staleTime: 15 * 60 * 1000
+  })
+}
+
+// Hook para status do sistema - USA DADOS REAIS
+export function useSystemStatus() {
+  return useQuery({
+    queryKey: ['dashboard', 'system-status'],
+    queryFn: async () => {
+      try {
+        // Buscar dados reais da view ou API
+        const { data, error } = await supabase
+          .from('v_kpis_dashboard')
+          .select('*')
+          .single()
+        
+        let kpis
+        if (error) {
+          // Fallback para API
+          const response = await fetch('/api/dashboard/kpis')
+          kpis = await response.json()
+        } else {
+          kpis = data
+        }
+        
+        // Calcular status baseado nos dados reais
+        const slaOk = (kpis.sla_compliance || 0) >= 95
+        const atrasosOk = (kpis.pedidos_atrasados || 0) <= 5
+        const volumeOk = (kpis.total_pedidos || 0) > 0
+        
+        let status = 'unknown'
+        if (slaOk && atrasosOk && volumeOk) status = 'excellent'
+        else if (slaOk && atrasosOk) status = 'good'  
+        else if (slaOk || atrasosOk) status = 'warning'
+        else status = 'critical'
+        
+        return {
+          ...kpis,
+          status,
+          health_score: slaOk ? 100 : atrasosOk ? 75 : 50
+        }
+      } catch (error) {
+        console.error('Erro ao buscar status do sistema:', error)
+        throw error
+      }
+    },
+    staleTime: 3 * 60 * 1000,
+    refetchInterval: 3 * 60 * 1000
+  })
+}
+
+// Hook para refresh manual
+export function useRefreshDashboard() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async () => {
+      // Tentar executar função de refresh no banco
+      try {
+        const { error } = await supabase.rpc('refresh_dashboard_views')
+        if (error && !error.message.includes('does not exist')) {
+          throw error
+        }
+      } catch (error) {
+        console.warn('Função refresh não existe, continuando...')
+      }
+      
+      return { success: true, timestamp: new Date().toISOString() }
+    },
+    onSuccess: () => {
+      // Invalidar todas as queries do dashboard para forçar refresh
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    }
+  })
+}
+
+// Hook para ranking de laboratórios - USA DADOS REAIS
+export function useRankingLaboratorios(limit = 20, statusRisco?: string) {
+  return useQuery({
+    queryKey: ['dashboard', 'ranking-laboratorios', limit, statusRisco],
+    queryFn: async (): Promise<RankingLaboratorio[]> => {
+      try {
+        let query = supabase
+          .from('v_ranking_laboratorios')
+          .select('*')
+          .order('posicao', { ascending: true })
+          .limit(limit)
+        
+        if (statusRisco) {
+          query = query.eq('status_risco', statusRisco)
+        }
+        
+        const { data, error } = await query
+        
+        if (error) {
+          console.error('Erro ao buscar ranking:', error)
+          throw error
+        }
+        
+        return data || []
+      } catch (error) {
+        console.error('Erro ao buscar ranking de laboratórios:', error)
+        throw error
+      }
+    },
+    staleTime: 10 * 60 * 1000
+  })
+}
+
+// Hook para alertas críticos - USA DADOS REAIS
+export function useAlertasCriticos(prioridade?: string) {
+  return useQuery({
+    queryKey: ['dashboard', 'alertas-criticos', prioridade],
+    queryFn: async (): Promise<AlertaCritico[]> => {
+      try {
+        let query = supabase
+          .from('v_alertas_criticos')
+          .select('*')
+          .order('ordem_prioridade', { ascending: true })
+        
+        if (prioridade) {
+          query = query.eq('prioridade', prioridade)
+        }
+        
+        const { data, error } = await query
+        
+        if (error) {
+          console.error('Erro ao buscar alertas:', error)
+          throw error
+        }
+        
+        return data || []
+      } catch (error) {
+        console.error('Erro ao buscar alertas críticos:', error)
+        throw error
+      }
+    },
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 2 * 60 * 1000
+  })
+}
+
+// Hook para análise financeira - USA DADOS REAIS
+export function useAnaliseFinanceira() {
+  return useQuery({
+    queryKey: ['dashboard', 'analise-financeira'],
+    queryFn: async (): Promise<AnaliseFinanceira[]> => {
+      try {
+        const { data, error } = await supabase
+          .from('v_analise_financeira')
+          .select('*')
+          .order('faturamento_total', { ascending: false })
+        
+        if (error) {
+          console.error('Erro ao buscar análise financeira:', error)
+          throw error
+        }
+        
+        return data || []
+      } catch (error) {
+        console.error('Erro ao buscar análise financeira:', error)
+        throw error
+      }
+    },
+    staleTime: 15 * 60 * 1000
+  })
+}
+
+// Hook para status do sistema - USA DADOS REAIS
+export function useSystemStatus() {
+  return useQuery({
+    queryKey: ['dashboard', 'system-status'],
+    queryFn: async () => {
+      try {
+        // Buscar dados reais da view ou API
+        const { data, error } = await supabase
+          .from('v_kpis_dashboard')
+          .select('*')
+          .single()
+        
+        let kpis
+        if (error) {
+          // Fallback para API
+          const response = await fetch('/api/dashboard/kpis')
+          kpis = await response.json()
+        } else {
+          kpis = data
+        }
+        
+        // Calcular status baseado nos dados reais
+        const slaOk = (kpis.sla_compliance || 0) >= 95
+        const atrasosOk = (kpis.pedidos_atrasados || 0) <= 5
+        const volumeOk = (kpis.total_pedidos || 0) > 0
+        
+        let status = 'unknown'
+        if (slaOk && atrasosOk && volumeOk) status = 'excellent'
+        else if (slaOk && atrasosOk) status = 'good'  
+        else if (slaOk || atrasosOk) status = 'warning'
+        else status = 'critical'
+        
+        return {
+          ...kpis,
+          status,
+          health_score: slaOk ? 100 : atrasosOk ? 75 : 50
+        }
+      } catch (error) {
+        console.error('Erro ao buscar status do sistema:', error)
+        throw error
+      }
+    },
+    staleTime: 3 * 60 * 1000,
+    refetchInterval: 3 * 60 * 1000
+  })
+}
+
+// Hook para refresh manual
+export function useRefreshDashboard() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async () => {
+      // Tentar executar função de refresh no banco
+      try {
+        const { error } = await supabase.rpc('refresh_dashboard_views')
+        if (error && !error.message.includes('does not exist')) {
+          throw error
+        }
+      } catch (error) {
+        console.warn('Função refresh não existe, continuando...')
+      }
+      
+      return { success: true, timestamp: new Date().toISOString() }
+    },
+    onSuccess: () => {
+      // Invalidar todas as queries do dashboard para forçar refresh
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    }
+  })
+}
+
+// Hook para ranking de laboratórios - DADOS MOCKADOS POR ENQUANTO
+export function useRankingLaboratorios(limit = 20, statusRisco?: string) {
+  return useQuery({
+    queryKey: ['dashboard', 'ranking-laboratorios', limit, statusRisco],
+    queryFn: async (): Promise<RankingLaboratorio[]> => {
+      // Por enquanto, sempre retornar dados mockados
+      return getMockRankingData(limit, statusRisco)
+    },
+    staleTime: 10 * 60 * 1000 // 10 minutos
+  })
+}
+
+// Hook para alertas críticos - DADOS MOCKADOS POR ENQUANTO
+export function useAlertasCriticos(prioridade?: string) {
+  return useQuery({
+    queryKey: ['dashboard', 'alertas-criticos', prioridade],
+    queryFn: async (): Promise<AlertaCritico[]> => {
+      // Por enquanto, sempre retornar dados mockados
+      return getMockAlertasData(prioridade)
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    refetchInterval: 2 * 60 * 1000
+  })
+}
+
+// Hook para refresh manual
+export function useRefreshDashboard() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async () => {
+      // Simplesmente invalidar as queries para forçar refresh
+      return { success: true, timestamp: new Date().toISOString() }
+    },
+    onSuccess: () => {
+      // Invalidar todas as queries do dashboard para forçar refresh
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    }
+  })
+}
+
+// Hook para status do sistema
+export function useSystemStatus() {
+  return useQuery({
+    queryKey: ['dashboard', 'system-status'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/dashboard/kpis')
+        const kpis = await response.json()
+        
+        const slaOk = (kpis.sla_compliance || 0) >= 95
+        const atrasosOk = (kpis.pedidos_atrasados || 0) <= 5
+        
+        let status = 'unknown'
+        if (slaOk && atrasosOk) status = 'excellent'
+        else if (slaOk || atrasosOk) status = 'good'
+        else status = 'warning'
+        
+        return {
+          ...kpis,
+          status,
+          health_score: slaOk ? 100 : 75
+        }
+      } catch (error) {
+        console.warn('Erro ao buscar status do sistema:', error)
+        return {
+          status: 'unknown',
+          health_score: 0,
+          sla_compliance: 0,
+          pedidos_atrasados: 0,
+          total_pedidos: 0
+        }
+      }
+    },
+    staleTime: 3 * 60 * 1000, // 3 minutos
+    refetchInterval: 3 * 60 * 1000
+  })
+}
+
+// ================================================================
+// DADOS MOCKADOS BASEADOS NOS SEUS DADOS REAIS
+// ================================================================
+
+function getMockKPIs(): DashboardKPIs {
+  return {
+    total_pedidos: 2503,
+    entregues: 2055,
+    lead_time_medio: 8.5,
+    pedidos_atrasados: 0,
+    ticket_medio: 1412.69,
+    sla_compliance: 42.48,
+    labs_ativos: 9,
+    valor_total_vendas: 3535955.42,
+    custo_total_lentes: 0,
+    margem_percentual: 100.00
+  }
+}
+
+function getMockRankingData(limit: number, statusRisco?: string): RankingLaboratorio[] {
+  const allData: RankingLaboratorio[] = [
+    {
+      posicao: 1,
+      laboratorio_nome: 'Sygma',
+      laboratorio_codigo: 'SYGMA',
+      total_pedidos: 25,
+      pedidos_ultima_semana: 2,
+      sla_compliance: 56.25,
+      lead_time_medio: 8.6,
+      ticket_medio: 1360.37,
+      faturamento_total: 34009.18,
+      pedidos_atrasados: 0,
+      pedidos_risco: 0,
+      monofocais: 0,
+      multifocais: 6,
+      transitions: 0,
+      tempo_resposta_horas: 6.0,
+      score_geral: 69.4,
+      status_risco: 'MÉDIO',
+      tendencia: 'ESTÁVEL'
+    },
+    {
+      posicao: 2,
+      laboratorio_nome: 'HighVision',
+      laboratorio_codigo: 'HIGH',
+      total_pedidos: 37,
+      pedidos_ultima_semana: 5,
+      sla_compliance: 35.0,
+      lead_time_medio: 12.5,
+      ticket_medio: 1375.15,
+      faturamento_total: 50880.55,
+      pedidos_atrasados: 12,
+      pedidos_risco: 8,
+      monofocais: 15,
+      multifocais: 22,
+      transitions: 0,
+      tempo_resposta_horas: 8.5,
+      score_geral: 45.2,
+      status_risco: 'ALTO',
+      tendencia: 'DESCENDO'
+    }
+  ]
+  
+  let filteredData = allData
+  if (statusRisco) {
+    filteredData = allData.filter(lab => lab.status_risco === statusRisco)
+  }
+  
+  return filteredData.slice(0, limit)
+}
+
+function getMockAlertasData(prioridade?: string): AlertaCritico[] {
+  const allData: AlertaCritico[] = [
+    {
+      tipo_alerta: 'LABORATÓRIO EM RISCO',
+      prioridade: 'ALTA',
+      laboratorio_nome: 'HighVision',
+      problema: 'SLA muito baixo: 35.0%',
+      pedidos_afetados: 37,
+      valor_risco: 50880.41,
+      indicador_numerico: 35.00,
+      acao_sugerida: 'Revisar processos com laboratório e definir plano de ação',
+      prazo_acao: 'Imediato (24h)',
+      responsavel: 'Gestor de Operações',
+      ordem_prioridade: 1
+    }
+  ]
+  
+  if (prioridade) {
+    return allData.filter(alerta => alerta.prioridade === prioridade)
+  }
+  
+  return allData
+}
+
+// ================================================================
+// ANÁLISE FINANCEIRA MOCKADA
+// ================================================================
+
+export interface AnaliseFinanceira {
+  categoria: string
+  volume_pedidos: number
+  faturamento_total: number
+  ticket_medio: number
+  sla_compliance: number
+  laboratorio_mais_usado: string
+}
+
+export function useAnaliseFinanceira() {
+  return useQuery({
+    queryKey: ['dashboard', 'analise-financeira'],
+    queryFn: async (): Promise<AnaliseFinanceira[]> => {
+      // Por enquanto, sempre retornar dados mockados
+      return getMockAnaliseFinanceira()
+    },
+    staleTime: 15 * 60 * 1000 // 15 minutos
+  })
+}
+
+function getMockAnaliseFinanceira(): AnaliseFinanceira[] {
+  return [
+    {
+      categoria: 'Multifocal Premium',
+      volume_pedidos: 28,
+      faturamento_total: 84890.73,
+      ticket_medio: 1375.37,
+      sla_compliance: 45.8,
+      laboratorio_mais_usado: 'Sygma'
+    },
+    {
+      categoria: 'Monofocal Padrão',
+      volume_pedidos: 15,
+      faturamento_total: 20405.55,
+      ticket_medio: 1360.37,
+      sla_compliance: 56.2,
+      laboratorio_mais_usado: 'HighVision'
+    }
+  ]
+}

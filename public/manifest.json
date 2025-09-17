@@ -1,0 +1,21 @@
+{
+  "name": "Desenrola DCL - Sistema de Gestão",
+  "short_name": "Desenrola DCL",
+  "id": "/",
+  "scope": "/",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "description": "Sistema de Gestão de Pedidos - Laboratórios Ópticos",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+/* ===================================================================
+   🎨 DESENROLA DCL - INTELLIGENT COLOR SYSTEM v2.0
+   Sistema de cores que PENSA e se adapta automaticamente
+   ================================================================== */
+
+:root {
+  /* === CORES INTELIGENTES BASE === */
+  --intelligence-primary-hue: 212;
+  --intelligence-primary-sat: 100%;
+  --intelligence-primary-light: 50%;
+  
+  /* === PALETA DINÂMICA CALCULADA === */
+  --color-primary-50:  hsl(var(--intelligence-primary-hue), var(--intelligence-primary-sat), 97%);
+  --color-primary-100: hsl(var(--intelligence-primary-hue), var(--intelligence-primary-sat), 94%);
+  --color-primary-200: hsl(var(--intelligence-primary-hue), var(--intelligence-primary-sat), 87%);
+  --color-primary-300: hsl(var(--intelligence-primary-hue), var(--intelligence-primary-sat), 78%);
+  --color-primary-400: hsl(var(--intelligence-primary-hue), var(--intelligence-primary-sat), 69%);
+  --color-primary-500: hsl(var(--intelligence-primary-hue), var(--intelligence-primary-sat), var(--intelligence-primary-light));
+  --color-primary-600: hsl(var(--intelligence-primary-hue), var(--intelligence-primary-sat), 41%);
+  --color-primary-700: hsl(var(--intelligence-primary-hue), var(--intelligence-primary-sat), 33%);
+  --color-primary-800: hsl(var(--intelligence-primary-hue), var(--intelligence-primary-sat), 24%);
+  --color-primary-900: hsl(var(--intelligence-primary-hue), var(--intelligence-primary-sat), 15%);
+
+  /* === CORES SEMÂNTICAS CONTEXTUAIS === */
+  --semantic-urgent:      hsl(0, 84%, 60%);    /* Vermelho - Ação imediata */
+  --semantic-attention:   hsl(36, 91%, 55%);   /* Laranja - Requer atenção */
+  --semantic-warning:     hsl(45, 93%, 58%);   /* Amarelo - Cuidado */
+  --semantic-info:        hsl(199, 89%, 48%);  /* Azul - Informação */
+  --semantic-success:     hsl(159, 75%, 42%);  /* Verde - Sucesso */
+  --semantic-neutral:     hsl(220, 13%, 69%);  /* Cinza - Neutro */
+
+  /* === STATUS KANBAN INTELIGENTES === */
+  --status-registrado:    var(--semantic-neutral);
+  --status-ag-pagamento:  var(--semantic-attention);
+  --status-pago:          var(--semantic-success);
+  --status-producao:      var(--semantic-info);
+  --status-pronto:        hsl(262, 80%, 65%);  /* Roxo - Finalização */
+  --status-enviado:       hsl(14, 90%, 53%);   /* Coral - Em movimento */
+  --status-chegou:        hsl(189, 85%, 43%);  /* Ciano - Chegada */
+  --status-entregue:      var(--semantic-success);
+  --status-cancelado:     hsl(220, 9%, 46%);   /* Cinza escuro */
+
+  /* === CONTRASTE AUTOMÁTICO === */
+  --contrast-threshold: 0.5;
+  --auto-text-light: hsl(0, 0%, 98%);
+  --auto-text-dark: hsl(220, 39%, 11%);
+
+  /* === SISTEMA TIPOGRÁFICO AVANÇADO === */
+  --font-display: 'Cal Sans', 'Inter Variable', system-ui, sans-serif;
+  --font-body: 'Inter Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'Fira Code', monospace;
+  
+  /* Escala tipográfica harmoniosa (proporção áurea) */
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  1.875rem;   /* 30px */
+  --text-4xl:  2.25rem;    /* 36px */
+  --text-5xl:  3rem;       /* 48px */
+
+  /* === ESPAÇAMENTO PERFEITO === */
+  --space-px: 1px;
+  --space-0: 0;
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-20: 5rem;     /* 80px */
+  --space-24: 6rem;     /* 96px */
+
+  /* === BORDAS E RAIOS === */
+  --radius-none: 0;
+  --radius-sm: 0.125rem;   /* 2px */
+  --radius-base: 0.25rem;  /* 4px */
+  --radius-md: 0.375rem;   /* 6px */
+  --radius-lg: 0.5rem;     /* 8px */
+  --radius-xl: 0.75rem;    /* 12px */
+  --radius-2xl: 1rem;      /* 16px */
+  --radius-full: 9999px;
+
+  /* === SOMBRAS INTELIGENTES === */
+  --shadow-color: hsl(var(--intelligence-primary-hue), 50%, 15%);
+  --shadow-xs: 0 1px 2px 0 hsla(var(--shadow-color), 0.05);
+  --shadow-sm: 0 1px 3px 0 hsla(var(--shadow-color), 0.1), 0 1px 2px -1px hsla(var(--shadow-color), 0.1);
+  --shadow-md: 0 4px 6px -1px hsla(var(--shadow-color), 0.1), 0 2px 4px -2px hsla(var(--shadow-color), 0.1);
+  --shadow-lg: 0 10px 15px -3px hsla(var(--shadow-color), 0.1), 0 4px 6px -4px hsla(var(--shadow-color), 0.1);
+  --shadow-xl: 0 20px 25px -5px hsla(var(--shadow-color), 0.1), 0 8px 10px -6px hsla(var(--shadow-color), 0.1);
+  --shadow-2xl: 0 25px 50px -12px hsla(var(--shadow-color), 0.25);
+
+  /* === CORES DE FUNDO CONTEXTUAIS === */
+  --bg-canvas: hsl(0, 0%, 100%);
+  --bg-subtle: hsl(220, 14%, 96%);
+  --bg-muted: hsl(220, 13%, 91%);
+  --bg-emphasis: var(--color-primary-500);
+  
+  /* === CORES DE TEXTO CONTEXTUAIS === */
+  --text-primary: hsl(220, 39%, 11%);
+  --text-secondary: hsl(220, 9%, 46%);
+  --text-tertiary: hsl(220, 14%, 71%);
+  --text-contrast: var(--auto-text-light);
+
+  /* === CORES DE BORDA CONTEXTUAIS === */
+  --border-subtle: hsl(220, 13%, 91%);
+  --border-muted: hsl(220, 13%, 85%);
+  --border-emphasis: var(--color-primary-300);
+
+  /* === TRANSIÇÕES INTELIGENTES === */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* === MODO ESCURO INTELIGENTE === */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-canvas: hsl(220, 39%, 11%);
+    --bg-subtle: hsl(220, 28%, 15%);
+    --bg-muted: hsl(220, 22%, 19%);
+    
+    --text-primary: hsl(0, 0%, 98%);
+    --text-secondary: hsl(220, 14%, 71%);
+    --text-tertiary: hsl(220, 9%, 46%);
+    
+    --border-subtle: hsl(220, 22%, 19%);
+    --border-muted: hsl(220, 17%, 26%);
+    
+    --shadow-color: hsl(0, 0%, 0%);
+  }
+}
+
+[data-theme="dark"] {
+  --bg-canvas: hsl(220, 39%, 11%);
+  --bg-subtle: hsl(220, 28%, 15%);
+  --bg-muted: hsl(220, 22%, 19%);
+  
+  --text-primary: hsl(0, 0%, 98%);
+  --text-secondary: hsl(220, 14%, 71%);
+  --text-tertiary: hsl(220, 9%, 46%);
+  
+  --border-subtle: hsl(220, 22%, 19%);
+  --border-muted: hsl(220, 17%, 26%);
+  
+  --shadow-color: hsl(0, 0%, 0%);
+}
+
+/* === SISTEMA DE CORES PREMIUM === */
+.color-scheme-ocean {
+  --intelligence-primary-hue: 199;
+  --intelligence-primary-sat: 89%;
+  --intelligence-primary-light: 48%;
+}
+
+.color-scheme-forest {
+  --intelligence-primary-hue: 159;
+  --intelligence-primary-sat: 75%;
+  --intelligence-primary-light: 42%;
+}
+
+.color-scheme-sunset {
+  --intelligence-primary-hue: 14;
+  --intelligence-primary-sat: 90%;
+  --intelligence-primary-light: 53%;
+}
+
+.color-scheme-purple {
+  --intelligence-primary-hue: 262;
+  --intelligence-primary-sat: 80%;
+  --intelligence-primary-light: 65%;
+}
+
+/* === APLICAÇÃO GLOBAL === */
+* {
+  border-color: var(--border-subtle);
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* === CLASSES UTILITÁRIAS INTELIGENTES === */
+.smart-text-primary { color: var(--text-primary); }
+.smart-text-secondary { color: var(--text-secondary); }
+.smart-text-tertiary { color: var(--text-tertiary); }
+
+.smart-bg-canvas { background-color: var(--bg-canvas); }
+.smart-bg-subtle { background-color: var(--bg-subtle); }
+.smart-bg-muted { background-color: var(--bg-muted); }
+
+.smart-border-subtle { border-color: var(--border-subtle); }
+.smart-border-muted { border-color: var(--border-muted); }
+
+.smart-shadow-sm { box-shadow: var(--shadow-sm); }
+.smart-shadow-md { box-shadow: var(--shadow-md); }
+.smart-shadow-lg { box-shadow: var(--shadow-lg); }
+
+.smart-transition { transition: all var(--transition-base); }
+.smart-transition-fast { transition: all var(--transition-fast); }
+.smart-transition-slow { transition: all var(--transition-slow); }
