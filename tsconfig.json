@@ -19,14 +19,14 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@/components/*": ["./components/*"],
-      "@/lib/*": ["./lib/*"],
-      "@/hooks/*": ["./lib/hooks/*"],
-      "@/types/*": ["./lib/types/*"],
-      "@/utils/*": ["./lib/utils/*"],
-      "@/stores/*": ["./lib/stores/*"],
-      "@/app/*": ["./app/*"]
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/hooks/*": ["./src/lib/hooks/*"],
+      "@/types/*": ["./src/lib/types/*"],
+      "@/utils/*": ["./src/lib/utils/*"],
+      "@/stores/*": ["./src/lib/stores/*"],
+      "@/app/*": ["./src/app/*"]
     },
     "target": "es5",
     "forceConsistentCasingInFileNames": true,

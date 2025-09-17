@@ -8,7 +8,7 @@ import { LayoutWrapper } from '@/components/layout/LayoutWrapper'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata: Metadata = {
+export const metadata: Metadata = { 
   title: 'Desenrola DCL - Sistema de Gestão',
   description: 'Sistema de gestão de pedidos para laboratórios',
 }

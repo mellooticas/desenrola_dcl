@@ -79,10 +79,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleSignOut = async () => {
     try {
+      // Chamar API de logout para limpar cookie
+      await fetch('/api/auth/logout', { method: 'POST' })
+      
+      // Limpar sessão Supabase (se existir)
       await supabase.auth.signOut()
+      
+      // Limpar estados
       setUser(null)
       setUserProfile(null)
       setDevProfile(null)
+      
+      // Limpar localStorage
       try { localStorage.removeItem('desenrola_user') } catch {}
     } catch (error) {
       console.error('Error signing out:', error)

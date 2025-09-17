@@ -73,10 +73,22 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { senha_hash, reset_token, reset_token_expires_at, ...usuarioLimpo } = usuarioBanco
 
-    return NextResponse.json({
+    // Criar o response com sucesso
+    const response = NextResponse.json({
       success: true,
       user: usuarioLimpo
     })
+
+    // Definir cookie de autenticação para o middleware
+    response.cookies.set('auth-token', usuarioBanco.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 dias
+      path: '/'
+    })
+
+    return response
 
   } catch (error: unknown) {
     return NextResponse.json(

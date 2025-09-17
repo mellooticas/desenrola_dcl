@@ -7,26 +7,22 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-  const supabase = getServerSupabase()
-    const authHeader = request.headers.get('authorization')
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { success: false, error: 'Token não fornecido' },
-        { status: 400 }
-      )
-    }
+    // Criar response de sucesso
+    const response = NextResponse.json({
+      success: true,
+      message: 'Logout realizado com sucesso'
+    })
 
-    const token = authHeader.substring(7)
+    // Limpar cookie de autenticação
+    response.cookies.set('auth-token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0, // Remove o cookie
+      path: '/'
+    })
 
-    // Remover sessão
-    const { error } = await supabase
-      .from('user_sessions')
-      .delete()
-      .eq('token', token)
-
-    if (error) {
-    }
+    return response
 
     return NextResponse.json({
       success: true,
