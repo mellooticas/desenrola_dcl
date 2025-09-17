@@ -1,0 +1,42 @@
+[build]
+  publish = ".next"
+  command = "npm run build"
+
+[build.environment]
+  NEXT_TELEMETRY_DISABLED = "1"
+  NODE_VERSION = "18"
+
+# Configurações para Next.js no Netlify
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Redirecionamentos para SPA
+[[redirects]]
+  from = "/api/*"
+  to = "/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers de segurança
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "s-maxage=0, max-age=0"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Configuração de environment variables
+# Estas devem ser configuradas no dashboard do Netlify:
+# NEXT_PUBLIC_SUPABASE_URL
+# NEXT_PUBLIC_SUPABASE_ANON_KEY  
+# SUPABASE_URL
+# SUPABASE_SERVICE_ROLE_KEY
+# NEXTAUTH_SECRET
+# NEXTAUTH_URL
