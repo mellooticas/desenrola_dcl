@@ -1,47 +1,59 @@
+// ========================================
+// 2. MIDDLEWARE ATUALIZADO
+// middleware.ts
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+
+// Mapeamento de rotas e roles permitidos
+const ROUTE_PERMISSIONS = {
+  '/dashboard': ['gestor', 'financeiro'],
+  '/kanban': ['gestor', 'dcl', 'financeiro', 'loja'],
+  '/pedidos': ['gestor', 'dcl', 'financeiro', 'loja'], 
+  '/configuracoes': ['gestor']
+}
 
 // Rotas que requerem autenticação
 const protectedRoutes = [
   '/dashboard',
-  '/pedidos',
+  '/pedidos', 
   '/kanban',
   '/configuracoes',
 ]
 
-// Rotas públicas (não requerem autenticação)
+// Rotas públicas
 const publicRoutes = [
   '/',
   '/login',
   '/api/auth/login',
-  '/api/auth/logout',
+  '/api/auth/logout', 
   '/api/health',
 ]
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  
+
   // Verificar se a rota é protegida
-  const isProtectedRoute = protectedRoutes.some(route => 
+  const isProtectedRoute = protectedRoutes.some(route =>
     pathname.startsWith(route)
   )
-  
+
   // Verificar se é API route
   const isApiRoute = pathname.startsWith('/api/')
   
   // Verificar se é rota pública específica
   const isPublicRoute = publicRoutes.includes(pathname)
-  
+
   // Permitir todas as APIs e rotas públicas
   if (isApiRoute || isPublicRoute) {
     return NextResponse.next()
   }
-  
+
   // Verificar token de autenticação
   const token = request.cookies.get('auth-token')?.value
-  
-  console.log('🔐 Middleware:', { pathname, token: !!token, isProtectedRoute })
-  
+  const userRole = request.cookies.get('user-role')?.value // ← NOVO: cookie com role
+
+  console.log('🔐 Middleware:', { pathname, token: !!token, userRole, isProtectedRoute })
+
   // Se não tem token e está tentando acessar rota protegida
   if (!token && isProtectedRoute) {
     console.log('❌ Sem token, redirecionando para login')
@@ -49,22 +61,53 @@ export function middleware(request: NextRequest) {
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
-  
-  // Se tem token e está tentando acessar login, redirecionar para dashboard
-  if (token && pathname === '/login') {
-    console.log('✅ Com token, redirecionando para dashboard')
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+
+  // NOVO: Verificar permissões de role por rota
+  if (token && userRole && isProtectedRoute) {
+    const matchedRoute = Object.keys(ROUTE_PERMISSIONS).find(route => 
+      pathname.startsWith(route)
+    )
+    
+    if (matchedRoute) {
+      const allowedRoles = ROUTE_PERMISSIONS[matchedRoute as keyof typeof ROUTE_PERMISSIONS]
+      
+      if (!allowedRoles.includes(userRole)) {
+        console.log(`❌ Role ${userRole} não permitido para ${matchedRoute}`)
+        // Redirecionar para página de acesso negado ou página permitida
+        const redirectPage = getDefaultPageForRole(userRole)
+        return NextResponse.redirect(new URL(redirectPage, request.url))
+      }
+    }
   }
-  
+
+  // Se tem token e está tentando acessar login, redirecionar baseado no role
+  if (token && userRole && pathname === '/login') {
+    console.log('✅ Com token, redirecionando baseado no role')
+    const defaultPage = getDefaultPageForRole(userRole)
+    return NextResponse.redirect(new URL(defaultPage, request.url))
+  }
+
   return NextResponse.next()
+}
+
+// Helper para obter página padrão por role
+function getDefaultPageForRole(role: string): string {
+  switch (role) {
+    case 'gestor':
+      return '/dashboard'
+    case 'financeiro': 
+      return '/dashboard'
+    case 'dcl':
+      return '/kanban'
+    case 'loja':
+      return '/kanban'
+    default:
+      return '/kanban'
+  }
 }
 
 export const config = {
   matcher: [
-    // Aplicar middleware em todas as rotas exceto:
-    // - APIs (tratadas separadamente dentro do middleware)
-    // - arquivos estáticos
-    // - arquivos do Next.js
     '/((?!_next/static|_next/image|favicon.ico|.*\\..*$).*)',
   ],
 }

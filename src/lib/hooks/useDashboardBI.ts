@@ -1,126 +1,142 @@
 export type { DashboardFilters } from '@/lib/types/dashboard-bi'
 import type { EvolucaoMensal, DashboardFilters, Projecoes, InsightsAutomaticos, AlertaCritico } from '@/lib/types/dashboard-bi'
 
-// Hook para alertas críticos - busca dados da view v_alertas_criticos
+// Hook para alertas críticos - REABILITADO USANDO API
 export function useAlertasCriticos(filters?: DashboardFilters) {
   return useQuery({
     queryKey: ['dashboard', 'alertas_criticos', filters],
     queryFn: async (): Promise<AlertaCritico[]> => {
-      let query = supabase
-        .from('v_alertas_criticos')
-        .select('*')
-        .order('ordem_prioridade', { ascending: true })
-      if (filters?.prioridade_alerta?.length) {
-        query = query.in('prioridade', filters.prioridade_alerta)
+      try {
+        const response = await fetch('/api/dashboard/alertas-criticos')
+        if (!response.ok) {
+          console.warn('API alertas indisponível, retornando array vazio')
+          return []
+        }
+        const data = await response.json()
+        return Array.isArray(data) ? data : []
+      } catch (error) {
+        console.warn('Erro na API alertas:', error)
+        return []
       }
-      const { data, error } = await query
-      if (error) throw error
-      return data || []
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000
   })
 }
 
-// Hook para projeções - busca dados da view v_projecoes
+// Hook para projeções - REABILITADO COM FALLBACK
 export function useProjecoes(filters?: DashboardFilters) {
   return useQuery({
     queryKey: ['dashboard', 'projecoes', filters],
     queryFn: async (): Promise<Projecoes[]> => {
-      let query = supabase
-        .from('v_projecoes')
-        .select('*')
-        .order('periodo', { ascending: true })
-      if (filters?.data_inicio) {
-        query = query.gte('periodo', filters.data_inicio)
+      try {
+        const response = await fetch('/api/dashboard/projecoes', {
+          signal: AbortSignal.timeout(10000) // timeout de 10s
+        })
+        if (!response.ok) {
+          console.warn('API projeções indisponível, retornando array vazio')
+          return []
+        }
+        const data = await response.json()
+        return Array.isArray(data) ? data : []
+      } catch (error) {
+        console.warn('Erro na API projeções:', error)
+        return []
       }
-      if (filters?.data_fim) {
-        query = query.lte('periodo', filters.data_fim)
-      }
-      const { data, error } = await query
-      if (error) throw error
-      return data || []
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000
   })
 }
 
-// Hook para insights automáticos - busca dados da view v_insights
+// Hook para insights automáticos - REABILITADO COM FALLBACK
 export function useInsights(filters?: DashboardFilters) {
   return useQuery({
     queryKey: ['dashboard', 'insights', filters],
     queryFn: async (): Promise<InsightsAutomaticos> => {
-      let query = supabase
-        .from('v_insights')
-        .select('*')
-        .single()
-      const { data, error } = await query
-      if (error) throw error
-      return data || { insights: [], score_sistema: 0, recomendacoes: [], alertas_urgentes: 0 }
+      try {
+        const response = await fetch('/api/dashboard/insights', {
+          signal: AbortSignal.timeout(10000) // timeout de 10s
+        })
+        if (!response.ok) {
+          console.warn('API insights indisponível, usando fallback')
+          return { insights: [], score_sistema: 0, recomendacoes: [], alertas_urgentes: 0 }
+        }
+        const data = await response.json()
+        return data || { insights: [], score_sistema: 0, recomendacoes: [], alertas_urgentes: 0 }
+      } catch (error) {
+        console.warn('Erro na API insights:', error)
+        return { insights: [], score_sistema: 0, recomendacoes: [], alertas_urgentes: 0 }
+      }
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000
   })
 }
 
-// Hook para evolução mensal - busca dados da view v_evolucao_mensal
+// Hook para evolução mensal - REABILITADO USANDO API
 export function useEvolucaoMensal(filters?: DashboardFilters) {
   return useQuery({
     queryKey: ['dashboard', 'evolucao_mensal', filters],
     queryFn: async (): Promise<EvolucaoMensal[]> => {
-      let query = supabase
-        .from('v_evolucao_mensal')
-        .select('*')
-        .order('ano_mes', { ascending: true })
-      if (filters?.data_inicio) {
-        query = query.gte('ano_mes', filters.data_inicio)
+      try {
+        const response = await fetch('/api/dashboard/evolucao-mensal')
+        if (!response.ok) {
+          console.warn('API evolução indisponível, retornando array vazio')
+          return []
+        }
+        const data = await response.json()
+        return Array.isArray(data) ? data : []
+      } catch (error) {
+        console.warn('Erro na API evolução:', error)
+        return []
       }
-      if (filters?.data_fim) {
-        query = query.lte('ano_mes', filters.data_fim)
-      }
-      const { data, error } = await query
-      if (error) throw error
-      return data || []
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000
   })
 }
-// Hook para ranking de laboratórios - busca dados da view v_ranking_laboratorios
 import type { RankingLaboratorio } from '@/lib/types/dashboard-bi'
+// Hook para ranking de laboratórios - REABILITADO USANDO API
 export function useRankingLaboratorios(limite: number = 10, filtroRisco: string = '') {
   return useQuery({
     queryKey: ['dashboard', 'ranking_laboratorios', limite, filtroRisco],
     queryFn: async (): Promise<RankingLaboratorio[]> => {
-      let query = supabase
-        .from('v_ranking_laboratorios')
-        .select('*')
-        .order('posicao', { ascending: true })
-        .limit(limite)
-      if (filtroRisco) {
-        query = query.eq('status_risco', filtroRisco)
+      try {
+        const response = await fetch('/api/dashboard/ranking-laboratorios')
+        if (!response.ok) {
+          console.warn('API ranking indisponível, retornando array vazio')
+          return []
+        }
+        const data = await response.json()
+        return data.ranking_laboratorios || []
+      } catch (error) {
+        console.warn('Erro na API ranking:', error)
+        return []
       }
-      const { data, error } = await query
-      if (error) throw error
-      return data || []
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000
   })
 }
 import type { AnaliseFinanceira, DashboardKPIs } from '@/lib/types/dashboard-bi'
-// Hook para análise financeira - busca dados da view v_analise_financeira
+// Hook para análise financeira - REABILITADO USANDO API
 export function useAnaliseFinanceira() {
   return useQuery({
     queryKey: ['dashboard', 'analise_financeira'],
     queryFn: async (): Promise<AnaliseFinanceira[]> => {
-      const { data, error } = await supabase
-        .from('v_analise_financeira')
-        .select('*')
-        .order('faturamento_total', { ascending: false })
-      if (error) throw error
-      return data || []
+      try {
+        const response = await fetch('/api/dashboard/analise-financeira')
+        if (!response.ok) {
+          console.warn('API análise financeira indisponível, retornando array vazio')
+          return []
+        }
+        const data = await response.json()
+        return Array.isArray(data) ? data : []
+      } catch (error) {
+        console.warn('Erro na API análise financeira:', error)
+        return []
+      }
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000
@@ -133,34 +149,17 @@ import { supabase } from '@/lib/supabase/client'
 // HOOKS QUE USAM DADOS REAIS DO BANCO
 // ================================================================
 
-// Hook para KPIs principais - USA DADOS REAIS
+// Hook para KPIs principais - REABILITADO USANDO APIS
 export function useDashboardKPIs(filters?: DashboardFilters) {
   return useQuery({
     queryKey: ['dashboard', 'kpis', filters],
     queryFn: async (): Promise<DashboardKPIs> => {
-      try {
-        let query = supabase
-          .from('v_kpis_dashboard')
-          .select('*')
-        if (filters?.data_inicio) {
-          query = query.gte('data', filters.data_inicio)
-        }
-        if (filters?.data_fim) {
-          query = query.lte('data', filters.data_fim)
-        }
-        const { data: viewData, error: viewError } = await query.single()
-        if (!viewError && viewData) {
-          return viewData
-        }
-        console.warn('View v_kpis_dashboard não encontrada, usando API...')
-        // Se view não existir, usar API
-        const response = await fetch('/api/dashboard/kpis')
-        if (!response.ok) throw new Error('Falha ao carregar KPIs')
-        return response.json()
-      } catch (error) {
-        console.error('Erro ao buscar KPIs:', error)
-        throw error
+      // Usar API que funciona com as políticas RLS
+      const response = await fetch('/api/dashboard/kpis')
+      if (!response.ok) {
+        throw new Error(`Falha ao carregar KPIs: ${response.status}`)
       }
+      return response.json()
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000

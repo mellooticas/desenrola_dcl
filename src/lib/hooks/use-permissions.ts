@@ -1,15 +1,6 @@
-// lib/hooks/use-permissions.ts
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase/client'
+// lib/hooks/use-permissions.ts - VERSÃO TEMPORÁRIA SEM BANCO
 import { StatusPedido } from '@/lib/types/database'
 import { useAuth } from '@/components/providers/AuthProvider'
-
-export interface RolePermission {
-  role: string
-  status_origem: string[]
-  status_destino_permitidos: string[]
-  acoes_especiais: string[]
-}
 
 export interface UserPermissions {
   canView: (status: StatusPedido) => boolean
@@ -20,123 +11,66 @@ export interface UserPermissions {
   getAllowedMoves: (fromStatus: StatusPedido) => StatusPedido[]
 }
 
+// DADOS HARDCODED (baseados no banco)
+const ROLE_PERMISSIONS = {
+  financeiro: {
+    colunas_visiveis: ['AG_PAGAMENTO', 'PAGO'],
+    status_origem: ['AG_PAGAMENTO'],
+    status_destino_permitidos: ['PAGO', 'CANCELADO']
+  },
+  dcl: {
+    colunas_visiveis: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
+    status_origem: ['REGISTRADO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO'],
+    status_destino_permitidos: ['REGISTRADO', 'AG_PAGAMENTO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU', 'CANCELADO']
+  },
+  gestor: {
+    colunas_visiveis: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
+    status_origem: ['*'],
+    status_destino_permitidos: ['*']
+  },
+  loja: {
+    colunas_visiveis: ['PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
+    status_origem: ['CHEGOU'],
+    status_destino_permitidos: ['ENTREGUE']
+  }
+}
+
 export const usePermissions = (): UserPermissions => {
-  const { userProfile } = useAuth() // Usar perfil consolidado
-  const [permissions, setPermissions] = useState<RolePermission | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { userProfile } = useAuth()
+  const role = userProfile?.role || 'financeiro'
+  const permissions = ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS] || ROLE_PERMISSIONS.financeiro
 
-  const loadPermissions = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('role_permissions')
-        .select('*')
-        .eq('role', userProfile?.role)
-        .single()
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erro ao carregar permissões:', error)
-        return
-      }
-
-      setPermissions(data)
-    } catch (error) {
-      console.error('Erro ao carregar permissões:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [userProfile?.role])
-
-  useEffect(() => {
-    const run = async () => {
-      if (userProfile?.role) {
-        await loadPermissions()
-      }
-    }
-    run()
-  }, [userProfile?.role, loadPermissions])
-
-  // Função para verificar se pode visualizar um status
   const canView = (status: StatusPedido): boolean => {
-    if (!permissions) return false
-    if (permissions.role === 'gestor') return true
-    if (permissions.role === 'loja') return true // Loja vê todos
-    
-    return permissions.status_origem.includes(status) || 
-           permissions.status_destino_permitidos.includes(status)
+    return permissions.colunas_visiveis.includes(status)
   }
 
-  // Função para verificar se pode editar um status
   const canEdit = (status: StatusPedido): boolean => {
-    if (!permissions) return false
-    if (permissions.role === 'gestor') return true
-    
+    if (role === 'gestor') return true
     return permissions.status_origem.includes(status) || permissions.status_origem.includes('*')
   }
 
-  // Função para verificar se pode mover de um status para outro
   const canMoveTo = (fromStatus: StatusPedido, toStatus: StatusPedido): boolean => {
-    if (!permissions) return false
-    if (permissions.role === 'gestor') return true
-    
-    // Verifica se pode mexer no status de origem
+    if (role === 'gestor') return true
     if (!permissions.status_origem.includes(fromStatus) && !permissions.status_origem.includes('*')) {
       return false
     }
-    
-    // Verifica se o status de destino é permitido
-    return permissions.status_destino_permitidos.includes(toStatus) || 
-           permissions.status_destino_permitidos.includes('*')
+    return permissions.status_destino_permitidos.includes(toStatus) || permissions.status_destino_permitidos.includes('*')
   }
 
-  // Função para verificar se tem uma ação especial
   const hasAction = (action: string): boolean => {
-    if (!permissions) return false
-    if (permissions.role === 'gestor') return true
-    
-    return permissions.acoes_especiais.includes(action) || 
-           permissions.acoes_especiais.includes('*')
+    return role === 'gestor'
   }
 
-  // Função para obter colunas visíveis no Kanban
   const getVisibleColumns = (): StatusPedido[] => {
-    if (!permissions) return []
-    
-    const allStatuses: StatusPedido[] = [
-      'REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 
-      'PRONTO', 'ENVIADO', 'CHEGOU', 'ENTREGUE', 'CANCELADO'
-    ]
-
-    if (permissions.role === 'gestor') {
-      return allStatuses
-    }
-
-    if (permissions.role === 'loja') {
-      return allStatuses // Loja vê tudo mas só mexe em CHEGOU → ENTREGUE
-    }
-
-    if (permissions.role === 'financeiro') {
-      return ['AG_PAGAMENTO', 'PAGO']
-    }
-
-    if (permissions.role === 'dcl') {
-      return ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU']
-    }
-
-    return []
+    return permissions.colunas_visiveis as StatusPedido[]
   }
 
-  // Função para obter movimentos permitidos a partir de um status
   const getAllowedMoves = (fromStatus: StatusPedido): StatusPedido[] => {
-    if (!permissions) return []
-    if (permissions.role === 'gestor') {
+    if (role === 'gestor') {
       return ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU', 'ENTREGUE', 'CANCELADO']
     }
-
     if (!canEdit(fromStatus)) return []
-
-    return permissions.status_destino_permitidos.filter(status => 
-      status !== '*'
-    ) as StatusPedido[]
+    return permissions.status_destino_permitidos.filter(status => status !== '*') as StatusPedido[]
   }
 
   return {
@@ -148,5 +82,3 @@ export const usePermissions = (): UserPermissions => {
     getAllowedMoves
   }
 }
-
-// (Contexto de usuário vem de '@/components/providers/AuthProvider')
