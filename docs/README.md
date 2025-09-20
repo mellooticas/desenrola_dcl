@@ -1,6 +1,27 @@
 # 📚 Documentação Desenrola DCL
 
-Bem-vindo à documentação completa do sistema **Desenrola DCL** - Sistema de Gestão de Pedidos para Óticas com Dashboard BI.
+Bem-vindo à documentação completa do sistema **Desenrola DCL** - Sistema de Gestão de Pedidos para Óticas com Dashboard BI e Mission Control.
+
+## 📁 **Estrutura Organizada da Documentação**
+
+### 🏗️ **Arquitetura e Desenvolvimento**
+- [`development/`](./development/) - Guias de desenvolvimento, configuração local
+- [`api/`](./api/) - Documentação das APIs e endpoints  
+- [`components/`](./components/) - Documentação dos componentes React
+- [`database/`](./database/) - Esquemas do banco, views e procedures
+
+### 🔧 **Configuração e Deploy**
+- [`deployment/`](./deployment/) - Scripts e configurações de deploy
+- [`supabase/`](./supabase/) - Configurações específicas do Supabase
+- [`security/`](./security/) - Documentação de segurança e RLS
+
+### 🎯 **Funcionalidades Específicas**  
+- [`mission-control/`](./mission-control/) - Sistema de missões diárias
+- [`sql-queries/`](./sql-queries/) - Queries SQL úteis e scripts
+- [`templates/`](./templates/) - Templates de código e documentação
+
+### 🐛 **Arquivo e Debug**
+- [`debug-archive/`](./debug-archive/) - Arquivos históricos de investigação e debug
 
 ## 📖 Índice Geral
 

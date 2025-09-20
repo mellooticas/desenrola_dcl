@@ -72,7 +72,7 @@ const getDefaultPageForRole = (role: string): string => {
     case 'dcl':
       return '/kanban'
     case 'loja':
-      return '/kanban'
+      return '/mission-control' // Página padrão para lojas agora é mission-control
     default:
       return '/kanban'
   }

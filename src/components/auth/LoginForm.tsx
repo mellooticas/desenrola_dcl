@@ -38,7 +38,7 @@ const USUARIOS_REAIS = [
     nome: 'Operadores Lojas', 
     role: 'loja',
     icon: Building,
-    description: 'Finalização de entregas'
+    description: 'Mission Control - Central de comando da loja'
   }
 ]
 
@@ -63,7 +63,9 @@ export default function LoginForm() {
     
     if (success) {
       console.log('✅ Login bem-sucedido, redirecionando...')
-      router.push('/dashboard')
+      // Não redirecionar aqui - deixar o AuthProvider ou middleware lidar com isso
+      // O redirecionamento baseado em role será feito automaticamente
+      window.location.href = '/' // Força recarregamento para ativar o redirecionamento baseado em role
     } else {
       setError('Email ou senha incorretos. Verifique suas credenciais.')
     }

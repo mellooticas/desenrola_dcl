@@ -183,7 +183,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
     try {
       setLoading(true)
       
-      await supabaseHelpers.criarPedidoCompleto({
+      const pedidoData = {
         loja_id: formData.loja_id,
         laboratorio_id: formData.laboratorio_id,
         classe_lente_id: formData.classe_lente_id,
@@ -198,13 +198,24 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
         tratamentos_ids: formData.tratamentos_ids,
         observacoes: formData.observacoes || undefined,
         observacoes_garantia: formData.eh_garantia ? formData.observacoes_garantia : undefined
+      }
+      
+      // DEBUG: Log dos dados que estão sendo enviados
+      console.log('📋 Dados sendo enviados para API:', {
+        numero_os_fisica: pedidoData.numero_os_fisica,
+        numero_pedido_laboratorio: pedidoData.numero_pedido_laboratorio,
+        cliente_nome: pedidoData.cliente_nome,
+        eh_garantia: pedidoData.eh_garantia
       })
+      
+      await supabaseHelpers.criarPedidoCompleto(pedidoData)
 
       resetForm()
       setOpen(false)
       onSuccess?.()
-    } catch {
+    } catch (error) {
       // Erro ao criar pedido
+      console.error('❌ Erro ao criar pedido:', error)
       alert('Erro ao criar pedido. Tente novamente.')
     } finally {
       setLoading(false)

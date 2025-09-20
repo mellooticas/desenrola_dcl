@@ -46,9 +46,10 @@ export default function HomePage() {
       return
     }
 
-    // Redirecionar para dashboard se autenticado
-    if (!loading && user && userProfile) {
-      router.push('/dashboard')
+    // Redirecionar baseado no role do usuário
+    if (!loading && user && userProfile && userProfile.role) {
+      const defaultPage = getDefaultPageForRole(userProfile.role)
+      router.push(defaultPage)
       return
     }
 
@@ -57,6 +58,22 @@ export default function HomePage() {
       carregarDadosBasicos()
     }
   }, [user, userProfile, loading, router])
+
+  // Helper para obter página padrão baseado no role
+  const getDefaultPageForRole = (role: string): string => {
+    switch (role) {
+      case 'gestor':
+        return '/dashboard'
+      case 'financeiro':
+        return '/dashboard'
+      case 'dcl':
+        return '/kanban'
+      case 'loja':
+        return '/mission-control' // Operadores de loja vão direto para Mission Control
+      default:
+        return '/kanban'
+    }
+  }
 
   const carregarDadosBasicos = async () => {
     try {

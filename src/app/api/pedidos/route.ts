@@ -107,6 +107,19 @@ export async function POST(request: NextRequest) {
     const supabase = getServerSupabase()
     const body: CriarPedidoCompletoData = await request.json()
     
+    // DEBUG: Log dos dados recebidos na API
+    console.log('🔔 API /pedidos POST - Dados recebidos:', {
+      numero_os_fisica: body.numero_os_fisica,
+      numero_pedido_laboratorio: body.numero_pedido_laboratorio,
+      cliente_nome: body.cliente_nome,
+      cliente_telefone: body.cliente_telefone,
+      valor_pedido: body.valor_pedido,
+      custo_lentes: body.custo_lentes,
+      observacoes: body.observacoes,
+      loja_id: body.loja_id,
+      eh_garantia: body.eh_garantia
+    })
+    
     // Validação básica
     if (!body.loja_id || !body.laboratorio_id || !body.classe_lente_id || !body.cliente_nome) {
       return NextResponse.json(
@@ -117,45 +130,64 @@ export async function POST(request: NextRequest) {
 
     // MÉTODO 1: Usar função SQL (mais confiável para permissões)
     try {
-      const { data: resultado, error: funcaoError } = await supabase
-        .rpc('inserir_novo_pedido', {
+      const { data: pedidoId, error: funcaoError } = await supabase
+        .rpc('criar_pedido_simples', {
           p_loja_id: body.loja_id,
           p_laboratorio_id: body.laboratorio_id,
           p_classe_lente_id: body.classe_lente_id,
           p_cliente_nome: body.cliente_nome,
+          p_cliente_telefone: body.cliente_telefone || null,
+          p_numero_os_fisica: body.numero_os_fisica || null,
           p_numero_pedido_laboratorio: body.numero_pedido_laboratorio || null,
           p_valor_pedido: body.valor_pedido || null,
+          p_custo_lentes: body.custo_lentes || null,
+          p_eh_garantia: body.eh_garantia || false,
           p_observacoes: body.observacoes || null,
+          p_observacoes_garantia: body.observacoes_garantia || null,
           p_prioridade: body.prioridade || 'NORMAL'
         })
 
-      if (!funcaoError && resultado) {
-        // Tentar buscar dados completos do pedido para o Kanban
-        try {
-          const { data: pedidoCompleto, error: buscaError } = await supabase
-            .from('v_pedidos_kanban')
-            .select('*')
-            .eq('id', resultado.id)
-            .single()
+      if (!funcaoError && pedidoId) {
+        // DEBUG: Log da função SQL
+        console.log('🔧 Pedido criado via função SQL - ID:', pedidoId)
+        
+        // Buscar dados completos do pedido criado
+        const { data: pedidoCompleto, error: buscaError } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', pedidoId)
+          .single()
 
-          if (!buscaError && pedidoCompleto) {
-            return NextResponse.json(pedidoCompleto, { status: 201 })
-          } else {
-            return NextResponse.json(resultado, { status: 201 })
-          }
-        } catch {
-          return NextResponse.json(resultado, { status: 201 })
+        if (!buscaError && pedidoCompleto) {
+          console.log('✅ Pedido criado com sucesso:', {
+            id: pedidoCompleto.id,
+            numero_sequencial: pedidoCompleto.numero_sequencial,
+            cliente_telefone: pedidoCompleto.cliente_telefone,
+            numero_os_fisica: pedidoCompleto.numero_os_fisica,
+            numero_pedido_laboratorio: pedidoCompleto.numero_pedido_laboratorio,
+            valor_pedido: pedidoCompleto.valor_pedido,
+            custo_lentes: pedidoCompleto.custo_lentes,
+            observacoes: pedidoCompleto.observacoes,
+            eh_garantia: pedidoCompleto.eh_garantia,
+            cliente_nome: pedidoCompleto.cliente_nome
+          })
+          return NextResponse.json(pedidoCompleto, { status: 201 })
+        } else {
+          // Retornar pelo menos o ID
+          return NextResponse.json({ id: pedidoId }, { status: 201 })
         }
       } else {
+        console.log('⚠️ Função SQL falhou, erro:', funcaoError)
       }
-    } catch {
-      // Função SQL falhou, tentando inserção direta
+    } catch (error) {
+      console.log('⚠️ Erro ao executar função SQL:', error)
     }
 
     // MÉTODO 2: Inserção direta (fallback)
-    // Calcular SLA básico
+    // Usar SLA padrão sem acessar laboratorio_sla para evitar problema de permissões
     let slaDias = 5 // SLA padrão
     
+    // Tentar buscar SLA da classe de lente (com fallback se falhar)
     try {
       const { data: classe, error: classeError } = await supabase
         .from('classes_lente')
@@ -163,11 +195,12 @@ export async function POST(request: NextRequest) {
         .eq('id', body.classe_lente_id)
         .single()
       
-      if (!classeError && classe) {
-        slaDias = classe.sla_base_dias || 5
+      if (!classeError && classe && classe.sla_base_dias) {
+        slaDias = classe.sla_base_dias
       }
-    } catch {
-      // Erro ao calcular SLA, usando padrão
+    } catch (error) {
+      console.log('⚠️ Erro ao buscar SLA da classe, usando padrão:', error)
+      // Continuar com SLA padrão
     }
 
     // Ajustar por prioridade
@@ -212,6 +245,16 @@ export async function POST(request: NextRequest) {
       created_by: 'api_direct'
     }
     
+    // DEBUG: Log do objeto que será inserido
+    console.log('📝 Objeto para inserção no banco:', {
+      cliente_telefone: novoPedido.cliente_telefone,
+      numero_os_fisica: novoPedido.numero_os_fisica,
+      valor_pedido: novoPedido.valor_pedido,
+      custo_lentes: novoPedido.custo_lentes,
+      observacoes: novoPedido.observacoes,
+      eh_garantia: novoPedido.eh_garantia
+    })
+    
     const { data: pedido, error } = await supabase
       .from('pedidos')
       .insert(novoPedido)
@@ -219,12 +262,27 @@ export async function POST(request: NextRequest) {
       .single()
     
     if (error) {
+      console.error('❌ Erro ao inserir pedido:', error)
       const debug = process.env.NEXT_PUBLIC_DEBUG === 'true' || process.env.NEXT_PUBLIC_DEBUG === '1'
       const errPayload = debug
         ? { error: 'Erro ao criar pedido', details: (error as unknown as { message?: string })?.message || 'Falha na inserção' }
         : { error: 'Erro ao criar pedido' }
       return NextResponse.json(errPayload, { status: 500 })
     }
+    
+    // DEBUG: Log do pedido criado
+    console.log('✅ Pedido criado com sucesso:', {
+      id: pedido.id,
+      numero_sequencial: pedido.numero_sequencial,
+      cliente_telefone: pedido.cliente_telefone,
+      numero_os_fisica: pedido.numero_os_fisica,
+      numero_pedido_laboratorio: pedido.numero_pedido_laboratorio,
+      valor_pedido: pedido.valor_pedido,
+      custo_lentes: pedido.custo_lentes,
+      observacoes: pedido.observacoes,
+      eh_garantia: pedido.eh_garantia,
+      cliente_nome: pedido.cliente_nome
+    })
     
     return NextResponse.json(pedido, { status: 201 })
     

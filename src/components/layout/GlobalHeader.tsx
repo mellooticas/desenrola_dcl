@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -14,11 +15,11 @@ import {
   Menu,
   X,
   BarChart3,
+  Target,
   Package,
   FileText,
   Settings,
-  User,
-  Layers
+  User
 } from 'lucide-react'
 import { Usuario } from '@/components/providers/AuthProvider'
 
@@ -28,26 +29,46 @@ interface GlobalHeaderProps {
 
 // Navigation configuration
 const NAVIGATION_ITEMS = [
+  { name: 'Mission Control', href: '/mission-control', icon: Target },
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Kanban', href: '/kanban', icon: Package },
   { name: 'Pedidos', href: '/pedidos', icon: FileText },
   { name: 'Configurações', href: '/configuracoes', icon: Settings }
 ] as const
 
-// Clean logo component
+// Logo component usando o arquivo real
 const Logo = () => (
-  <Link href="/dashboard" className="flex items-center gap-3 group transition-all duration-300 hover:scale-105">
-    <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-      <Layers className="w-6 h-6 text-white" />
-    </div>
-    <div className="hidden sm:block">
-      <h1 className="text-lg font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-        Desenrola DCL
-      </h1>
-      <p className="text-xs text-slate-500 group-hover:text-slate-600 transition-colors">
-        Sistema de Gestão
-      </p>
-    </div>
+  <Link 
+    href="/dashboard" 
+    className="flex items-center group transition-all duration-300 hover:opacity-80"
+  >
+    {/* Logo desktop - completo */}
+    <Image
+  src="/logo_desenrola.svg"
+  alt="Desenrola DCL"
+  width={180}  // Era 140, agora 210 (50% maior)
+  height={60}  // Era 47, agora 70 (50% maior)
+  priority={true}
+  className="hidden sm:block object-contain"
+  onError={(e) => {
+    const target = e.target as HTMLImageElement
+    target.src = "/logo_desenrola.png"
+  }}
+/>
+
+{/* Logo mobile - versão compacta */}
+<Image
+  src="/logo_desenrola.svg"
+  alt="DCL"
+  width={130}  // Era 100, agora 150 (50% maior)
+  height={44}  // Era 34, agora 51 (50% maior)
+  priority={true}
+  className="sm:hidden object-contain"
+  onError={(e) => {
+    const target = e.target as HTMLImageElement
+    target.src = "/logo_desenrola.png"
+  }}
+/>
   </Link>
 )
 
@@ -288,4 +309,3 @@ export default function GlobalHeader({ className }: GlobalHeaderProps) {
     </>
   )
 }
-

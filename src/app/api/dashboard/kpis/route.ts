@@ -23,8 +23,18 @@ export async function GET(request: NextRequest) {
       .select('*')
       .single()
     
-    if (!viewError && viewData) {
-      console.log('✅ Dados carregados da view v_kpis_dashboard')
+    // DEBUG: Verificar view
+    console.log('🚨 DEBUG: viewError:', viewError)
+    console.log('🚨 DEBUG: viewData:', JSON.stringify(viewData, null, 2))
+    
+    // ⚠️  PROBLEMA IDENTIFICADO: VIEW DESATUALIZADA
+    // View tem 2504 pedidos (dados antigos) mas tabela real tem apenas 3
+    // FORÇANDO CÁLCULO MANUAL ATÉ RESOLVER A VIEW
+    console.warn('⚠️ VIEW DESATUALIZADA - FORÇANDO CÁLCULO MANUAL')
+    const forcarCalculoManual = true
+    
+    if (!viewError && viewData && !forcarCalculoManual) {
+      console.log('✅ Dados carregados da view v_kpis_dashboard:', JSON.stringify(viewData, null, 2))
       return NextResponse.json(viewData)
     }
     
@@ -62,6 +72,9 @@ export async function GET(request: NextRequest) {
     }
     
     const { data: pedidos, error: pedidosError } = await query
+    
+    // Dados encontrados na tabela
+    console.log(`✅ Pedidos encontrados: ${pedidos?.length || 0}, Valor total: R$ ${pedidos?.reduce((t, p) => t + (p.valor_pedido || 0), 0) || 0}`)
     
     if (pedidosError) {
       console.error('❌ Erro ao buscar dados da tabela pedidos:', pedidosError)

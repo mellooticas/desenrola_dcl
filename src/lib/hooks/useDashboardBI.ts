@@ -149,17 +149,39 @@ import { supabase } from '@/lib/supabase/client'
 // HOOKS QUE USAM DADOS REAIS DO BANCO
 // ================================================================
 
-// Hook para KPIs principais - REABILITADO USANDO APIS
+// Hook para KPIs principais - USANDO API /dashboard QUE FUNCIONA
 export function useDashboardKPIs(filters?: DashboardFilters) {
   return useQuery({
     queryKey: ['dashboard', 'kpis', filters],
     queryFn: async (): Promise<DashboardKPIs> => {
-      // Usar API que funciona com as políticas RLS
-      const response = await fetch('/api/dashboard/kpis')
+      // ⚠️  BYPASS: Usar /api/dashboard em vez de /api/dashboard/kpis
+      // API /kpis tem bug que perde 1 pedido, API /dashboard funciona perfeitamente
+      const response = await fetch('/api/dashboard')
       if (!response.ok) {
         throw new Error(`Falha ao carregar KPIs: ${response.status}`)
       }
-      return response.json()
+      const data = await response.json()
+      
+      // Mapear formato da API /dashboard para formato esperado pelos KPIs
+      return {
+        total_pedidos: data.total_pedidos,
+        entregues: data.entregues,
+        lead_time_medio: data.lead_time_medio || 0,
+        pedidos_atrasados: 0, // TODO: API /dashboard não tem este campo
+        ticket_medio: data.total_pedidos > 0 ? data.valor_total_vendas / data.total_pedidos : 0,
+        sla_compliance: data.sla_compliance || 0,
+        labs_ativos: 0, // TODO: API /dashboard não tem este campo
+        valor_total_vendas: data.valor_total_vendas,
+        margem_percentual: data.margem_bruta || 0,
+        
+        // Campos de comparação (temporariamente zerados)
+        total_pedidos_anterior: 0,
+        lead_time_anterior: 0,
+        sla_anterior: 0,
+        variacao_pedidos: 0,
+        variacao_lead_time: 0,
+        variacao_sla: 0
+      }
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000

@@ -23,6 +23,12 @@ export function Navigation() {
       show: canAccessPage(userRole, 'kanban')
     },
     {
+      href: '/mission-control',
+      label: 'Mission Control',
+      icon: 'Target',
+      show: canAccessPage(userRole, 'mission-control')
+    },
+    {
       href: '/pedidos',
       label: 'Pedidos',
       icon: 'FileText',

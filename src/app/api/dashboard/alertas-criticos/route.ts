@@ -1,44 +1,214 @@
 // ================================================================
 // src/app/api/dashboard/alertas-criticos/route.ts
+// VERSÃO COMPLETA PARA CENTRO DE COMANDO
 // ================================================================
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import type { AlertaCritico } from '@/lib/types/dashboard-bi'
+import { getServerSupabase } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = getServerSupabase()
     const { searchParams } = new URL(request.url)
+    const lojaId = searchParams.get('loja_id')
     
-    const prioridade = searchParams.get('prioridade')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    console.log('🚨 Calculando alertas críticos...')
     
-    let query = supabase
-      .from('v_alertas_criticos')
+    // 1. PEDIDOS ATRASADOS
+    let queryAtrasados = supabase
+      .from('pedidos')
+      .select(`
+        id, numero_sequencial, cliente_nome, 
+        data_prevista_pronto, status,
+        loja_id, laboratorio_id
+      `)
+      .not('data_prevista_pronto', 'is', null)
+      .not('status', 'in', '("ENTREGUE", "CANCELADO")')
+      .lt('data_prevista_pronto', new Date().toISOString().split('T')[0])
+      .order('data_prevista_pronto', { ascending: true })
+      .limit(10)
+    
+    if (lojaId) {
+      queryAtrasados = queryAtrasados.eq('loja_id', lojaId)
+    }
+    
+    const { data: pedidosAtrasados } = await queryAtrasados
+    
+    // 2. PEDIDOS PRÓXIMOS AO VENCIMENTO (próximos 2 dias)
+    const dataLimite = new Date()
+    dataLimite.setDate(dataLimite.getDate() + 2)
+    
+    let queryVencimento = supabase
+      .from('pedidos')
+      .select(`
+        id, numero_sequencial, cliente_nome,
+        data_prevista_pronto, status
+      `)
+      .not('data_prevista_pronto', 'is', null)
+      .not('status', 'in', '("ENTREGUE", "CANCELADO")')
+      .gte('data_prevista_pronto', new Date().toISOString().split('T')[0])
+      .lte('data_prevista_pronto', dataLimite.toISOString().split('T')[0])
+      .order('data_prevista_pronto', { ascending: true })
+      .limit(5)
+    
+    if (lojaId) {
+      queryVencimento = queryVencimento.eq('loja_id', lojaId)
+    }
+    
+    const { data: pedidosVencimento } = await queryVencimento
+    
+    // 3. PAGAMENTOS PENDENTES (mais de 3 dias)
+    const dataLimitePagamento = new Date()
+    dataLimitePagamento.setDate(dataLimitePagamento.getDate() - 3)
+    
+    let queryPagamentos = supabase
+      .from('pedidos')
+      .select(`
+        id, numero_sequencial, cliente_nome,
+        valor_pedido, data_pedido, status
+      `)
+      .eq('status', 'AG_PAGAMENTO')
+      .lt('data_pedido', dataLimitePagamento.toISOString().split('T')[0])
+      .order('data_pedido', { ascending: true })
+      .limit(5)
+    
+    if (lojaId) {
+      queryPagamentos = queryPagamentos.eq('loja_id', lojaId)
+    }
+    
+    const { data: pagamentosPendentes } = await queryPagamentos
+    
+    // 4. ALERTAS DO SISTEMA (não lidos)
+    let queryAlertas = supabase
+      .from('alertas')
       .select('*')
-      .order('ordem_prioridade', { ascending: true })
-      .limit(limit)
+      .eq('lido', false)
+      .order('created_at', { ascending: false })
+      .limit(10)
     
-    if (prioridade) {
-      query = query.eq('prioridade', prioridade)
+    if (lojaId) {
+      queryAlertas = queryAlertas.eq('loja_id', lojaId)
     }
     
-    const { data, error } = await query
+    const { data: alertasSistema } = await queryAlertas
     
-    if (error) {
-      console.error('Erro ao buscar alertas:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    // 5. COMPILAR TODOS OS ALERTAS
+    type AlertaItem = {
+      id: string
+      tipo: string
+      prioridade: 'CRITICA' | 'ALTA' | 'MEDIA' | 'BAIXA'
+      titulo: string
+      mensagem: string
+      dados: any
+      created_at: string
     }
     
-    return NextResponse.json(data || [])
+    const alertas: AlertaItem[] = []
+    
+    // Processar pedidos atrasados
+    if (pedidosAtrasados && pedidosAtrasados.length > 0) {
+      pedidosAtrasados.forEach(p => {
+        const diasAtraso = Math.floor(
+          (new Date().getTime() - new Date(p.data_prevista_pronto).getTime()) / (1000 * 60 * 60 * 24)
+        )
+        alertas.push({
+          id: `atraso-${p.id}`,
+          tipo: 'PEDIDO_ATRASADO',
+          prioridade: diasAtraso > 7 ? 'CRITICA' : diasAtraso > 3 ? 'ALTA' : 'MEDIA',
+          titulo: `Pedido #${p.numero_sequencial} atrasado`,
+          mensagem: `Cliente ${p.cliente_nome} - ${diasAtraso} dias de atraso`,
+          dados: p,
+          created_at: p.data_prevista_pronto
+        })
+      })
+    }
+    
+    // Processar próximos ao vencimento
+    if (pedidosVencimento && pedidosVencimento.length > 0) {
+      pedidosVencimento.forEach(p => {
+        const diasRestantes = Math.floor(
+          (new Date(p.data_prevista_pronto).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        )
+        alertas.push({
+          id: `vencimento-${p.id}`,
+          tipo: 'SLA_PROXIMO_VENCIMENTO',
+          prioridade: diasRestantes <= 1 ? 'ALTA' : 'MEDIA',
+          titulo: `SLA próximo ao vencimento`,
+          mensagem: `Pedido #${p.numero_sequencial} vence em ${diasRestantes} dia(s)`,
+          dados: p,
+          created_at: new Date().toISOString()
+        })
+      })
+    }
+    
+    // Processar pagamentos pendentes
+    if (pagamentosPendentes && pagamentosPendentes.length > 0) {
+      pagamentosPendentes.forEach(p => {
+        const diasPendente = Math.floor(
+          (new Date().getTime() - new Date(p.data_pedido).getTime()) / (1000 * 60 * 60 * 24)
+        )
+        alertas.push({
+          id: `pagamento-${p.id}`,
+          tipo: 'PAGAMENTO_PENDENTE',
+          prioridade: diasPendente > 7 ? 'ALTA' : 'MEDIA',
+          titulo: `Pagamento pendente há ${diasPendente} dias`,
+          mensagem: `Pedido #${p.numero_sequencial} - R$ ${p.valor_pedido}`,
+          dados: p,
+          created_at: p.data_pedido
+        })
+      })
+    }
+    
+    // Processar alertas do sistema
+    if (alertasSistema && alertasSistema.length > 0) {
+      alertasSistema.forEach(a => {
+        alertas.push({
+          id: `sistema-${a.id}`,
+          tipo: a.tipo,
+          prioridade: 'MEDIA',
+          titulo: a.titulo || 'Alerta do sistema',
+          mensagem: a.mensagem,
+          dados: a,
+          created_at: a.created_at
+        })
+      })
+    }
+    
+    // 6. ORDENAR POR PRIORIDADE E DATA
+    const prioridadeOrdem = { 'CRITICA': 0, 'ALTA': 1, 'MEDIA': 2, 'BAIXA': 3 }
+    alertas.sort((a, b) => {
+      if (prioridadeOrdem[a.prioridade] !== prioridadeOrdem[b.prioridade]) {
+        return prioridadeOrdem[a.prioridade] - prioridadeOrdem[b.prioridade]
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+    
+    // 7. RESUMO ESTATÍSTICO
+    const resumo = {
+      total_alertas: alertas.length,
+      criticos: alertas.filter(a => a.prioridade === 'CRITICA').length,
+      alta_prioridade: alertas.filter(a => a.prioridade === 'ALTA').length,
+      pedidos_atrasados: pedidosAtrasados?.length || 0,
+      pagamentos_pendentes: pagamentosPendentes?.length || 0,
+      proximos_vencimento: pedidosVencimento?.length || 0
+    }
+    
+    console.log(`✅ Alertas processados: ${alertas.length} encontrados`)
+    
+    return NextResponse.json({
+      alertas: alertas.slice(0, 20), // Limitar a 20 alertas mais críticos
+      resumo,
+      timestamp: new Date().toISOString()
+    })
     
   } catch (error) {
-    console.error('Erro interno:', error)
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
+    console.error('❌ Erro na API de alertas:', error)
+    return NextResponse.json(
+      { error: 'Erro ao buscar alertas críticos' },
+      { status: 500 }
+    )
   }
 }
