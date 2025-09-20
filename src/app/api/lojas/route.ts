@@ -1,87 +1,104 @@
+// app/api/lojas/route.ts - CORRIGIDO PARA FUNCIONAR COM FILTROSPERIODO
+import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSupabase } from '@/lib/supabase/server'
-import type { Loja } from '@/lib/types/database'
 
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { 
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 export async function GET(request: NextRequest) {
   try {
-  const supabase = getServerSupabase()
-    
     const { searchParams } = new URL(request.url)
     const ativo = searchParams.get('ativo')
     
-    let query = supabase
+    console.log('🏪 Buscando lojas reais do banco...')
+    
+    // Buscar lojas ativas da tabela real
+    let query = supabaseAdmin
       .from('lojas')
       .select('*')
       .order('nome')
-    
-    if (ativo !== null) {
-      query = query.eq('ativo', ativo === 'true')
-    }
-    
-    const { data: lojas, error } = await query
-    
-    if (error) {
-      console.error('Erro ao buscar lojas:', error)
-      return NextResponse.json(
-        { error: 'Erro ao buscar lojas' },
-        { status: 500 }
-      )
-    }
-    
-    return NextResponse.json(lojas)
-  } catch (error) {
-    console.error('Erro interno:', error)
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
-  }
-}
 
-export async function POST(request: NextRequest) {
-  try {
-  const supabase = getServerSupabase()
-    const body = await request.json()
-    
-    if (!body.nome || !body.codigo) {
-      return NextResponse.json(
-        { error: 'Nome e código são obrigatórios' },
-        { status: 400 }
-      )
+    // Se veio parâmetro ativo=true, filtrar apenas ativas
+    if (ativo === 'true') {
+      query = query.eq('ativo', true)
     }
-    
-    const novaLoja: Partial<Loja> = {
-      nome: body.nome,
-      codigo: body.codigo,
-      endereco: body.endereco || null,
-      telefone: body.telefone || null,
-      gerente: body.gerente || null,
-      ativo: true
-    }
-    
-    const { data: loja, error } = await supabase
-      .from('lojas')
-      .insert(novaLoja)
-      .select()
-      .single()
-    
+
+    const { data: lojas, error } = await query
+
     if (error) {
-      console.error('Erro ao criar loja:', error)
-      return NextResponse.json(
-        { error: 'Erro ao criar loja' },
-        { status: 500 }
-      )
+      console.error('❌ Erro ao buscar lojas:', error)
+      throw new Error(`Erro ao buscar lojas: ${error.message}`)
     }
-    
-    return NextResponse.json(loja, { status: 201 })
+
+    if (!lojas || lojas.length === 0) {
+      console.log('⚠️ Nenhuma loja encontrada, retornando array vazio')
+      // IMPORTANTE: FiltrosPeriodo espera array direto, não objeto com propriedade
+      return NextResponse.json([])
+    }
+
+    console.log(`✅ Encontradas ${lojas.length} lojas`)
+
+    // Para LojaSelector (sem parâmetro ativo), incluir stats
+    if (!ativo) {
+      const hoje = new Date().toISOString().split('T')[0]
+      const lojasComStats = await Promise.all(
+        lojas.map(async (loja) => {
+          try {
+            // Buscar stats desta loja (se a view existir)
+            const { data: stats, error: statsError } = await supabaseAdmin
+              .from('v_mission_control_dashboard')
+              .select('*')
+              .eq('loja_id', loja.id)
+              .eq('data_missao', hoje)
+              .maybeSingle() // usar maybeSingle em vez de single para não dar erro se não encontrar
+
+            return {
+              ...loja,
+              total_missoes: stats?.total_missoes || 0,
+              concluidas: stats?.concluidas || 0,
+              percentual_conclusao: stats?.percentual_conclusao || 0,
+              status_sistemas: stats?.status_sistemas || 'ok'
+            }
+          } catch (err) {
+            console.warn(`⚠️ Erro ao buscar stats da loja ${loja.nome}:`, err)
+            return {
+              ...loja,
+              total_missoes: 0,
+              concluidas: 0,
+              percentual_conclusao: 0,
+              status_sistemas: 'ok' as const
+            }
+          }
+        })
+      )
+
+      return NextResponse.json({
+        lojas: lojasComStats,
+        source: 'database',
+        debug: {
+          total_lojas: lojasComStats.length,
+          data_consultada: hoje,
+          message: 'Dados reais da tabela lojas + stats da view dashboard'
+        }
+      })
+    }
+
+    // Para FiltrosPeriodo (ativo=true), retornar array simples
+    console.log('🔄 Retornando array simples para FiltrosPeriodo')
+    return NextResponse.json(lojas)
+
   } catch (error) {
-    console.error('Erro interno:', error)
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    console.error('💥 Erro crítico na API de lojas:', error)
+    
+    // Fallback: retornar array vazio para não quebrar os componentes
+    return NextResponse.json([])
   }
 }

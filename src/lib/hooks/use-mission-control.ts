@@ -174,7 +174,7 @@ function getMockDashboard(): DashboardData {
 // ========================================
 
 /**
- * Hook para buscar missões
+ * Hook para buscar missões - SOMENTE DADOS REAIS
  */
 export function useMissions(lojaId?: string) {
   const today = new Date().toISOString().split('T')[0]
@@ -182,46 +182,55 @@ export function useMissions(lojaId?: string) {
   return useQuery({
     queryKey: ['missions', today, lojaId],
     queryFn: async (): Promise<MissaoDiaria[]> => {
+      if (!lojaId || lojaId === 'all') {
+        console.warn('LojaId não fornecido para buscar missões')
+        return []
+      }
+
       try {
         const params = new URLSearchParams({
           action: 'missions',
-          data: today
+          data: today,
+          loja_id: lojaId
         })
-        
-        if (lojaId && lojaId !== 'all' && !lojaId.includes('mock')) {
-          params.append('loja_id', lojaId)
-        }
 
+        console.log(`🔍 Buscando missões reais para loja ${lojaId}...`)
         const response = await fetch(`/api/mission-control?${params.toString()}`)
         
         if (!response.ok) {
-          console.warn(`API retornou ${response.status}, usando dados mock`)
-          return getMockMissions()
+          const errorText = await response.text()
+          throw new Error(`API retornou ${response.status}: ${errorText}`)
         }
         
         const result = await response.json()
         
-        if (!result.missions || result.missions.length === 0) {
-          console.warn('API retornou dados vazios, usando mock')
-          return getMockMissions()
+        if (result.error) {
+          throw new Error(result.error)
         }
         
+        if (!result.missions) {
+          console.warn('API não retornou campo missions')
+          return []
+        }
+        
+        console.log(`✅ Encontradas ${result.missions.length} missões reais`)
         return result.missions
         
       } catch (err) {
-        console.warn('Erro ao buscar missões, usando dados mock:', err)
-        return getMockMissions()
+        console.error('❌ Erro ao buscar missões:', err)
+        throw err // Não usar fallback, deixar o React Query mostrar o erro
       }
     },
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
     refetchOnWindowFocus: true,
-    retry: 1
+    retry: 2,
+    enabled: !!lojaId && lojaId !== 'all' // Só executar se tiver lojaId válido
   })
 }
 
 /**
- * Hook para buscar dashboard
+ * Hook para buscar dashboard - SOMENTE DADOS REAIS
  */
 export function useDashboard(lojaId?: string) {
   const today = new Date().toISOString().split('T')[0]
@@ -229,35 +238,49 @@ export function useDashboard(lojaId?: string) {
   return useQuery({
     queryKey: ['dashboard', today, lojaId],
     queryFn: async (): Promise<DashboardData> => {
+      if (!lojaId || lojaId === 'all') {
+        console.warn('LojaId não fornecido para buscar dashboard')
+        throw new Error('LojaId é obrigatório para buscar dashboard')
+      }
+
       try {
         const params = new URLSearchParams({
           action: 'dashboard',
-          data: today
+          data: today,
+          loja_id: lojaId
         })
-        
-        if (lojaId && lojaId !== 'all' && !lojaId.includes('mock')) {
-          params.append('loja_id', lojaId)
-        }
 
+        console.log(`📊 Buscando dashboard real para loja ${lojaId}...`)
         const response = await fetch(`/api/mission-control?${params.toString()}`)
         
         if (!response.ok) {
-          console.warn(`Dashboard API retornou ${response.status}, usando mock`)
-          return getMockDashboard()
+          const errorText = await response.text()
+          throw new Error(`API retornou ${response.status}: ${errorText}`)
         }
         
         const result = await response.json()
-        return result.dashboard || getMockDashboard()
+        
+        if (result.error) {
+          throw new Error(result.error)
+        }
+        
+        if (!result.dashboard) {
+          throw new Error('API não retornou dados de dashboard')
+        }
+        
+        console.log('✅ Dashboard real carregado')
+        return result.dashboard
         
       } catch (err) {
-        console.warn('Erro ao buscar dashboard, usando mock:', err)
-        return getMockDashboard()
+        console.error('❌ Erro ao buscar dashboard:', err)
+        throw err // Não usar fallback
       }
     },
     staleTime: 60 * 1000,
     refetchInterval: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
-    retry: 1
+    retry: 2,
+    enabled: !!lojaId && lojaId !== 'all' // Só executar se tiver lojaId válido
   })
 }
 

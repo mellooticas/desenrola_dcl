@@ -1,18 +1,19 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Users, Activity, Lock, Unlock } from 'lucide-react'
+import { MapPin, Lock, Package, AlertTriangle } from 'lucide-react'
 
 interface Loja {
   id: string
   nome: string
-  total_missoes: number
-  concluidas: number
-  percentual_conclusao: number
-  status_sistemas: 'ok' | 'atencao' | 'critico'
+  codigo: string
+  endereco?: string
+  total_pedidos?: number
+  pedidos_atrasados?: number
+  status_operacao: 'ok' | 'atencao' | 'critico'
 }
 
 interface LojaSelectProps {
@@ -30,87 +31,64 @@ export function LojaSelector({ onLojaSelected, selectedLoja, locked = false }: L
     const fetchLojas = async () => {
       try {
         setLoading(true)
-        const today = new Date().toISOString().split('T')[0]
         
-        const response = await fetch(`/api/mission-control?action=dashboard&data=${today}`)
+        const response = await fetch('/api/lojas')
         
         if (!response.ok) {
-          throw new Error('Erro ao carregar lojas')
+          throw new Error(`Erro ao carregar lojas: ${response.statusText}`)
         }
         
         const result = await response.json()
         
-        // Se temos dados da view dashboard com lojas_detalhes
-        if (result.dashboard?.lojas_detalhes) {
-          const lojasFormatted = result.dashboard.lojas_detalhes.map((loja: any) => ({
-            id: loja.loja_id,
-            nome: loja.loja_nome,
-            total_missoes: loja.total_missoes,
-            concluidas: loja.concluidas,
-            percentual_conclusao: loja.percentual_conclusao,
-            status_sistemas: loja.status_sistemas
-          }))
-          setLojas(lojasFormatted)
-        } else {
-          // Fallback: usar dados mock baseados nos IDs reais que você mostrou
-          setLojas([
-            {
-              id: 'e974fc5d-ed39-4831-9e5e-4a5544489de6',
-              nome: 'Escritório Central',
-              total_missoes: 10,
-              concluidas: 7,
-              percentual_conclusao: 70.0,
-              status_sistemas: 'ok'
-            },
-            {
-              id: 'e5915ba4-fdb4-4fa7-b9d5-c71d3c704c55',
-              nome: 'Suzano',
-              total_missoes: 31,
-              concluidas: 10,
-              percentual_conclusao: 32.3,
-              status_sistemas: 'ok'
-            },
-            {
-              id: 'c1aa5124-bdec-4cd2-86ee-cba6eea5041d',
-              nome: 'Mauá',
-              total_missoes: 31,
-              concluidas: 0,
-              percentual_conclusao: 0.0,
-              status_sistemas: 'ok'
-            },
-            {
-              id: 'f1dd8fe9-b783-46cd-ad26-56ad364a85d7',
-              nome: 'Perus',
-              total_missoes: 31,
-              concluidas: 0,
-              percentual_conclusao: 0.0,
-              status_sistemas: 'ok'
-            }
-          ])
+        if (!result.lojas || result.lojas.length === 0) {
+          throw new Error('Nenhuma loja encontrada')
         }
         
+        console.log(`✅ ${result.lojas.length} lojas carregadas`)
+        setLojas(result.lojas)
         setError(null)
-      } catch (err) {
-        console.error('Erro ao carregar lojas:', err)
-        setError('Erro ao carregar lojas')
         
-        // Fallback com dados reais que você mostrou
+      } catch (err) {
+        console.error('❌ Erro ao carregar lojas:', err)
+        setError(err instanceof Error ? err.message : 'Erro desconhecido')
+        
+        // Dados de fallback baseados no sistema DCL
         setLojas([
           {
-            id: 'e974fc5d-ed39-4831-9e5e-4a5544489de6',
-            nome: 'Escritório Central',
-            total_missoes: 10,
-            concluidas: 7,
-            percentual_conclusao: 70.0,
-            status_sistemas: 'ok'
+            id: '1',
+            nome: 'DCL Matriz',
+            codigo: 'DCL001',
+            endereco: 'Av. Paulista, 1000',
+            total_pedidos: 45,
+            pedidos_atrasados: 2,
+            status_operacao: 'ok'
           },
           {
-            id: 'e5915ba4-fdb4-4fa7-b9d5-c71d3c704c55',
-            nome: 'Suzano',
-            total_missoes: 31,
-            concluidas: 10,
-            percentual_conclusao: 32.3,
-            status_sistemas: 'ok'
+            id: '2', 
+            nome: 'DCL Shopping',
+            codigo: 'DCL002',
+            endereco: 'Shopping Ibirapuera',
+            total_pedidos: 32,
+            pedidos_atrasados: 5,
+            status_operacao: 'atencao'
+          },
+          {
+            id: '3',
+            nome: 'DCL Vila Madalena', 
+            codigo: 'DCL003',
+            endereco: 'Rua Harmonia, 456',
+            total_pedidos: 28,
+            pedidos_atrasados: 0,
+            status_operacao: 'ok'
+          },
+          {
+            id: '4',
+            nome: 'DCL Campinas',
+            codigo: 'DCL101', 
+            endereco: 'Av. Francisco Glicério, 500',
+            total_pedidos: 15,
+            pedidos_atrasados: 8,
+            status_operacao: 'critico'
           }
         ])
       } finally {
@@ -123,9 +101,9 @@ export function LojaSelector({ onLojaSelected, selectedLoja, locked = false }: L
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'critico': return 'bg-red-500'
-      case 'atencao': return 'bg-yellow-500'
-      default: return 'bg-green-500'
+      case 'critico': return 'bg-red-100 text-red-800 border-red-200'
+      case 'atencao': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      default: return 'bg-green-100 text-green-800 border-green-200'
     }
   }
 
@@ -133,16 +111,16 @@ export function LojaSelector({ onLojaSelected, selectedLoja, locked = false }: L
     switch (status) {
       case 'critico': return 'Crítico'
       case 'atencao': return 'Atenção'
-      default: return 'OK'
+      default: return 'Normal'
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
+      <div className="container mx-auto px-6 py-12">
         <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <h2 className="text-xl font-bold text-gray-800">Carregando lojas...</h2>
+          <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+          <p className="text-gray-600">Carregando lojas...</p>
         </div>
       </div>
     )
@@ -150,149 +128,127 @@ export function LojaSelector({ onLojaSelected, selectedLoja, locked = false }: L
 
   if (selectedLoja && locked) {
     return (
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-green-500 p-2 rounded-full">
-              <Lock className="h-5 w-5 text-white" />
+      <div className="container mx-auto px-6 py-8">
+        <Card className="max-w-md mx-auto border-green-200 bg-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-500 p-2 rounded-full">
+                <Lock className="h-4 w-4 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-green-800">Loja Ativa</div>
+                <div className="text-sm text-green-700">{selectedLoja.nome}</div>
+              </div>
+              <Badge className="bg-green-100 text-green-800 border-green-300 text-xs">
+                Sessão Ativa
+              </Badge>
             </div>
-            <div>
-              <div className="font-bold text-green-800">Loja Selecionada</div>
-              <div className="text-green-700">{selectedLoja.nome}</div>
-            </div>
-          </div>
-          <Badge className="bg-green-100 text-green-800 border-green-300">
-            Bloqueado para esta sessão
-          </Badge>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      <div className="container mx-auto px-6 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-            MISSION CONTROL
-          </h1>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-            Selecione sua Loja
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Escolha a loja para acessar o painel de missões. 
-            Esta seleção será mantida durante toda a sessão.
-          </p>
-        </div>
+    <div className="container mx-auto px-6 py-12">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          Desenrola DCL
+        </h1>
+        <p className="text-gray-600">
+          Selecione sua loja para acessar o sistema
+        </p>
+      </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-center">
-            <div className="text-red-800 font-medium">{error}</div>
-            <div className="text-red-600 text-sm mt-1">
-              Usando dados de fallback para demonstração
-            </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-center max-w-2xl mx-auto">
+          <div className="text-red-800 text-sm font-medium">{error}</div>
+          <div className="text-red-600 text-xs mt-1">
+            Usando dados de demonstração
           </div>
-        )}
+        </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-          {lojas.map((loja) => (
-            <Card 
-              key={loja.id}
-              className="group hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer border-2 hover:border-blue-300 bg-white/80 backdrop-blur-sm"
-              onClick={() => onLojaSelected(loja.id, loja.nome)}
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-2 rounded-full">
-                    <MapPin className="h-6 w-6 text-white" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        {lojas.map((loja) => (
+          <Card 
+            key={loja.id}
+            className="cursor-pointer hover:shadow-lg hover:scale-105 hover:border-blue-300 transition-all duration-200 border group"
+            onClick={() => onLojaSelected(loja.id, loja.nome)}
+          >
+            <CardContent className="p-6">
+              <div className="text-center space-y-4">
+                
+                {/* Header com ícone e status */}
+                <div className="flex items-center justify-between">
+                  <div className="bg-blue-100 group-hover:bg-blue-200 p-3 rounded-full transition-colors">
+                    <MapPin className="h-5 w-5 text-blue-600" />
                   </div>
-                  <Badge className={`${getStatusColor(loja.status_sistemas)} text-white`}>
-                    {getStatusText(loja.status_sistemas)}
+                  <Badge className={`text-xs ${getStatusColor(loja.status_operacao)}`}>
+                    {getStatusText(loja.status_operacao)}
                   </Badge>
                 </div>
-                <CardTitle className="text-lg font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
-                  {loja.nome}
-                </CardTitle>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center bg-blue-50 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {loja.total_missoes}
-                    </div>
-                    <div className="text-xs text-blue-700">
-                      Total Missões
-                    </div>
-                  </div>
-                  <div className="text-center bg-green-50 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-green-600">
-                      {loja.concluidas}
-                    </div>
-                    <div className="text-xs text-green-700">
-                      Concluídas
-                    </div>
-                  </div>
+
+                {/* Nome da loja */}
+                <div>
+                  <h3 className="font-bold text-gray-800 text-lg group-hover:text-blue-600 transition-colors">
+                    {loja.nome}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {loja.codigo}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {loja.endereco}
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Progresso</span>
-                    <span className="font-semibold text-gray-800">
-                      {loja.percentual_conclusao.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div 
-                      className={`h-3 rounded-full transition-all duration-500 ${
-                        loja.percentual_conclusao >= 80 ? 'bg-green-500' :
-                        loja.percentual_conclusao >= 50 ? 'bg-yellow-500' :
-                        'bg-red-500'
-                      }`}
-                      style={{ width: `${Math.min(loja.percentual_conclusao, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
+                {/* Métricas */}
+                {(loja.total_pedidos !== undefined) && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm text-gray-600">Pedidos</span>
+                      </div>
+                      <span className="font-semibold text-gray-800">
+                        {loja.total_pedidos}
+                      </span>
+                    </div>
 
+                    {loja.pedidos_atrasados !== undefined && loja.pedidos_atrasados > 0 && (
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                          <span className="text-sm text-red-600">Atrasados</span>
+                        </div>
+                        <span className="font-semibold text-red-600">
+                          {loja.pedidos_atrasados}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Botão de ação */}
                 <Button 
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl transition-all duration-200"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors"
                   onClick={(e) => {
                     e.stopPropagation()
                     onLojaSelected(loja.id, loja.nome)
                   }}
                 >
-                  <Unlock className="h-4 w-4 mr-2" />
-                  Selecionar Loja
+                  Selecionar
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-                <div className="pt-2 border-t border-gray-100">
-                  <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      <span>Equipe Ativa</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Activity className="h-3 w-3" />
-                      <span>Tempo Real</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="text-center mt-12">
-          <div className="bg-white/50 backdrop-blur-sm rounded-xl p-6 max-w-2xl mx-auto border border-gray-200">
-            <h3 className="font-bold text-gray-800 mb-2">
-              ⚠️ Importante
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Após selecionar uma loja, você não poderá alterá-la durante esta sessão. 
-              Certifique-se de escolher a loja correta antes de prosseguir.
-            </p>
-          </div>
-        </div>
+      <div className="text-center mt-8">
+        <p className="text-sm text-gray-500 max-w-md mx-auto">
+          ⚠️ A loja selecionada será mantida durante toda a sessão de trabalho
+        </p>
       </div>
     </div>
   )

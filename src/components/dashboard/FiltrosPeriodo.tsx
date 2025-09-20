@@ -16,7 +16,7 @@ export interface DashboardFilters {
 interface FiltrosPeriodoProps {
   filters: DashboardFilters
   onFiltersChange: (filters: DashboardFilters) => void
-}
+} 
 
 interface SelectOption {
   id: string

@@ -77,28 +77,43 @@ export async function POST(request: NextRequest) {
 // ========================================
 async function getMissions(supabase: any, data: string, lojaId?: string | null) {
   try {
-    console.log('🔍 Buscando missões para data:', data, 'loja:', lojaId)
+    console.log('🔍 Buscando missões REAIS para data:', data, 'loja:', lojaId)
+    
+    if (!lojaId) {
+      throw new Error('LojaId é obrigatório para buscar missões')
+    }
     
     // USAR A VIEW REAL v_missoes_timeline
-    let query = supabase
+    const { data: missions, error } = await supabase
       .from('v_missoes_timeline')
       .select('*')
       .eq('data_missao', data)
+      .eq('loja_id', lojaId)
       .order('created_at', { ascending: false })
 
-    if (lojaId && lojaId !== 'all') {
-      query = query.eq('loja_id', lojaId)
-    }
-
-    const { data: missions, error } = await query
-
     if (error) {
-      console.error('❌ Erro na query da view:', error)
+      console.error('❌ Erro na query da view v_missoes_timeline:', error)
       throw new Error(`Erro ao buscar missões: ${error.message}`)
     }
 
+    console.log(`✅ Query executada com sucesso. Encontradas ${missions?.length || 0} missões`)
+
+    if (!missions || missions.length === 0) {
+      console.warn(`⚠️ Nenhuma missão encontrada para loja ${lojaId} na data ${data}`)
+      return NextResponse.json({
+        missions: [],
+        source: 'v_missoes_timeline',
+        debug: {
+          data_consultada: data,
+          loja_filtro: lojaId,
+          total_encontradas: 0,
+          motivo: 'Nenhuma missão encontrada para esta loja/data'
+        }
+      })
+    }
+
     // Transformar dados para o formato esperado pelo frontend
-    const missionsFormatted = (missions || []).map((mission: any) => ({
+    const missionsFormatted = missions.map((mission: any) => ({
       // IDs e referências
       id: mission.id,
       loja_id: mission.loja_id,
@@ -134,7 +149,6 @@ async function getMissions(supabase: any, data: string, lojaId?: string | null) 
       
       // Pontos e evidência
       pontos_total: mission.pontos_total,
-      pontos_base: mission.pontos_total, // Usar pontos_total como base se não tiver pontos_base
       requer_evidencia: mission.requer_evidencia,
       
       // Flags calculadas
