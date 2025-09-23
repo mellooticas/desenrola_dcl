@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePermissions } from '@/lib/hooks/use-permissions'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -38,6 +39,7 @@ interface CardDetailsProps {
 }
 
 export function CardDetails({ pedido, open, onClose, onUpdate, userProfile }: CardDetailsProps) {
+  const permissions = usePermissions()
   const [showPagamentoForm, setShowPagamentoForm] = useState(false)
   const updateStatusMutation = useUpdatePedidoStatus()
 
@@ -206,7 +208,7 @@ export function CardDetails({ pedido, open, onClose, onUpdate, userProfile }: Ca
                     <span className="text-sm text-gray-600">Telefone:</span>
                     <span className="font-medium">{pedido.cliente_telefone || 'N/A'}</span>
                   </div>
-                  {!pedido.eh_garantia && (
+                  {!pedido.eh_garantia && permissions.canViewFinancialData() && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Valor:</span>
                       <span className="font-medium">{formatCurrency(pedido.valor_pedido)}</span>
@@ -215,8 +217,8 @@ export function CardDetails({ pedido, open, onClose, onUpdate, userProfile }: Ca
                 </CardContent>
               </Card>
 
-              {/* Informações Financeiras - apenas se não for garantia */}
-              {!pedido.eh_garantia && (pedido.valor_pedido || pedido.custo_lentes) && (
+              {/* Informações Financeiras - apenas se não for garantia e permitido */}
+              {!pedido.eh_garantia && permissions.canViewFinancialData() && (pedido.valor_pedido || pedido.custo_lentes) && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base flex items-center">

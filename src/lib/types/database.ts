@@ -91,6 +91,9 @@ export interface Pedido {
   requer_atencao: boolean
   cliente_nome: string
   cliente_telefone: string | null
+  montador_id: string | null
+  data_montagem: string | null
+  custo_montagem: number | null
   observacoes: string | null
   observacoes_garantia: string | null
   observacoes_internas: string | null
@@ -127,6 +130,9 @@ export interface PedidoCompleto {
   requer_atencao: boolean
   cliente_nome: string
   cliente_telefone: string | null
+  montador_id: string | null
+  data_montagem: string | null
+  custo_montagem: number | null
   observacoes: string | null
   observacoes_garantia: string | null
   observacoes_internas: string | null
@@ -147,6 +153,11 @@ export interface PedidoCompleto {
   laboratorio_sla_padrao: number
   laboratorio_trabalha_sabado: boolean
   
+  // Dados do montador (quando aplicável)
+  montador_nome: string | null
+  montador_local: string | null
+  montador_contato: string | null
+  
   // Dados da classe de lente
   classe_nome: string
   classe_codigo: string | null
@@ -165,6 +176,18 @@ export interface PedidoCompleto {
   
   // Contadores
   alertas_count: number
+}
+
+// NOVO: Interface para Montadores DCL
+export interface Montador {
+  id: string
+  nome: string
+  local: string
+  contato: string | null
+  preco_base: number
+  ativo: boolean
+  especialidades?: string[]
+  created_at?: string
 }
 
 // NOVO: Interface para relacionamento Pedido-Tratamentos

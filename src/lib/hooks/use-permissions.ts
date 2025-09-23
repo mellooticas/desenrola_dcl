@@ -9,6 +9,9 @@ export interface UserPermissions {
   hasAction: (action: string) => boolean
   getVisibleColumns: () => StatusPedido[]
   getAllowedMoves: (fromStatus: StatusPedido) => StatusPedido[]
+  canViewFinancialData: () => boolean
+  canViewCostData: () => boolean
+  canSelectMontador: () => boolean
 }
 
 // DADOS HARDCODED (baseados no banco)
@@ -36,9 +39,11 @@ const ROLE_PERMISSIONS = {
 }
 
 export const usePermissions = (): UserPermissions => {
-  const { userProfile } = useAuth()
-  const role = userProfile?.role || 'financeiro'
-  const permissions = ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS] || ROLE_PERMISSIONS.financeiro
+  const { userProfile, loading } = useAuth()
+  
+  // Durante o carregamento ou se não há perfil, usar permissões padrão mais restritivas
+  const role = userProfile?.role || 'loja'
+  const permissions = ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS] || ROLE_PERMISSIONS.loja
 
   const canView = (status: StatusPedido): boolean => {
     return permissions.colunas_visiveis.includes(status)
@@ -73,12 +78,30 @@ export const usePermissions = (): UserPermissions => {
     return permissions.status_destino_permitidos.filter(status => status !== '*') as StatusPedido[]
   }
 
+  const canViewFinancialData = (): boolean => {
+    // NOVA REGRA: Loja NÃO pode ver dados financeiros
+    return role !== 'loja'
+  }
+
+  const canViewCostData = (): boolean => {
+    // NOVA REGRA: Financeiro vê custo, outros veem venda (exceto loja que não vê nada)
+    return role !== 'loja'
+  }
+
+  const canSelectMontador = (): boolean => {
+    // NOVA REGRA: Apenas DCL pode selecionar montador
+    return role === 'dcl' || role === 'gestor'
+  }
+
   return {
     canView,
     canEdit,
     canMoveTo,
     hasAction,
     getVisibleColumns,
-    getAllowedMoves
+    getAllowedMoves,
+    canViewFinancialData,
+    canViewCostData,
+    canSelectMontador
   }
 }

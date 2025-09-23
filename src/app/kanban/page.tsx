@@ -10,13 +10,15 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Search, Bell, Eye, ArrowLeft, ArrowRight, CheckCircle, Lock, RefreshCw, Copy, Package, AlertCircle, X, DollarSign, Clock, MapPin, Truck } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { PedidoCompleto, StatusPedido, PrioridadeLevel } from '@/lib/types/database'
 import { STATUS_COLORS, STATUS_LABELS } from '@/lib/utils/constants'
 import NovaOrdemForm from '@/components/forms/NovaOrdemForm'
+import { KanbanCard } from '@/components/kanban/KanbanCard'
+import { PedidoDetailDrawer } from '@/components/kanban/PedidoDetailDrawer'
 
 // ========== TYPES E INTERFACES ==========
 type KanbanColumn = {
@@ -311,6 +313,7 @@ export default function KanbanBoard() {
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
   const [lojas, setLojas] = useState<Loja[]>([])
   const [selectedPedido, setSelectedPedido] = useState<PedidoCompleto | null>(null)
+  const [isHydrated, setIsHydrated] = useState(false)
 
   // ========== PERMISSÕES ==========
   const userRole = userProfile?.role || 'operador'
@@ -529,6 +532,11 @@ export default function KanbanBoard() {
     }
   }, [user, supabase, selectedLoja, selectedLab, userRole, permissions, visibleColumns])
 
+  // ========== EFFECT DE HIDRATAÇÃO ==========
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
   // ========== FUNÇÕES DE AÇÃO ==========
   const handleDragEnd = async (result: DropResult) => {
     if (!supabase) return
@@ -732,7 +740,6 @@ export default function KanbanBoard() {
     const canEdit = permissions.canEditColumn(pedido.status)
     const canMoveNext = permissions.canMoveToNext(pedido.status)
     const canMovePrev = permissions.canMoveToPrev(pedido.status)
-    const canViewFinancial = permissions.canViewFinancialData()
     const canDrag = permissions.canDragCard(pedido.status)
 
     return (
@@ -747,316 +754,17 @@ export default function KanbanBoard() {
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
+            className="mb-3"
           >
-            <Card
-              className={`cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md mb-3 border ${
-                snapshot.isDragging ? 'rotate-2 shadow-xl border-blue-400 bg-blue-50' : 'border-gray-200 bg-white hover:bg-gray-50'
-              } ${pedido.eh_garantia ? 'border-l-4 border-l-orange-500' : ''} ${
-                pedido.requer_atencao ? 'border-l-4 border-l-red-500' : ''
-              } ${!canEdit ? 'opacity-80' : ''}`}
+            <KanbanCard
+              pedido={pedido}
               onClick={() => setSelectedPedido(pedido)}
-            >
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  {/* Header do card */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs font-mono bg-white/80">
-                          #{pedido.numero_sequencial}
-                        </Badge>
-                        {pedido.eh_garantia && (
-                          <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300">
-                            🛡️ GARANTIA
-                          </Badge>
-                        )}
-                        {pedido.requer_atencao && (
-                          <Badge variant="outline" className="text-xs bg-red-100 text-red-700 border-red-300">
-                            ⚠️ ATENÇÃO
-                          </Badge>
-                        )}
-                        {!canEdit && (
-                          <Lock className="w-3 h-3 text-gray-400" />
-                        )}
-                      </div>
-                      {/* Números de referência */}
-                      <div className="space-y-1">
-                        {pedido.numero_os_fisica && (
-                          <div className="text-xs text-gray-600 font-mono bg-gray-100 px-2 py-1 rounded">
-                            OS: {pedido.numero_os_fisica}
-                          </div>
-                        )}
-                        {pedido.numero_pedido_laboratorio && (
-<div className="text-xs text-blue-600 font-mono bg-blue-50 px-2 py-1 rounded">
-                            Lab: {pedido.numero_pedido_laboratorio}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      {pedido.alertas_count > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Bell className="w-4 h-4 text-red-500" />
-                          <span className="text-xs text-red-600 font-semibold">{pedido.alertas_count}</span>
-                        </div>
-                      )}
-                      {pedido.prioridade !== 'NORMAL' && (
-                        <Badge
-                          variant={pedido.prioridade === 'URGENTE' ? 'destructive' : 'secondary'}
-                          className={`text-xs ${
-                            pedido.prioridade === 'URGENTE' ? 'bg-red-100 text-red-800 border-red-300' :
-                            pedido.prioridade === 'ALTA' ? 'bg-orange-100 text-orange-800 border-orange-300' :
-                            'bg-blue-100 text-blue-800 border-blue-300'
-                          }`}
-                        >
-                          {pedido.prioridade}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Cliente */}
-                  <div className="bg-gray-50 p-2 rounded-lg">
-                    <p className="font-medium text-sm text-gray-900">
-                      {pedido.cliente_nome || 'Cliente não informado'}
-                    </p>
-                    {pedido.cliente_telefone && (
-                      <p className="text-xs text-gray-600 mt-1">
-                        📞 {pedido.cliente_telefone}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Loja e Lab */}
-                  <div className="grid grid-cols-1 gap-2 text-xs">
-                    <div className="bg-blue-50 p-2 rounded border border-blue-200">
-                      <div className="font-semibold text-blue-800">🏪 {pedido.loja_nome}</div>
-                      {pedido.loja_codigo && (
-                        <div className="text-blue-600">({pedido.loja_codigo})</div>
-                      )}
-                    </div>
-                    <div className="bg-purple-50 p-2 rounded border border-purple-200">
-                      <div className="font-semibold text-purple-800">🔬 {pedido.laboratorio_nome}</div>
-                      {pedido.laboratorio_codigo && (
-                        <div className="text-purple-600">({pedido.laboratorio_codigo})</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Classe da lente e tratamentos */}
-                  <div className="space-y-2">
-                    <Badge
-                      style={{ backgroundColor: pedido.classe_cor || '#6B7280' }}
-                      className="text-white text-xs font-medium shadow-sm"
-                    >
-                      {pedido.classe_nome}
-                    </Badge>
-
-                    {pedido.tratamentos_nomes && (
-                      <div className="text-xs bg-teal-50 border border-teal-200 text-teal-800 px-2 py-1 rounded">
-                        <strong>Tratamentos:</strong> {pedido.tratamentos_nomes}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Valores financeiros - só se tiver permissão */}
-                  {canViewFinancial && (
-                    <div className="bg-green-50 border border-green-200 p-3 rounded-lg space-y-2">
-                      <h5 className="text-xs font-semibold text-green-800">💰 Financeiro</h5>
-                      {pedido.valor_pedido && !pedido.eh_garantia && (
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-green-600 font-medium">Venda:</span>
-                            <div className="font-bold text-green-800">
-                              R$ {pedido.valor_pedido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </div>
-                          </div>
-                          {pedido.custo_lentes && (
-                            <div>
-                              <span className="text-red-600 font-medium">Custo:</span>
-                              <div className="font-bold text-red-700">
-                                R$ {pedido.custo_lentes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Margem de lucro */}
-                      {pedido.valor_pedido && pedido.custo_lentes && !pedido.eh_garantia && (
-                        <div className="bg-white/80 p-2 rounded border border-green-300">
-                          <span className="text-xs text-gray-600">Margem: </span>
-                          <span className={`text-sm font-bold ${
-                            ((pedido.valor_pedido - pedido.custo_lentes) / pedido.valor_pedido) * 100 > 50
-                              ? 'text-green-700'
-                              : 'text-orange-700'
-                          }`}>
-                            {(((pedido.valor_pedido - pedido.custo_lentes) / pedido.valor_pedido) * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                      )}
-
-                      {pedido.eh_garantia && pedido.custo_lentes && (
-                        <div className="text-xs text-orange-700">
-                          <strong>Custo Garantia:</strong> R$ {pedido.custo_lentes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Flags de atenção */}
-                  <div className="flex gap-1 flex-wrap">
-                    {pedido.pagamento_atrasado && (
-                      <Badge variant="destructive" className="text-xs bg-red-100 text-red-800 border-red-300">
-                        💳 Pag. Atrasado
-                      </Badge>
-                    )}
-                    {pedido.producao_atrasada && (
-                      <Badge variant="destructive" className="text-xs bg-orange-100 text-orange-800 border-orange-300">
-                        ⏰ Prod. Atrasada
-                      </Badge>
-                    )}
-                    {pedido.requer_atencao && (
-                      <Badge variant="outline" className="text-xs bg-yellow-100 border-yellow-500 text-yellow-800">
-                        ⚠️ Requer Atenção
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Informações de tempo e SLA */}
-                  <div className="bg-gray-100 p-2 rounded-lg text-xs space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-gray-600" />
-                      <span className="text-gray-700">
-                        <strong>{pedido.dias_desde_pedido}</strong> dias desde o pedido
-                      </span>
-                    </div>
-
-                    {pedido.dias_para_vencer_sla !== null && pedido.dias_para_vencer_sla !== undefined && (
-                      <div className={`flex items-center gap-2 ${
-                        pedido.dias_para_vencer_sla < 0 ? 'text-red-600' :
-                        pedido.dias_para_vencer_sla <= 1 ? 'text-orange-600' : 'text-blue-600'
-                      }`}>
-                        <AlertCircle className="w-3 h-3" />
-                        <span className="font-medium">
-                          {pedido.dias_para_vencer_sla < 0
-                            ? `Vencido há ${Math.abs(pedido.dias_para_vencer_sla)} dias`
-                            : `Vence em ${pedido.dias_para_vencer_sla} dias`
-                          }
-                        </span>
-                      </div>
-                    )}
-
-                    {pedido.data_prometida && (
-                      <div className="text-gray-600">
-                        <strong>Prometido:</strong> {new Date(pedido.data_prometida).toLocaleDateString('pt-BR')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Observações importantes */}
-                  {pedido.observacoes && (
-                    <div className="bg-blue-50 border border-blue-200 p-2 rounded text-xs">
-                      <strong className="text-blue-800">Obs:</strong>
-                      <p className="text-blue-700 mt-1">{pedido.observacoes}</p>
-                    </div>
-                  )}
-
-                  {pedido.observacoes_garantia && pedido.eh_garantia && (
-                    <div className="bg-orange-50 border border-orange-200 p-2 rounded text-xs">
-                      <strong className="text-orange-800">Garantia:</strong>
-                      <p className="text-orange-700 mt-1">{pedido.observacoes_garantia}</p>
-                    </div>
-                  )}
-
-                  {/* Botões de ação - baseados em permissões */}
-                  <div className="pt-2 border-t border-gray-200 space-y-2">
-                    {/* Sempre mostrar botão ver detalhes */}
-                    <div className="flex gap-1">
-                      <Link href={`/pedidos/${pedido.id}`} className="flex-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-full text-xs h-7 bg-white/70 hover:bg-white border-gray-300"
-                        >
-                          <Eye className="w-3 h-3 mr-1" />
-                          Detalhes
-                        </Button>
-                      </Link>
-                      <Link href={`/pedidos/${pedido.id}/timeline`} className="flex-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-full text-xs h-7 bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700"
-                        >
-                          <Clock className="w-3 h-3 mr-1" />
-                          Timeline
-                        </Button>
-                      </Link>
-                    </div>
-
-                    {/* Botões de status apenas para usuários com permissão */}
-                    {canEdit && (canMoveNext || canMovePrev) && (
-                      <div className="flex gap-1">
-                        {canMovePrev && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleRegressStatus(pedido)
-                            }}
-                            className="flex-1 text-xs h-8 bg-gray-50 hover:bg-gray-100 border-gray-300"
-                          >
-                            <ArrowLeft className="w-3 h-3 mr-1" />
-                            Voltar
-                          </Button>
-                        )}
-                        {canMoveNext && (
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAdvanceStatus(pedido)
-                            }}
-                            className="flex-1 text-xs h-8 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium shadow-sm"
-                          >
-                            {pedido.status === 'CHEGOU' ? (
-                              <>
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Finalizar
-                              </>
-                            ) : pedido.status === 'AG_PAGAMENTO' ? (
-                              <>
-                                <DollarSign className="w-3 h-3 mr-1" />
-                                Marcar Pago
-                              </>
-                            ) : (
-                              <>
-                                <ArrowRight className="w-3 h-3 mr-1" />
-                                Avançar
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Badge de apenas visualização */}
-                    {!canEdit && (
-                      <div className="text-center">
-                        <Badge variant="outline" className="text-xs text-gray-600 border-gray-400 bg-gray-50">
-                          <Lock className="w-3 h-3 mr-1" />
-                          Apenas Visualização ({userRole})
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              isDragging={snapshot.isDragging}
+              onMoveLeft={canMovePrev ? () => handleRegressStatus(pedido) : undefined}
+              onMoveRight={canMoveNext ? () => handleAdvanceStatus(pedido) : undefined}
+              canMoveLeft={canMovePrev && canEdit}
+              canMoveRight={canMoveNext && canEdit}
+            />
           </div>
         )}
       </Draggable>
@@ -1257,16 +965,16 @@ export default function KanbanBoard() {
                           </div>
 
                           {/* Resumo da coluna */}
-                          {column.pedidos.length > 0 && (
+                          {column.pedidos.length > 0 && isHydrated && (
                             <div className="mt-2 text-xs text-gray-600">
                               {permissions.canViewFinancialData() && (
                                 <div className="flex gap-4">
                                   <span>
                                     💰 R$ {column.pedidos
-                                      .filter(p => p.valor_pedido && !p.eh_garantia)
-                                      .reduce((sum, p) => sum + (p.valor_pedido || 0), 0)
+                                      .filter(p => p.custo_lentes && !p.eh_garantia)
+                                      .reduce((sum, p) => sum + (p.custo_lentes || 0), 0)
                                       .toLocaleString('pt-BR', { minimumFractionDigits: 0 })
-                                    }
+                                    } <span className="text-orange-600">(custo)</span>
                                   </span>
                                   {column.pedidos.some(p => p.alertas_count > 0) && (
                                     <span className="text-red-600 font-medium">
@@ -1323,274 +1031,24 @@ export default function KanbanBoard() {
             </DragDropContext>
           </div>
 
-          {/* ========== MODAL DE DETALHES SIMPLIFICADO ========== */}
-          <Dialog open={!!selectedPedido} onOpenChange={() => setSelectedPedido(null)}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  Pedido #{selectedPedido?.numero_sequencial}
-                </DialogTitle>
-                <DialogDescription>
-                  Detalhes do pedido - Perfil: {userRole.toUpperCase()}
-                </DialogDescription>
-              </DialogHeader>
-
-              {selectedPedido && (
-                <div className="space-y-4">
-                  {/* Status atual */}
-                  <div className="flex items-center gap-3">
-                    <Badge
-                      style={{ backgroundColor: STATUS_COLORS[selectedPedido.status] }}
-                      className="text-white"
-                    >
-                      {STATUS_LABELS[selectedPedido.status]}
-                    </Badge>
-                    {selectedPedido.eh_garantia && (
-                      <Badge className="bg-orange-100 text-orange-800 border-orange-300">
-                        GARANTIA
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Informações básicas */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <label className="text-sm font-medium text-gray-700">Cliente</label>
-                      <p className="text-sm">{selectedPedido.cliente_nome || 'Não informado'}</p>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <label className="text-sm font-medium text-gray-700">Telefone</label>
-                      <p className="text-sm">{selectedPedido.cliente_telefone || 'Não informado'}</p>
-                    </div>
-                  </div>
-
-                  {/* Informações do pedido */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-indigo-50 p-3 rounded-lg">
-                      <label className="text-sm font-medium text-indigo-700">Loja</label>
-                      <p className="text-sm text-indigo-900">{selectedPedido.loja_nome}</p>
-                    </div>
-                    <div className="bg-purple-50 p-3 rounded-lg">
-                      <label className="text-sm font-medium text-purple-700">Laboratório</label>
-                      <p className="text-sm text-purple-900">
-                        {selectedPedido.laboratorio_nome}
-                        {selectedPedido.laboratorio_codigo && ` (${selectedPedido.laboratorio_codigo})`}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Especificações técnicas */}
-{/* Especificações técnicas */}
-                  <div className="bg-amber-50 p-3 rounded-lg">
-                    <label className="text-sm font-medium text-amber-700">Classe da Lente</label>
-                    <div className="flex items-center gap-3 mt-2">
-                      <div 
-                        className="w-4 h-4 rounded-full shadow-md border border-white"
-                        style={{ backgroundColor: selectedPedido.classe_cor || '#6B7280' }}
-                      />
-                      <span className="text-sm text-amber-900">{selectedPedido.classe_nome}</span>
-                    </div>
-                    
-                    {selectedPedido.tratamentos_nomes && (
-                      <div className="mt-2">
-                        <span className="text-xs text-teal-700 bg-teal-100 px-2 py-1 rounded">
-                          Tratamentos: {selectedPedido.tratamentos_nomes}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Informações financeiras - só para quem tem permissão */}
-                  {permissions.canViewFinancialData() && (
-                    <div className="bg-green-50 p-3 rounded-lg space-y-3">
-                      <h4 className="font-medium text-green-800">Informações Financeiras</h4>
-                      
-                      {selectedPedido.eh_garantia ? (
-                        <div className="text-center">
-                          <Badge className="bg-orange-100 text-orange-800 border-orange-300">
-                            PEDIDO DE GARANTIA
-                          </Badge>
-                          {selectedPedido.custo_lentes && (
-                            <div className="mt-2">
-                              <label className="text-sm font-medium text-orange-700">Custo Estimado</label>
-                              <p className="text-lg font-bold text-orange-800">
-                                R$ {selectedPedido.custo_lentes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3">
-                          {selectedPedido.valor_pedido && (
-                            <div>
-                              <label className="text-sm font-medium text-green-700">Valor de Venda</label>
-                              <p className="text-lg font-bold text-green-800">
-                                R$ {selectedPedido.valor_pedido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </p>
-                            </div>
-                          )}
-                          {selectedPedido.custo_lentes && (
-                            <div>
-                              <label className="text-sm font-medium text-red-700">Custo das Lentes</label>
-                              <p className="text-lg font-bold text-red-700">
-                                R$ {selectedPedido.custo_lentes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {selectedPedido.forma_pagamento && (
-                        <div className="bg-blue-50 p-2 rounded">
-                          <label className="text-sm font-medium text-blue-700">Forma de Pagamento</label>
-                          <p className="text-sm text-blue-900">{selectedPedido.forma_pagamento}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Datas importantes */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-slate-50 p-3 rounded-lg">
-                      <label className="text-sm font-medium text-slate-700">Data do Pedido</label>
-                      <p className="text-sm">{new Date(selectedPedido.data_pedido).toLocaleDateString('pt-BR')}</p>
-                      <p className="text-xs text-slate-600">{selectedPedido.dias_desde_pedido} dias atrás</p>
-                    </div>
-                    {selectedPedido.data_prometida && (
-                      <div className="bg-slate-50 p-3 rounded-lg">
-                        <label className="text-sm font-medium text-slate-700">Data Prometida</label>
-                        <p className="text-sm">{new Date(selectedPedido.data_prometida).toLocaleDateString('pt-BR')}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* SLA */}
-                  {selectedPedido.dias_para_vencer_sla !== null && selectedPedido.dias_para_vencer_sla !== undefined && (
-                    <div className={`p-3 rounded-lg text-center ${
-                      selectedPedido.dias_para_vencer_sla < 0 ? 'bg-red-100' : 
-                      selectedPedido.dias_para_vencer_sla <= 1 ? 'bg-orange-100' : 'bg-blue-100'
-                    }`}>
-                      <label className="text-sm font-medium">Status SLA</label>
-                      <p className="font-bold">
-                        {selectedPedido.dias_para_vencer_sla < 0 
-                          ? `Vencido há ${Math.abs(selectedPedido.dias_para_vencer_sla)} dias` 
-                          : `Vence em ${selectedPedido.dias_para_vencer_sla} dias`
-                        }
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Observações */}
-                  {selectedPedido.observacoes && (
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <label className="text-sm font-medium text-blue-700">Observações</label>
-                      <p className="text-sm text-blue-800 mt-1">{selectedPedido.observacoes}</p>
-                    </div>
-                  )}
-
-                  {selectedPedido.observacoes_garantia && selectedPedido.eh_garantia && (
-                    <div className="bg-orange-50 p-3 rounded-lg">
-                      <label className="text-sm font-medium text-orange-700">Observações da Garantia</label>
-                      <p className="text-sm text-orange-800 mt-1">{selectedPedido.observacoes_garantia}</p>
-                    </div>
-                  )}
-
-                  {/* Ações */}
-                  <div className="flex gap-3 pt-4 border-t">
-                    <Link href={`/pedidos/${selectedPedido.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4 mr-2" />
-                        Ver Página Completa
-                      </Button>
-                    </Link>
-                    
-                    <Link href={`/pedidos/${selectedPedido.id}/timeline`}>
-                      <Button variant="outline" size="sm" className="bg-blue-50 border-blue-300 text-blue-700">
-                        <Clock className="w-4 h-4 mr-2" />
-                        Ver Timeline
-                      </Button>
-                    </Link>
-                    
-                    {permissions.canEditColumn(selectedPedido.status) && (
-                      <>
-                        {permissions.canMoveToPrev(selectedPedido.status) && (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              handleRegressStatus(selectedPedido)
-                              setSelectedPedido(null)
-                            }}
-                          >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Voltar
-                          </Button>
-                        )}
-                        
-                        {permissions.canMoveToNext(selectedPedido.status) && (
-                          <Button 
-                            size="sm" 
-                            onClick={() => {
-                              handleAdvanceStatus(selectedPedido)
-                              setSelectedPedido(null)
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                          >
-                            {selectedPedido.status === 'AG_PAGAMENTO' && (
-                              <>
-                                <DollarSign className="w-4 h-4 mr-2" />
-                                Marcar Pago
-                              </>
-                            )}
-                            {selectedPedido.status === 'CHEGOU' && (
-                              <>
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                Marcar Entregue
-                              </>
-                            )}
-                            {!['AG_PAGAMENTO', 'CHEGOU'].includes(selectedPedido.status) && (
-                              <>
-                                <ArrowRight className="w-4 h-4 mr-2" />
-                                Avançar
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-
-                  {/* ✅ NOVA SEÇÃO: Ação de Cancelamento */}
-                  {permissions.canEditColumn(selectedPedido.status) && selectedPedido.status !== 'CANCELADO' && (
-                    <div className="flex justify-center pt-3 border-t border-red-200">
-                      <Button 
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          handleCancelPedido(selectedPedido)
-                          setSelectedPedido(null)
-                        }}
-                        className="bg-red-600 hover:bg-red-700 text-white font-semibold"
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Cancelar Pedido
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Indicador de permissões */}
-                  <div className="bg-gray-100 p-3 rounded-lg text-xs text-gray-600">
-                    <strong>Suas permissões ({userRole}):</strong>
-                    <div className="mt-1 space-y-1">
-                      <div>• Dados financeiros: {permissions.canViewFinancialData() ? '✅' : '❌'}</div>
-                      <div>• Editar este status: {permissions.canEditColumn(selectedPedido.status) ? '✅' : '❌'}</div>
-                      <div>• Criar pedidos: {permissions.canCreateOrder() ? '✅' : '❌'}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+          {/* ========== DRAWER DE DETALHES PROFISSIONAL ========== */}
+          <PedidoDetailDrawer
+            pedido={selectedPedido}
+            isOpen={!!selectedPedido}
+            onClose={() => setSelectedPedido(null)}
+            onAdvanceStatus={handleAdvanceStatus}
+            onRegressStatus={handleRegressStatus}
+            onCancelPedido={handleCancelPedido}
+            canMoveNext={selectedPedido ? permissions.canMoveToNext(selectedPedido.status) : false}
+            canMovePrev={selectedPedido ? permissions.canMoveToPrev(selectedPedido.status) : false}
+            canCancel={selectedPedido ? permissions.canEditColumn(selectedPedido.status) && selectedPedido.status !== 'CANCELADO' : false}
+            nextStatusLabel={
+              selectedPedido?.status === 'AG_PAGAMENTO' ? 'Marcar Pago' :
+              selectedPedido?.status === 'CHEGOU' ? 'Marcar Entregue' :
+              'Avançar'
+            }
+            prevStatusLabel="Voltar"
+          />
 
           {/* ========== LOADING OVERLAY ========== */}
           {loading && (

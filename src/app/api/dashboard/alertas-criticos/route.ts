@@ -198,8 +198,15 @@ export async function GET(request: NextRequest) {
     
     console.log(`✅ Alertas processados: ${alertas.length} encontrados`)
     
+    // Converter prioridade para severidade para compatibilidade com o frontend
+    const alertasFormatados = alertas.slice(0, 20).map(alerta => ({
+      ...alerta,
+      severidade: alerta.prioridade.toLowerCase(),
+      descricao: alerta.mensagem
+    }))
+    
     return NextResponse.json({
-      alertas: alertas.slice(0, 20), // Limitar a 20 alertas mais críticos
+      alertas: alertasFormatados,
       resumo,
       timestamp: new Date().toISOString()
     })

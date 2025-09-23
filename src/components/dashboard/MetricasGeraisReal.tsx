@@ -12,6 +12,8 @@ interface MetricasGeraisProps {
     margem_bruta: number
     percentual_margem: number
     quantidade_pedidos: number
+    quantidade_total?: number
+    quantidade_sem_valor?: number
     ticket_medio: number
   }
   performanceLabs?: Array<{
@@ -40,9 +42,11 @@ export function MetricasGeraisReal({ metricas, performanceLabs = [] }: MetricasG
   const metricCards = [
     {
       title: 'Total de Pedidos',
-      value: (metricas?.quantidade_pedidos || 0).toLocaleString(),
-      change: `${performanceLabs.reduce((sum, lab) => sum + lab.pedidos_atrasados, 0)} atrasados`,
-      subtitle: 'no período',
+      value: (metricas?.quantidade_total || metricas?.quantidade_pedidos || 0).toLocaleString(),
+      change: metricas?.quantidade_sem_valor ? 
+        `${metricas.quantidade_sem_valor} garantias incluídas` : 
+        `${performanceLabs.reduce((sum, lab) => sum + lab.pedidos_atrasados, 0)} atrasados`,
+      subtitle: `${metricas?.quantidade_pedidos || 0} com valor`,
       icon: BarChart3,
       gradient: 'from-blue-500 to-blue-600',
       bgGradient: 'from-blue-50/80 to-indigo-50/80',

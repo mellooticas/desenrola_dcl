@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     const dataLimite = new Date()
     dataLimite.setDate(dataLimite.getDate() - parseInt(periodo))
     
-    // 1. RECEITA E CUSTOS
+    // 1. RECEITA E CUSTOS - Incluindo pedidos sem valor (garantias)
     let queryFinanceiro = supabase
       .from('pedidos')
       .select(`
@@ -52,29 +52,32 @@ export async function GET(request: NextRequest) {
         created_at
       `)
       .gte('created_at', dataLimite.toISOString())
-      .not('valor_pedido', 'is', null)
     
     if (lojaId) {
       queryFinanceiro = queryFinanceiro.eq('loja_id', lojaId)
     }
     
-    const { data: pedidosFinanceiros } = await queryFinanceiro
+    const { data: pedidosCompletos } = await queryFinanceiro
     
-    if (!pedidosFinanceiros) {
+    if (!pedidosCompletos) {
       return NextResponse.json({
-        error: 'Nenhum dado financeiro encontrado'
+        error: 'Nenhum dado encontrado'
       }, { status: 404 })
     }
     
-    // 2. CÁLCULOS PRINCIPAIS
-    const totalReceita = pedidosFinanceiros.reduce((sum, p) => sum + (p.valor_pedido || 0), 0)
-    const totalCustos = pedidosFinanceiros.reduce((sum, p) => sum + (p.custo_lentes || 0), 0)
+    // Separar pedidos com valor (para cálculos financeiros) e sem valor (garantias)
+    const pedidosComValor = pedidosCompletos.filter(p => p.valor_pedido !== null && p.valor_pedido > 0)
+    const pedidosSemValor = pedidosCompletos.filter(p => p.valor_pedido === null || p.valor_pedido === 0)
+    
+    // 2. CÁLCULOS PRINCIPAIS (apenas pedidos com valor)
+    const totalReceita = pedidosComValor.reduce((sum: number, p: any) => sum + (p.valor_pedido || 0), 0)
+    const totalCustos = pedidosComValor.reduce((sum: number, p: any) => sum + (p.custo_lentes || 0), 0)
     const margemBruta = totalReceita - totalCustos
     const percentualMargem = totalReceita > 0 ? (margemBruta / totalReceita) * 100 : 0
     
-    // 3. ANÁLISE POR STATUS
+    // 3. ANÁLISE POR STATUS (todos os pedidos)
     const receitaPorStatus: StatusFinanceiro = {}
-    pedidosFinanceiros.forEach(p => {
+    pedidosCompletos.forEach((p: any) => {
       if (!receitaPorStatus[p.status]) {
         receitaPorStatus[p.status] = {
           quantidade: 0,
@@ -91,9 +94,9 @@ export async function GET(request: NextRequest) {
       status.valor_medio = status.quantidade > 0 ? status.valor_total / status.quantidade : 0
     })
     
-    // 4. FORMAS DE PAGAMENTO
+    // 4. FORMAS DE PAGAMENTO (apenas pedidos com valor e pagamento)
     const formasPagamento: AnaliseFormaPagamento = {}
-    const pedidosComPagamento = pedidosFinanceiros.filter(p => p.forma_pagamento)
+    const pedidosComPagamento = pedidosComValor.filter((p: any) => p.forma_pagamento)
     
     pedidosComPagamento.forEach(p => {
       const forma = p.forma_pagamento!
@@ -119,11 +122,11 @@ export async function GET(request: NextRequest) {
       data.setDate(data.getDate() - i)
       const dataStr = data.toISOString().split('T')[0]
       
-      const pedidosDia = pedidosFinanceiros.filter(p => 
+      const pedidosDia = pedidosComValor.filter((p: any) => 
         p.created_at.split('T')[0] === dataStr
       )
       
-      const receitaDia = pedidosDia.reduce((sum, p) => sum + (p.valor_pedido || 0), 0)
+      const receitaDia = pedidosDia.reduce((sum: number, p: any) => sum + (p.valor_pedido || 0), 0)
       const quantidadeDia = pedidosDia.length
       
       evolucaoTemporal.push({
@@ -135,26 +138,26 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // 6. ANÁLISE DE GARANTIAS
-    const pedidosGarantia = pedidosFinanceiros.filter(p => p.eh_garantia)
-    const custoGarantias = pedidosGarantia.reduce((sum, p) => sum + (p.valor_pedido || 0), 0)
-    const taxaGarantia = pedidosFinanceiros.length > 0 ? (pedidosGarantia.length / pedidosFinanceiros.length) * 100 : 0
+    // 6. ANÁLISE DE GARANTIAS (todos os pedidos - incluindo sem valor)
+    const pedidosGarantia = pedidosCompletos.filter((p: any) => p.eh_garantia)
+    const custoGarantias = pedidosGarantia.reduce((sum: number, p: any) => sum + (p.valor_pedido || 0), 0)
+    const taxaGarantia = pedidosCompletos.length > 0 ? (pedidosGarantia.length / pedidosCompletos.length) * 100 : 0
     
-    // 7. PAGAMENTOS
-    const pedidosPagos = pedidosFinanceiros.filter(p => p.data_pagamento)
-    const pedidosPendentes = pedidosFinanceiros.filter(p => p.status === 'AG_PAGAMENTO')
-    const valorPendente = pedidosPendentes.reduce((sum, p) => sum + (p.valor_pedido || 0), 0)
+    // 7. PAGAMENTOS (apenas pedidos com valor)
+    const pedidosPagos = pedidosComValor.filter((p: any) => p.data_pagamento)
+    const pedidosPendentes = pedidosComValor.filter((p: any) => p.status === 'AG_PAGAMENTO')
+    const valorPendente = pedidosPendentes.reduce((sum: number, p: any) => sum + (p.valor_pedido || 0), 0)
     
-    const taxaPagamento = pedidosFinanceiros.length > 0 ? (pedidosPagos.length / pedidosFinanceiros.length) * 100 : 0
+    const taxaPagamento = pedidosComValor.length > 0 ? (pedidosPagos.length / pedidosComValor.length) * 100 : 0
     
     // 8. MÉTRICAS DE DESEMPENHO
-    const ticketMedio = pedidosFinanceiros.length > 0 ? totalReceita / pedidosFinanceiros.length : 0
+    const ticketMedio = pedidosComValor.length > 0 ? totalReceita / pedidosComValor.length : 0
     const receitaPorDia = totalReceita / parseInt(periodo)
     
     // 9. ANÁLISE POR LOJA (se não filtrado por loja específica)
     const receitaPorLoja: { [key: string]: any } = {}
     if (!lojaId) {
-      pedidosFinanceiros.forEach(p => {
+      pedidosComValor.forEach((p: any) => {
         const loja = p.loja_id || 'SEM_LOJA'
         if (!receitaPorLoja[loja]) {
           receitaPorLoja[loja] = {
@@ -175,7 +178,7 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    console.log(`✅ Análise financeira: R$ ${totalReceita.toFixed(2)} em receita, ${pedidosFinanceiros.length} pedidos`)
+    console.log(`✅ Análise financeira: R$ ${totalReceita.toFixed(2)} em receita, ${pedidosCompletos.length} pedidos (${pedidosComValor.length} com valor, ${pedidosSemValor.length} sem valor)`)
     
     return NextResponse.json({
       // Métricas principais
@@ -184,7 +187,9 @@ export async function GET(request: NextRequest) {
         custo_total: totalCustos,
         margem_bruta: margemBruta,
         percentual_margem: percentualMargem,
-        quantidade_pedidos: pedidosFinanceiros.length,
+        quantidade_pedidos: pedidosComValor.length, // Pedidos com valor para cálculos financeiros
+        quantidade_total: pedidosCompletos.length, // Total incluindo garantias sem valor
+        quantidade_sem_valor: pedidosSemValor.length, // Pedidos sem valor (garantias, orçamentos)
         ticket_medio: ticketMedio,
         receita_por_dia: receitaPorDia
       },

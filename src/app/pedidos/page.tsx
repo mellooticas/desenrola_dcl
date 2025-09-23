@@ -39,6 +39,7 @@ import { ptBR } from 'date-fns/locale'
 import type { PedidoCompleto, StatusPedido, PrioridadeLevel } from '@/lib/types/database'
 import { isStatusValido, isPrioridadeValida } from '@/lib/types/database'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { usePermissions } from '@/lib/hooks/use-permissions'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
@@ -65,6 +66,8 @@ const PRIORIDADE_CONFIG: Record<PrioridadeLevel, { color: string; label: string 
 export default function PedidosPage() {
   // const router = useRouter() // Removido porque não estava sendo usado
   const { userProfile, loading: authLoading } = useAuth()
+  const permissions = usePermissions()
+  const [isHydrated, setIsHydrated] = useState(false)
   const [pedidos, setPedidos] = useState<PedidoCompleto[]>([])
   const [pedidosOriginais, setPedidosOriginais] = useState<PedidoCompleto[]>([]) // Dataset completo
   const [loading, setLoading] = useState(true)
@@ -96,7 +99,10 @@ export default function PedidosPage() {
       return acc
     }, {} as Record<StatusPedido, number>)
     
-    const valorTotal = pedidosOriginais.reduce((sum, p) => sum + (p.valor_pedido || 0), 0)
+    // NOVA LÓGICA: Só calcular valores se permitido
+    const valorTotal = permissions.canViewFinancialData() 
+      ? pedidosOriginais.reduce((sum, p) => sum + (p.valor_pedido || 0), 0)
+      : 0
     const atrasados = pedidosOriginais.filter(p => p.dias_para_vencer_sla !== null && p.dias_para_vencer_sla < 0).length
     const urgentes = pedidosOriginais.filter(p => p.prioridade === 'URGENTE').length
 
@@ -106,9 +112,9 @@ export default function PedidosPage() {
       valorTotal,
       atrasados,
       urgentes,
-      ticketMedio: total > 0 ? valorTotal / total : 0
+      ticketMedio: total > 0 && permissions.canViewFinancialData() ? valorTotal / total : 0
     }
-  }, [pedidosOriginais])
+  }, [pedidosOriginais, permissions])
 
   // Carrega todos os pedidos do servidor (uma única vez)
   const carregarTodosPedidos = useCallback(async () => {
@@ -208,6 +214,11 @@ export default function PedidosPage() {
     carregarTodosPedidos()
   }, [carregarTodosPedidos, carregarOpcoesFiltro, userProfile])
 
+  // ========== EFFECT DE HIDRATAÇÃO ==========
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
   // Não precisamos mais de debounce pois a filtragem é local
   // Os filtros aplicam instantaneamente via useMemo
 
@@ -249,7 +260,7 @@ export default function PedidosPage() {
       p.status,
       p.prioridade,
       format(new Date(p.data_pedido), 'dd/MM/yyyy'),
-      p.valor_pedido ? p.valor_pedido.toFixed(2) : '0,00',
+      permissions.canViewFinancialData() ? (p.valor_pedido ? p.valor_pedido.toFixed(2) : '0,00') : 'N/A',
       p.dias_para_vencer_sla !== null ? p.dias_para_vencer_sla.toString() : 'N/A',
       (p.observacoes || '').replace(/"/g, '""') // Escape quotes
     ])
@@ -295,7 +306,10 @@ export default function PedidosPage() {
                     <p className="text-gray-600 text-lg">
                       {loading ? 'Carregando...' : (
                         <>
-                          {estatisticas.total} pedidos • R$ {estatisticas.valorTotal.toLocaleString('pt-BR')}
+                          {estatisticas.total} pedidos
+                          {isHydrated && permissions.canViewFinancialData() && (
+                            <> • R$ {estatisticas.valorTotal.toLocaleString('pt-BR')}</>
+                          )}
                           {pedidosFiltrados.length !== estatisticas.total && (
                             <span className="text-blue-600 font-medium ml-2">
                               • {pedidosFiltrados.length} filtrados
@@ -351,19 +365,21 @@ export default function PedidosPage() {
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-green-600 font-medium">Valor Total</p>
-                      <p className="text-2xl font-bold text-green-900">
-                        R$ {(estatisticas.valorTotal / 1000).toFixed(0)}k
-                      </p>
+              {isHydrated && permissions.canViewFinancialData() && (
+                <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-green-600 font-medium">Valor Total</p>
+                        <p className="text-2xl font-bold text-green-900">
+                          R$ {(estatisticas.valorTotal / 1000).toFixed(0)}k
+                        </p>
+                      </div>
+                      <TrendingUp className="w-8 h-8 text-green-500" />
                     </div>
-                    <TrendingUp className="w-8 h-8 text-green-500" />
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardContent className="p-6">
@@ -538,10 +554,15 @@ export default function PedidosPage() {
                 </CardTitle>
                 {!loading && pedidos.length > 0 && (
                   <CardDescription>
-                    Ticket médio: R$ {estatisticas.ticketMedio.toLocaleString('pt-BR', { 
-                      minimumFractionDigits: 2, 
-                      maximumFractionDigits: 2 
-                    })} • {estatisticas.atrasados} atrasados • {estatisticas.urgentes} urgentes
+                    {isHydrated && permissions.canViewFinancialData() && (
+                      <>
+                        Ticket médio: R$ {estatisticas.ticketMedio.toLocaleString('pt-BR', { 
+                          minimumFractionDigits: 2, 
+                          maximumFractionDigits: 2 
+                        })} • 
+                      </>
+                    )}
+                    {estatisticas.atrasados} atrasados • {estatisticas.urgentes} urgentes
                   </CardDescription>
                 )}
               </CardHeader>
@@ -662,7 +683,9 @@ export default function PedidosPage() {
                           <TableHead>Status</TableHead>
                           <TableHead>Prioridade</TableHead>
                           <TableHead>Data</TableHead>
-                          <TableHead className="text-right">Valor</TableHead>
+                          {isHydrated && permissions.canViewFinancialData() && (
+                            <TableHead className="text-right">Valor</TableHead>
+                          )}
                           <TableHead className="text-center">SLA</TableHead>
                           <TableHead className="text-center">Ações</TableHead>
                         </TableRow>
@@ -720,18 +743,20 @@ export default function PedidosPage() {
                                   {pedido.dias_desde_pedido}d atrás
                                 </div>
                               </TableCell>
-                              <TableCell className="text-right">
-                                {pedido.valor_pedido ? (
-                                  <div className="text-sm font-medium">
-                                    R$ {pedido.valor_pedido.toLocaleString('pt-BR', { 
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2 
-                                    })}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400 text-sm">-</span>
-                                )}
-                              </TableCell>
+                              {isHydrated && permissions.canViewFinancialData() && (
+                                <TableCell className="text-right">
+                                  {pedido.valor_pedido ? (
+                                    <div className="text-sm font-medium">
+                                      R$ {pedido.valor_pedido.toLocaleString('pt-BR', { 
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2 
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 text-sm">-</span>
+                                  )}
+                                </TableCell>
+                              )}
                               <TableCell className="text-center">
                                 {pedido.dias_para_vencer_sla !== null ? (
                                   <Badge 

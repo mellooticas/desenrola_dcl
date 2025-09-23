@@ -49,6 +49,8 @@ interface MetricasFinanceiras {
   margem_bruta: number
   percentual_margem: number
   quantidade_pedidos: number
+  quantidade_total: number
+  quantidade_sem_valor: number
   ticket_medio: number
 }
 
@@ -139,7 +141,7 @@ const DashboardPage = () => {
     }).format(value)
   }
 
-  const getSeverityColor = (severidade: string) => {
+  const getSeverityColor = (severidade?: string) => {
     switch (severidade) {
       case 'critica': return 'bg-red-100 border-red-500 text-red-800'
       case 'alta': return 'bg-orange-100 border-orange-500 text-orange-800'
@@ -270,7 +272,7 @@ const DashboardPage = () => {
                                   <p className="text-sm mt-1">{alerta.descricao}</p>
                                 </div>
                                 <Badge variant="outline">
-                                  {alerta.severidade.toUpperCase()}
+                                  {alerta.severidade ? alerta.severidade.toUpperCase() : 'INDEFINIDO'}
                                 </Badge>
                               </div>
                             </AlertDescription>
@@ -493,10 +495,16 @@ const DashboardPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-orange-900">
-                      {metricas?.quantidade_pedidos || 0}
+                      {metricas?.quantidade_total || metricas?.quantidade_pedidos || 0}
                     </div>
                     <p className="text-sm text-orange-700 mt-1">
-                      No período
+                      {metricas?.quantidade_sem_valor ? (
+                        <>
+                          {metricas.quantidade_pedidos} com valor, {metricas.quantidade_sem_valor} garantias
+                        </>
+                      ) : (
+                        'No período'
+                      )}
                     </p>
                   </CardContent>
                 </Card>
@@ -525,8 +533,18 @@ const DashboardPage = () => {
                               <span className="font-semibold text-emerald-600">{formatCurrency(metricas.receita_total)}</span>
                             </div>
                             <div className="flex justify-between items-center py-2 px-4 bg-slate-50 rounded-lg">
-                              <span className="text-slate-700">Quantidade Pedidos</span>
+                              <span className="text-slate-700">Pedidos com Valor</span>
                               <span className="font-semibold">{metricas.quantidade_pedidos}</span>
+                            </div>
+                            {metricas.quantidade_sem_valor && metricas.quantidade_sem_valor > 0 && (
+                              <div className="flex justify-between items-center py-2 px-4 bg-yellow-50 rounded-lg">
+                                <span className="text-slate-700">Garantias/Sem Valor</span>
+                                <span className="font-semibold text-yellow-600">{metricas.quantidade_sem_valor}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center py-2 px-4 bg-blue-50 rounded-lg">
+                              <span className="text-slate-700">Total Geral</span>
+                              <span className="font-semibold text-blue-600">{metricas.quantidade_total || metricas.quantidade_pedidos}</span>
                             </div>
                             <div className="flex justify-between items-center py-2 px-4 bg-purple-50 rounded-lg">
                               <span className="text-slate-700">Ticket Médio</span>

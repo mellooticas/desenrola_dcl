@@ -152,7 +152,14 @@ export function usePedidos(filters: PedidosFilters = {}) {
             dias_desde_pedido: 2,
             dias_para_vencer_sla: 3,
             dias_para_vencer_prometido: 5,
-            alertas_count: 0
+            alertas_count: 0,
+            // Campos do montador
+            montador_id: null,
+            data_montagem: null,
+            custo_montagem: null,
+            montador_nome: null,
+            montador_local: null,
+            montador_contato: null
           }
         ]
       }

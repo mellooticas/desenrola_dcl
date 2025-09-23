@@ -3,6 +3,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom utilities for Kanban cards */
+@layer utilities {
+  .border-l-3 {
+    border-left-width: 3px;
+  }
+}
+
 @layer base {
   :root {
     /* Shadcn/ui core variables */
