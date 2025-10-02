@@ -15,22 +15,22 @@ interface LojaAcaoCustomizada {
   pontos_customizados?: number;
   obrigatoria: boolean;
   dias_semana: string[];
-  condicoes_especiais: Record<string, any>;
+  condicoes_especiais: Record<string, unknown>;
   permite_delegacao: boolean;
   requer_evidencia: boolean;
   requer_justificativa_se_nao_feita: boolean;
 }
 
-interface MissaoTemplate {
-  id: string;
-  nome: string;
-  descricao: string;
-  pontos_base: number;
-  categoria: string;
-  categoria_configuracao?: string;
-  horario_sugerido?: string;
-  dias_semana_padrao?: string[];
-}
+// interface MissaoTemplate {
+//   id: string;
+//   nome: string;
+//   descricao: string;
+//   pontos_base: number;
+//   categoria: string;
+//   categoria_configuracao?: string;
+//   horario_sugerido?: string;
+//   dias_semana_padrao?: string[];
+// }
 
 // ========================================
 // 📝 ATUALIZAR AÇÃO ESPECÍFICA

@@ -19,7 +19,6 @@ import {
   Trash2, 
   Save, 
   AlertCircle,
-  CheckCircle,
   Star,
   Calendar,
   Timer,
@@ -110,7 +109,7 @@ export default function ConfiguracoesLojaPage({ params }: ConfiguracoesLojaPageP
   const [configuracoes, setConfiguracoes] = useState<ConfiguracoesLoja | null>(null);
   const [acoesConfiguradas, setAcoesConfiguradas] = useState<AcaoCustomizada[]>([]);
   const [templatesDisponiveis, setTemplatesDisponiveis] = useState<TemplateDisponivel[]>([]);
-  const [estatisticas, setEstatisticas] = useState<any>({});
+  const [estatisticas, setEstatisticas] = useState<Record<string, number>>({});
 
   // Estados para edição
   const [editandoAcao, setEditandoAcao] = useState<string | null>(null);
@@ -145,7 +144,7 @@ export default function ConfiguracoesLojaPage({ params }: ConfiguracoesLojaPageP
 
   useEffect(() => {
     carregarConfiguracoes();
-  }, [lojaId]);
+  }, [lojaId, carregarConfiguracoes]);
 
   // ========================================
   // 💾 SALVAR CONFIGURAÇÕES DE HORÁRIO
