@@ -380,3 +380,160 @@ export const validarNumeroLaboratorio = (numero: string): boolean => {
   const regex = /^[A-Z]{2,4}-\d{6}-\d{4}$/
   return regex.test(numero)
 }
+
+// ========== SISTEMA DE GAMIFICAÇÃO ==========
+
+export type LigaTipo = 'BRONZE' | 'PRATA' | 'OURO' | 'DIAMANTE'
+
+export type BadgeTipo = 
+  | 'PRIMEIRA_MISSAO'
+  | 'STREAK_7_DIAS'
+  | 'STREAK_30_DIAS'
+  | 'PONTUACAO_100'
+  | 'PONTUACAO_500'
+  | 'PONTUACAO_1000'
+  | 'MISSOES_PERFEITAS_10'
+  | 'MISSOES_PERFEITAS_50'
+  | 'CAMPEAO_SEMANAL'
+  | 'CAMPEAO_MENSAL'
+  | 'SUBIU_LIGA'
+  | 'LIDER_EQUIPE'
+
+export type DesafioTipo = 
+  | 'SEMANA_PERFEICAO'
+  | 'MARATONA_VENDAS'
+  | 'SPRINT_PRODUCAO'
+  | 'DESAFIO_QUALIDADE'
+  | 'BATALHA_LOJAS'
+
+export interface LojaGamificacao {
+  id: string
+  loja_id: string
+  liga_atual: LigaTipo
+  pontos_mes_atual: number
+  pontos_total: number
+  streak_dias: number
+  maior_streak: number
+  badges_conquistadas: BadgeTipo[]
+  ultima_atividade: string
+  promocoes: number
+  rebaixamentos: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Badge {
+  id: string
+  tipo: BadgeTipo
+  nome: string
+  descricao: string
+  icone: string
+  cor: string
+  pontos_requisito: number
+  condicao_especial?: string
+  raridade: 'COMUM' | 'RARO' | 'EPICO' | 'LENDARIO'
+}
+
+export interface LojaRanking {
+  loja_id: string
+  loja_nome: string
+  liga_atual: LigaTipo
+  pontos_mes: number
+  pontos_total: number
+  posicao_liga: number
+  posicao_geral: number
+  badges_total: number
+  streak_atual: number
+  progresso_proxima_liga: number
+}
+
+export interface Desafio {
+  id: string
+  tipo: DesafioTipo
+  nome: string
+  descricao: string
+  meta_pontos: number
+  data_inicio: string
+  data_fim: string
+  bonus_multiplicador: number
+  lojas_participantes: string[]
+  premiacao: string
+  ativo: boolean
+  created_at: string
+}
+
+export interface DesafioParticipacao {
+  id: string
+  desafio_id: string
+  loja_id: string
+  pontos_conquistados: number
+  meta_atingida: boolean
+  posicao_final?: number
+  bonus_recebido: number
+  created_at: string
+}
+
+// Liga configuration
+export const LIGAS_CONFIG = {
+  BRONZE: {
+    nome: 'Liga Bronze',
+    cor: '#CD7F32',
+    percentual_minimo: 0, // 0% dos pontos possíveis
+    percentual_promocao: 60, // 60% para promover para Prata
+    icone: '🥉'
+  },
+  PRATA: {
+    nome: 'Liga Prata',
+    cor: '#C0C0C0',
+    percentual_minimo: 60, // 60% dos pontos possíveis
+    percentual_promocao: 80, // 80% para promover para Ouro
+    icone: '🥈'
+  },
+  OURO: {
+    nome: 'Liga Ouro',
+    cor: '#FFD700',
+    percentual_minimo: 80, // 80% dos pontos possíveis
+    percentual_promocao: 100, // 100% para promover para Diamante
+    icone: '🥇'
+  },
+  DIAMANTE: {
+    nome: 'Liga Diamante',
+    cor: '#B9F2FF',
+    percentual_minimo: 100, // 100% dos pontos possíveis
+    percentual_promocao: Infinity, // Não há promoção além de Diamante
+    icone: '💎'
+  }
+} as const
+
+// Interface para controle diário de pontuação
+export interface PontuacaoDiaria {
+  id: string
+  loja_id: string
+  data: string // YYYY-MM-DD
+  pontos_possiveis: number // Total de pontos que poderiam ser ganhos no dia
+  pontos_conquistados: number // Pontos realmente conquistados
+  missoes_totais: number // Total de missões disponíveis
+  missoes_completadas: number // Missões realmente completadas
+  percentual_eficiencia: number // pontos_conquistados / pontos_possiveis * 100
+  liga_no_dia: LigaTipo // Liga que a loja estava no dia
+  streak_dias: number // Sequência de dias consecutivos
+  created_at: string
+  updated_at: string
+}
+
+// Interface para métricas mensais
+export interface MetricasMensais {
+  loja_id: string
+  mes_ano: string // YYYY-MM
+  pontos_possiveis_mes: number
+  pontos_conquistados_mes: number
+  percentual_mensal: number
+  dias_ativos: number
+  melhor_dia: number
+  pior_dia: number
+  media_diaria: number
+  liga_inicial: LigaTipo
+  liga_final: LigaTipo
+  promocoes_mes: number
+  rebaixamentos_mes: number
+}

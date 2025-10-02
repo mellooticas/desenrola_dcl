@@ -1,0 +1,433 @@
+// 🎯 Utilitário de Geração de Missões com Configurações Personalizadas
+// Integração do sistema de    } catch (error) {
+      console.error('Erro geral:', error);
+      return {
+        sucesso: false,
+        erro: error instanceof Error ? error.message : 'Erro desconhecido',
+        detalhes: []
+      };
+    }rações com a geração automática de missões
+
+import { createClient } from '@supabase/supabase-js';
+
+interface ConfiguracoesLoja {
+  loja_id: string;
+  hora_abertura: string;
+  hora_fechamento: string;
+  hora_limite_missoes: string;
+  hora_renovacao_sistema: string;
+  prazo_padrao_horas: number;
+  permite_execucao_apos_horario: boolean;
+  [key: `${string}_ativa`]: boolean;
+}
+
+interface AcaoCustomizada {
+  id: string;
+  template_id: string;
+  ativa: boolean;
+  prioridade: number;
+  horario_especifico?: string;
+  prazo_customizado_horas?: number;
+  pontos_customizados?: number;
+  obrigatoria: boolean;
+  dias_semana: string[];
+  condicoes_especiais: Record<string, any>;
+  permite_delegacao: boolean;
+  requer_evidencia: boolean;
+  requer_justificativa_se_nao_feita: boolean;
+  template: {
+    id: string;
+    nome: string;
+    descricao: string;
+    pontos_base: number;
+    categoria: string;
+  };
+}
+
+export class GeradorMissoesPersonalizadas {
+  private supabase;
+
+  constructor() {
+    this.supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+  }
+
+  // ========================================
+  // 🗓️ GERAR MISSÕES PARA DATA ESPECÍFICA
+  // ========================================
+
+  async gerarMissoesParaData(data: Date = new Date()) {
+    try {
+      const dataFormatada = data.toISOString().split('T')[0];
+      const diaSemana = this.obterDiaSemana(data);
+      
+      console.log(`🎯 Gerando missões para ${dataFormatada} (${diaSemana})`);
+
+      // Buscar todas as lojas ativas
+      const { data: lojas, error: lojasError } = await this.supabase
+        .from('lojas')
+        .select('id, nome, ativo')
+        .eq('ativo', true);
+
+      if (lojasError) throw lojasError;
+
+      let totalMissoesGeradas = 0;
+      let lojasProcessadas = 0;
+      const relatorio = [];
+
+      for (const loja of lojas || []) {
+        const resultado = await this.gerarMissoesParaLoja(loja.id, data);
+        
+        if (resultado.sucesso) {
+          totalMissoesGeradas += resultado.missoes_criadas;
+          lojasProcessadas++;
+        }
+
+        relatorio.push({
+          loja_id: loja.id,
+          loja_nome: loja.nome,
+          ...resultado
+        });
+      }
+
+      console.log(`✅ Processamento concluído:`);
+      console.log(`   - ${lojasProcessadas} lojas processadas`);
+      console.log(`   - ${totalMissoesGeradas} missões criadas`);
+
+      return {
+        sucesso: true,
+        data: dataFormatada,
+        dia_semana: diaSemana,
+        lojas_processadas: lojasProcessadas,
+        total_missoes: totalMissoesGeradas,
+        detalhes: relatorio
+      };
+
+    } catch (error) {
+      console.error('❌ Erro ao gerar missões:', error);
+      return {
+        sucesso: false,
+        erro: error.message,
+        detalhes: []
+      };
+    }
+  }
+
+  // ========================================
+  // 🏪 GERAR MISSÕES PARA LOJA ESPECÍFICA
+  // ========================================
+
+  async gerarMissoesParaLoja(lojaId: string, data: Date = new Date()) {
+    try {
+      const dataFormatada = data.toISOString().split('T')[0];
+      const diaSemana = this.obterDiaSemana(data);
+
+      // 1. Buscar configurações da loja
+      const { data: configuracoes, error: configError } = await this.supabase
+        .from('loja_configuracoes_horario')
+        .select('*')
+        .eq('loja_id', lojaId)
+        .single();
+
+      if (configError) {
+        console.log(`⚠️ Loja ${lojaId}: Sem configurações, usando padrão`);
+        // Usar configurações padrão se não existir
+      }
+
+      // 2. Verificar se a loja trabalha neste dia
+      const trabalhaHoje = this.verificarDiaAtivo(configuracoes, diaSemana);
+      
+      if (!trabalhaHoje) {
+        return {
+          sucesso: true,
+          missoes_criadas: 0,
+          motivo: `Loja não trabalha em ${diaSemana}`
+        };
+      }
+
+      // 3. Buscar ações configuradas para esta loja
+      const { data: acoes, error: acoesError } = await this.supabase
+        .from('loja_acoes_customizadas')
+        .select(`
+          *,
+          template:missao_templates(
+            id,
+            nome,
+            descricao,
+            pontos_base,
+            categoria,
+            ativo
+          )
+        `)
+        .eq('loja_id', lojaId)
+        .eq('ativa', true);
+
+      if (acoesError) throw acoesError;
+
+      // Filtrar ações que devem ser executadas hoje
+      const acoesParaHoje = (acoes || []).filter(acao => 
+        acao.dias_semana.includes(this.obterDiaSemanaSigla(diaSemana)) &&
+        acao.template?.ativo
+      );
+
+      console.log(`📋 Loja ${lojaId}: ${acoesParaHoje.length} ações para ${diaSemana}`);
+
+      // 4. Gerar missões baseadas nas ações
+      const missoesParaCriar = [];
+
+      for (const acao of acoesParaHoje) {
+        // Verificar se já existe missão para esta data
+        const { data: missaoExistente } = await this.supabase
+          .from('missoes_diarias')
+          .select('id')
+          .eq('loja_id', lojaId)
+          .eq('template_id', acao.template_id)
+          .eq('data_missao', dataFormatada)
+          .single();
+
+        if (missaoExistente) {
+          console.log(`⏭️ Missão ${acao.template.nome} já existe para hoje`);
+          continue;
+        }
+
+        // Calcular data de vencimento
+        const dataVencimento = this.calcularDataVencimento(
+          data,
+          configuracoes,
+          acao
+        );
+
+        // Preparar dados da missão
+        const missao = {
+          loja_id: lojaId,
+          template_id: acao.template_id,
+          data_missao: dataFormatada,
+          data_vencimento: dataVencimento.toISOString(),
+          pontos_total: acao.pontos_customizados || acao.template.pontos_base,
+          status: 'pendente',
+          eh_obrigatoria: acao.obrigatoria,
+          permite_delegacao: acao.permite_delegacao,
+          requer_evidencia: acao.requer_evidencia,
+          requer_justificativa_se_nao_feita: acao.requer_justificativa_se_nao_feita,
+          prioridade: acao.prioridade,
+          criada_automaticamente: true,
+          configuracao_origem: {
+            acao_customizada_id: acao.id,
+            horario_especifico: acao.horario_especifico,
+            prazo_customizado: acao.prazo_customizado_horas,
+            condicoes_especiais: acao.condicoes_especiais
+          }
+        };
+
+        missoesParaCriar.push(missao);
+      }
+
+      // 5. Inserir missões no banco
+      if (missoesParaCriar.length > 0) {
+        const { data: missoesInseridas, error: insertError } = await this.supabase
+          .from('missoes_diarias')
+          .insert(missoesParaCriar)
+          .select('id, template:missao_templates(nome)');
+
+        if (insertError) throw insertError;
+
+        console.log(`✅ Loja ${lojaId}: ${missoesInseridas?.length || 0} missões criadas`);
+        missoesInseridas?.forEach(missao => {
+          console.log(`   - ${(missao.template as any)?.nome}`);
+        });
+
+        return {
+          sucesso: true,
+          missoes_criadas: missoesInseridas?.length || 0,
+          missoes_detalhes: missoesInseridas?.map(m => ({
+            id: m.id,
+            nome: (m.template as any)?.nome
+          }))
+        };
+      } else {
+        return {
+          sucesso: true,
+          missoes_criadas: 0,
+          motivo: 'Nenhuma ação configurada ou todas já existem'
+        };
+      }
+
+    } catch (error) {
+      console.error(`❌ Erro ao gerar missões para loja ${lojaId}:`, error);
+      return {
+        sucesso: false,
+        erro: error.message,
+        missoes_criadas: 0
+      };
+    }
+  }
+
+  // ========================================
+  // 🕐 CALCULAR DATA DE VENCIMENTO
+  // ========================================
+
+  private calcularDataVencimento(
+    dataMissao: Date,
+    configuracoes: ConfiguracoesLoja | null,
+    acao: AcaoCustomizada
+  ): Date {
+    const dataVencimento = new Date(dataMissao);
+    
+    // Usar horário específico da ação, ou horário limite da loja, ou padrão
+    let horarioLimite = acao.horario_especifico 
+      || configuracoes?.hora_limite_missoes 
+      || '17:00';
+
+    // Se tem prazo customizado, adicionar horas à data atual
+    if (acao.prazo_customizado_horas) {
+      dataVencimento.setHours(
+        dataVencimento.getHours() + acao.prazo_customizado_horas
+      );
+    } else {
+      // Usar horário limite do dia
+      const [horas, minutos] = horarioLimite.split(':').map(Number);
+      dataVencimento.setHours(horas, minutos, 0, 0);
+    }
+
+    return dataVencimento;
+  }
+
+  // ========================================
+  // 🗓️ UTILITÁRIOS DE DATA
+  // ========================================
+
+  private obterDiaSemana(data: Date): string {
+    const dias = [
+      'domingo', 'segunda', 'terca', 'quarta', 
+      'quinta', 'sexta', 'sabado'
+    ];
+    return dias[data.getDay()];
+  }
+
+  private obterDiaSemanaSigla(diaSemana: string): string {
+    const mapa: Record<string, string> = {
+      'segunda': 'seg',
+      'terca': 'ter',
+      'quarta': 'qua', 
+      'quinta': 'qui',
+      'sexta': 'sex',
+      'sabado': 'sab',
+      'domingo': 'dom'
+    };
+    return mapa[diaSemana] || '';
+  }
+
+  private verificarDiaAtivo(
+    configuracoes: ConfiguracoesLoja | null, 
+    diaSemana: string
+  ): boolean {
+    if (!configuracoes) return true; // Padrão: trabalha seg-sex
+
+    const campoAtivo = `${diaSemana}_ativa` as keyof ConfiguracoesLoja;
+    return Boolean(configuracoes[campoAtivo]);
+  }
+
+  // ========================================
+  // 📊 RELATÓRIO DE CONFIGURAÇÕES
+  // ========================================
+
+  async gerarRelatorioConfiguracoes() {
+    try {
+      // Buscar todas as configurações
+      const { data: configuracoes, error: configError } = await this.supabase
+        .from('loja_configuracoes_horario')
+        .select(`
+          *,
+          loja:lojas(nome, ativo)
+        `);
+
+      if (configError) throw configError;
+
+      // Buscar estatísticas de ações
+      const { data: estatisticasAcoes, error: acoesError } = await this.supabase
+        .from('loja_acoes_customizadas')
+        .select(`
+          loja_id,
+          ativa,
+          obrigatoria,
+          prioridade,
+          template:missao_templates(categoria)
+        `);
+
+      if (acoesError) throw acoesError;
+
+      // Compilar relatório
+      const relatorio = (configuracoes || []).map(config => {
+        const acoesLoja = (estatisticasAcoes || []).filter(
+          a => a.loja_id === config.loja_id
+        );
+
+        return {
+          loja_id: config.loja_id,
+          loja_nome: (config.loja as any)?.nome,
+          loja_ativa: (config.loja as any)?.ativo,
+          horario_funcionamento: `${config.hora_abertura} - ${config.hora_fechamento}`,
+          hora_limite_missoes: config.hora_limite_missoes,
+          hora_renovacao: config.hora_renovacao_sistema,
+          dias_ativos: this.obterDiasAtivos(config),
+          total_acoes: acoesLoja.length,
+          acoes_ativas: acoesLoja.filter(a => a.ativa).length,
+          acoes_obrigatorias: acoesLoja.filter(a => a.obrigatoria).length,
+          prioridade_media: acoesLoja.length > 0 
+            ? Math.round(acoesLoja.reduce((acc, a) => acc + a.prioridade, 0) / acoesLoja.length)
+            : 0,
+          categorias_acoes: [...new Set(acoesLoja.map(a => a.template?.categoria))].filter(Boolean)
+        };
+      });
+
+      return {
+        sucesso: true,
+        total_lojas: relatorio.length,
+        lojas_ativas: relatorio.filter(r => r.loja_ativa).length,
+        total_acoes_sistema: (estatisticasAcoes || []).length,
+        acoes_ativas_sistema: (estatisticasAcoes || []).filter(a => a.ativa).length,
+        detalhes: relatorio
+      };
+
+    } catch (error) {
+      console.error('❌ Erro ao gerar relatório:', error);
+      return {
+        sucesso: false,
+        erro: error.message
+      };
+    }
+  }
+
+  private obterDiasAtivos(config: ConfiguracoesLoja): string[] {
+    const diasAtivos = [];
+    if (config.segunda_ativa) diasAtivos.push('Seg');
+    if (config.terca_ativa) diasAtivos.push('Ter');
+    if (config.quarta_ativa) diasAtivos.push('Qua');
+    if (config.quinta_ativa) diasAtivos.push('Qui');
+    if (config.sexta_ativa) diasAtivos.push('Sex');
+    if (config.sabado_ativa) diasAtivos.push('Sáb');
+    if (config.domingo_ativa) diasAtivos.push('Dom');
+    return diasAtivos;
+  }
+}
+
+// ========================================
+// 📤 FUNÇÃO PARA USO EXTERNO
+// ========================================
+
+export async function gerarMissoesComConfiguracoes(data?: Date) {
+  const gerador = new GeradorMissoesPersonalizadas();
+  return await gerador.gerarMissoesParaData(data);
+}
+
+export async function gerarMissoesParaLojaEspecifica(lojaId: string, data?: Date) {
+  const gerador = new GeradorMissoesPersonalizadas();
+  return await gerador.gerarMissoesParaLoja(lojaId, data);
+}
+
+export async function obterRelatorioConfiguracoes() {
+  const gerador = new GeradorMissoesPersonalizadas();
+  return await gerador.gerarRelatorioConfiguracoes();
+}

@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/renovacao-diaria",
+      "schedule": "0 23 * * *"
+    }
+  ]
+}

@@ -22,12 +22,16 @@ export async function POST(request: NextRequest) {
       path: '/'
     })
 
-    return response
-
-    return NextResponse.json({
-      success: true,
-      message: 'Logout realizado com sucesso'
+    // Limpar cookie de role
+    response.cookies.set('user-role', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0, // Remove o cookie
+      path: '/'
     })
+
+    return response
 
   } catch (error) {
     return NextResponse.json(

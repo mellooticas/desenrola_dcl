@@ -46,6 +46,12 @@ const menuItems = [
     ]
   },
   {
+    category: 'Gamificação',
+    items: [
+      { name: 'Horários & Ações', href: '/configuracoes/horarios-acoes', icon: Activity, description: 'Configurar horários e ações por loja' },
+    ]
+  },
+  {
     category: 'Sistema',
     items: [
       { name: 'Configurações Gerais', href: '/configuracoes/sistema', icon: Settings, description: 'Configurações do sistema' },

@@ -1,0 +1,120 @@
+// 🔄 API Endpoint - Gerador de Missões com Configurações Personalizadas
+// Integração com sistema de configurações de horários e ações por loja
+
+import { NextRequest, NextResponse } from 'next/server';
+// import { gerarMissoesPersonalizadas } from '@/lib/gerador-missoes-personalizadas'
+
+// ========================================
+// 🎯 GERAR MISSÕES PARA DATA ESPECÍFICA
+// ========================================
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { data, loja_id } = body;
+
+    // Validar e processar data
+    let dataProcessamento = new Date();
+    if (data) {
+      dataProcessamento = new Date(data);
+      if (isNaN(dataProcessamento.getTime())) {
+        return NextResponse.json({
+          success: false,
+          error: 'Data inválida fornecida'
+        }, { status: 400 });
+      }
+    }
+
+    let resultado;
+
+    if (loja_id) {
+      // Gerar missões para loja específica
+      const { gerarMissoesParaLojaEspecifica } = await import('@/lib/gerador-missoes-personalizadas');
+      resultado = await gerarMissoesParaLojaEspecifica(loja_id, dataProcessamento);
+    } else {
+      // Gerar missões para todas as lojas
+      // resultado = await gerarMissoesComConfiguracoes(dataProcessamento);
+      resultado = { sucesso: false, erro: 'Funcionalidade temporariamente desabilitada' }
+    }
+
+    if (resultado.sucesso) {
+      return NextResponse.json({
+        success: true,
+        message: `Missões geradas com sucesso para ${resultado.sucesso ? dataProcessamento.toISOString().split('T')[0] : 'data processamento'}! 🎯`,
+        data: resultado
+      });
+    } else {
+      return NextResponse.json({
+        success: false,
+        error: resultado.erro || 'Erro ao gerar missões',
+        data: resultado
+      }, { status: 500 });
+    }
+
+  } catch (error) {
+    console.error('❌ Erro no endpoint de geração de missões:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Erro interno do servidor'
+    }, { status: 500 });
+  }
+}
+
+// ========================================
+// 📊 OBTER RELATÓRIO DE CONFIGURAÇÕES
+// ========================================
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const tipo = searchParams.get('tipo') || 'configuracoes';
+
+    if (tipo === 'configuracoes') {
+      // Relatório de configurações das lojas
+      // const resultado = await obterRelatorioConfiguracoes();
+      const resultado = { sucesso: true, configuracoes: [], total: 0 }
+
+      if (resultado.sucesso) {
+        return NextResponse.json({
+          success: true,
+          data: resultado
+        });
+      } else {
+        return NextResponse.json({
+          success: false,
+          error: 'Funcionalidade temporariamente desabilitada'
+        }, { status: 500 });
+      }
+
+    } else if (tipo === 'preview') {
+      // Preview das missões que seriam geradas hoje
+      const hoje = new Date();
+      // const resultado = await gerarMissoesComConfiguracoes(hoje);
+      const resultado = { sucesso: false, erro: 'Funcionalidade temporariamente desabilitada' }
+
+      // Simular geração sem inserir no banco
+      return NextResponse.json({
+        success: true,
+        message: `Preview das missões para ${hoje.toISOString().split('T')[0]}`,
+        data: {
+          ...resultado,
+          preview: true,
+          observacao: 'Este é apenas um preview. Nenhuma missão foi realmente criada.'
+        }
+      });
+
+    } else {
+      return NextResponse.json({
+        success: false,
+        error: 'Tipo de relatório não suportado. Use "configuracoes" ou "preview".'
+      }, { status: 400 });
+    }
+
+  } catch (error) {
+    console.error('❌ Erro no endpoint de relatório:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Erro interno do servidor'
+    }, { status: 500 });
+  }
+}

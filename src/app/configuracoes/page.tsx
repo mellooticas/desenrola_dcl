@@ -100,6 +100,15 @@ export default function ConfiguracoesPage() {
               <ArrowRight className="w-4 h-4 text-gray-400" />
             </Link>
             
+            <Link href="/configuracoes/horarios-acoes" className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+              <Activity className="w-5 h-5 text-orange-600 mr-3" />
+              <div className="flex-1">
+                <div className="font-medium">Horários & Ações</div>
+                <div className="text-sm text-gray-500">Configurar horários e ações por loja</div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-gray-400" />
+            </Link>
+            
             <Link href="/configuracoes/database" className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
               <Database className="w-5 h-5 text-red-600 mr-3" />
               <div className="flex-1">

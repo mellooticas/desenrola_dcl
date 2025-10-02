@@ -52,14 +52,14 @@ export function LojaSelector({ onLojaSelected, selectedLoja, locked = false }: L
         console.error('❌ Erro ao carregar lojas:', err)
         setError(err instanceof Error ? err.message : 'Erro desconhecido')
         
-        // Dados de fallback baseados no sistema DCL
+        // Dados de fallback baseados no sistema DCL - usando UUIDs reais
         setLojas([
           {
-            id: '1',
-            nome: 'DCL Matriz',
+            id: 'e5915ba4-fdb4-4fa7-b9d5-c71d3c704c55',
+            nome: 'Suzano',
             codigo: 'DCL001',
-            endereco: 'Av. Paulista, 1000',
-            total_pedidos: 45,
+            endereco: 'Suzano - SP',
+            total_pedidos: 31,
             pedidos_atrasados: 2,
             status_operacao: 'ok'
           },

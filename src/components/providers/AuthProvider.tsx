@@ -153,6 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, senha: string): Promise<boolean> => {
     setLoading(true)
     try {
+      // Usar API original que agora funciona com Service Role correto
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

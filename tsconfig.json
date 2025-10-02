@@ -22,7 +22,7 @@
       "@/*": ["./src/*"],
       "@/components/*": ["./src/components/*"],
       "@/lib/*": ["./src/lib/*"],
-      "@/hooks/*": ["./src/lib/hooks/*"],
+      "@/hooks/*": ["./src/hooks/*"],
       "@/types/*": ["./src/lib/types/*"],
       "@/utils/*": ["./src/lib/utils/*"],
       "@/stores/*": ["./src/lib/stores/*"],
