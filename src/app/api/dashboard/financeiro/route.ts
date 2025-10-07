@@ -33,14 +33,38 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = getServerSupabase()
     const { searchParams } = new URL(request.url)
-    const periodo = searchParams.get('periodo') || '30' // dias
+    
+    // Suporte para datas específicas ou período em dias (retrocompatibilidade)
+    const dataInicio = searchParams.get('data_inicio')
+    const dataFim = searchParams.get('data_fim')
+    const periodo = searchParams.get('periodo') || '30' // dias (fallback)
     const lojaId = searchParams.get('loja_id')
+    const laboratorioId = searchParams.get('laboratorio_id')
+    const classe = searchParams.get('classe')
     
-    console.log('💰 Calculando métricas financeiras...')
+    console.log('💰 Calculando métricas financeiras...', { 
+      dataInicio, 
+      dataFim, 
+      periodo, 
+      lojaId, 
+      laboratorioId, 
+      classe 
+    })
     
-    // Data limite para análise
-    const dataLimite = new Date()
-    dataLimite.setDate(dataLimite.getDate() - parseInt(periodo))
+    // Determinar intervalo de datas
+    let dataLimiteInicio: Date
+    let dataLimiteFim: Date
+    
+    if (dataInicio && dataFim) {
+      // Usar datas específicas dos filtros
+      dataLimiteInicio = new Date(dataInicio)
+      dataLimiteFim = new Date(dataFim)
+    } else {
+      // Fallback para o método antigo (período em dias)
+      dataLimiteFim = new Date()
+      dataLimiteInicio = new Date()
+      dataLimiteInicio.setDate(dataLimiteFim.getDate() - parseInt(periodo))
+    }
     
     // 1. RECEITA E CUSTOS - Incluindo pedidos sem valor (garantias)
     let queryFinanceiro = supabase
@@ -51,15 +75,32 @@ export async function GET(request: NextRequest) {
         eh_garantia, loja_id, laboratorio_id,
         created_at
       `)
-      .gte('created_at', dataLimite.toISOString())
+      .gte('created_at', dataLimiteInicio.toISOString())
+      .lte('created_at', dataLimiteFim.toISOString())
     
+    // Aplicar filtros opcionais
     if (lojaId) {
       queryFinanceiro = queryFinanceiro.eq('loja_id', lojaId)
     }
+    if (laboratorioId) {
+      queryFinanceiro = queryFinanceiro.eq('laboratorio_id', laboratorioId)
+    }
+    // Removido filtro por classe pois a coluna não existe
     
-    const { data: pedidosCompletos } = await queryFinanceiro
+    const { data: pedidosCompletos, error: queryError } = await queryFinanceiro
+    
+    if (queryError) {
+      console.error('❌ Erro na query:', queryError)
+      return NextResponse.json({
+        error: 'Erro ao buscar dados do banco',
+        details: queryError.message
+      }, { status: 500 })
+    }
+    
+    console.log('💰 Dados retornados:', pedidosCompletos?.length || 0, 'pedidos')
     
     if (!pedidosCompletos) {
+      console.log('❌ Nenhum dado encontrado na query')
       return NextResponse.json({
         error: 'Nenhum dado encontrado'
       }, { status: 404 })
@@ -152,7 +193,8 @@ export async function GET(request: NextRequest) {
     
     // 8. MÉTRICAS DE DESEMPENHO
     const ticketMedio = pedidosComValor.length > 0 ? totalReceita / pedidosComValor.length : 0
-    const receitaPorDia = totalReceita / parseInt(periodo)
+    const diasPeriodo = Math.ceil((dataLimiteFim.getTime() - dataLimiteInicio.getTime()) / (1000 * 3600 * 24))
+    const receitaPorDia = totalReceita / Math.max(diasPeriodo, 1)
     
     // 9. ANÁLISE POR LOJA (se não filtrado por loja específica)
     const receitaPorLoja: { [key: string]: any } = {}
@@ -218,7 +260,7 @@ export async function GET(request: NextRequest) {
       
       // Metadados
       periodo_analise: periodo,
-      data_inicio: dataLimite.toISOString().split('T')[0],
+      data_inicio: dataLimiteInicio.toISOString().split('T')[0],
       data_fim: new Date().toISOString().split('T')[0],
       timestamp: new Date().toISOString()
     })

@@ -2,42 +2,46 @@
 
 import { AlertCard } from '@/components/dashboard/AlertCard'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, CheckCircle } from 'lucide-react'
+// Ícones como constantes
+const IconesAlertas = {
+  AlertTriangle: '⚠️',
+  CheckCircle: '✅'
+}
 import { toast } from 'sonner'
 import type { AlertaCritico } from '@/lib/types/dashboard-bi'
 
 export function AlertsSection() {
-  // Hook para buscar alertas críticos
-  const { data: alertas = [], isLoading, error } = useQuery({
+  // Hook para buscar alertas críticos usando a API
+  const { data: responseData, isLoading, error } = useQuery({
     queryKey: ['dashboard', 'alertas_criticos'],
-    queryFn: async (): Promise<AlertaCritico[]> => {
-      const { data, error } = await supabase
-        .from('v_alertas_criticos')
-        .select('*')
-        .order('ordem_prioridade')
-        .limit(20)
-      if (error) throw error
-      return data || []
+    queryFn: async () => {
+      const response = await fetch('/api/dashboard/alertas-criticos')
+      if (!response.ok) {
+        throw new Error('Erro ao carregar alertas')
+      }
+      return response.json()
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000
   })
+
+  // Extrair alertas da resposta da API
+  const alertas: AlertaCritico[] = responseData?.alertas || []
   
   const handleAlertAction = (action: string, alerta: AlertaCritico) => {
     switch (action) {
       case 'phone':
-        toast.info(`Ligando para ${alerta.laboratorio_nome}...`)
+        toast.info(`Ligando para cliente ${alerta.dados?.cliente_nome || 'do alerta'}...`)
         // Aqui você pode implementar integração com sistema de telefonia
         break
       case 'email':
-        toast.info(`Enviando email para ${alerta.laboratorio_nome}...`)
+        toast.info(`Enviando email para cliente ${alerta.dados?.cliente_nome || 'do alerta'}...`)
         // Aqui você pode implementar envio de email
         break
       case 'details':
-        toast.info(`Abrindo detalhes de ${alerta.laboratorio_nome}...`)
+        toast.info(`Abrindo detalhes do ${alerta.titulo}...`)
         // Aqui você pode navegar para página de detalhes
         break
       default:
@@ -76,19 +80,19 @@ export function AlertsSection() {
   }
   
   const alertasPorPrioridade = {
-    'CRÍTICA': alertas.filter((a: AlertaCritico) => a.prioridade === 'CRÍTICA'),
+    'CRITICA': alertas.filter((a: AlertaCritico) => a.prioridade === 'CRITICA'),
     'ALTA': alertas.filter((a: AlertaCritico) => a.prioridade === 'ALTA'),
-    'MÉDIA': alertas.filter((a: AlertaCritico) => a.prioridade === 'MÉDIA')
+    'MEDIA': alertas.filter((a: AlertaCritico) => a.prioridade === 'MEDIA')
   }
   
   const totalAlertas = alertas.length
-  const alertasCriticos = alertasPorPrioridade['CRÍTICA'].length + alertasPorPrioridade['ALTA'].length
+  const alertasCriticos = alertasPorPrioridade['CRITICA'].length + alertasPorPrioridade['ALTA'].length
   
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 text-orange-600" />
+          <span className="text-lg">{IconesAlertas.AlertTriangle}</span>
           Centro de Alertas Críticos
           {totalAlertas > 0 && (
             <Badge variant="destructive">{totalAlertas}</Badge>
@@ -98,7 +102,7 @@ export function AlertsSection() {
       <CardContent>
         {totalAlertas === 0 ? (
           <div className="text-center py-8">
-            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+            <span className="text-5xl mb-4">{IconesAlertas.CheckCircle}</span>
             <p className="text-muted-foreground">Nenhum alerta crítico no momento</p>
             <p className="text-sm text-gray-500">Sistema operando normalmente</p>
           </div>
@@ -108,7 +112,7 @@ export function AlertsSection() {
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="text-center p-3 bg-red-50 rounded-lg">
                 <div className="text-2xl font-bold text-red-600">
-                  {alertasPorPrioridade['CRÍTICA'].length}
+                  {alertasPorPrioridade['CRITICA'].length}
                 </div>
                 <div className="text-sm text-red-600">Críticos</div>
               </div>
@@ -120,7 +124,7 @@ export function AlertsSection() {
               </div>
               <div className="text-center p-3 bg-yellow-50 rounded-lg">
                 <div className="text-2xl font-bold text-yellow-600">
-                  {alertasPorPrioridade['MÉDIA'].length}
+                  {alertasPorPrioridade['MEDIA'].length}
                 </div>
                 <div className="text-sm text-yellow-600">Média</div>
               </div>

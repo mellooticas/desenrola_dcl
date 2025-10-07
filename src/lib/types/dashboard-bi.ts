@@ -69,19 +69,27 @@ export interface RankingLaboratorio {
   tendencia: 'SUBINDO' | 'DESCENDO' | 'ESTÁVEL'
 }
 
-// ✅ CORRIGIDO: Interface baseada na view v_alertas_criticos real
+// ✅ Interface para alertas da API /api/dashboard/alertas-criticos
 export interface AlertaCritico {
-  tipo_alerta: string
-  prioridade: 'CRÍTICA' | 'ALTA' | 'MÉDIA'
-  laboratorio_nome: string
-  problema: string
-  pedidos_afetados: number
-  valor_risco: number
-  indicador_numerico: number
-  acao_sugerida: string
-  prazo_acao: string
-  responsavel: string
-  ordem_prioridade: number  // Campo usado para ordenação
+  id: string
+  tipo: string
+  prioridade: 'CRITICA' | 'ALTA' | 'MEDIA' | 'BAIXA'
+  titulo: string
+  mensagem: string
+  dados: any
+  created_at: string
+  severidade: string
+  descricao: string
+  // Campos opcionais para compatibilidade
+  laboratorio_nome?: string
+  problema?: string
+  pedidos_afetados?: number
+  valor_risco?: number
+  indicador_numerico?: number
+  acao_sugerida?: string
+  prazo_acao?: string
+  responsavel?: string
+  ordem_prioridade?: number
 }
 
 // ✅ CORRIGIDO: Interface baseada na view v_analise_financeira real

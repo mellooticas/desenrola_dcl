@@ -12,6 +12,8 @@ import { FiltrosPeriodo, type DashboardFilters } from '@/components/dashboard/Fi
 import { MetricasGeraisReal } from '@/components/dashboard/MetricasGeraisReal'
 import { GraficoLeadTimeReal } from '@/components/dashboard/GraficoLeadTimeReal'
 import { TrendsChartReal } from '@/components/dashboard/TrendsChartReal'
+import { EvolucaoTemporalMelhorada } from '@/components/dashboard/EvolucaoTemporalMelhorada'
+import { DashboardFinanceiroCompleto } from '@/components/dashboard/DashboardFinanceiroCompleto'
 import { RankingLaboratoriosReal } from '@/components/dashboard/RankingLaboratoriosReal'
 import { FinanceChart } from '@/components/dashboard/FinanceChart'
 import { AlertsSection } from '@/components/dashboard/AlertsSection'
@@ -217,26 +219,8 @@ const DashboardPage = () => {
               {/* Grid de Gráficos Principais */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
-                {/* Gráfico de Tendências */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <span>📈</span> Evolução Temporal
-                    </CardTitle>
-                    <CardDescription>
-                      Tendências de receita e pedidos ao longo do tempo
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {evolucaoTemporal.length > 0 ? (
-                      <TrendsChartReal evolucaoTemporal={evolucaoTemporal} />
-                    ) : (
-                      <div className="h-[300px] flex items-center justify-center text-slate-500">
-                        📊 Carregando dados de evolução...
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                {/* Evolução Temporal Melhorada */}
+                <EvolucaoTemporalMelhorada filters={filters} />
 
                 {/* Lead Time por Laboratório */}
                 <GraficoLeadTimeReal filters={filters} performanceLabs={performanceLabs} />
@@ -409,180 +393,9 @@ const DashboardPage = () => {
 
             </TabsContent>
 
-            {/* ABA FINANCEIRO - Com Gráficos Financeiros */}
+            {/* ABA FINANCEIRO - Dashboard Financeiro Completo */}
             <TabsContent value="financeiro" className="space-y-6">
-              
-              {/* Gráficos Financeiros */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>📊 Análise de Receita</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px] flex items-center justify-center text-slate-500">
-                      🔄 Carregando gráfico de receita...
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>📈 Análise de Margem</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px] flex items-center justify-center text-slate-500">
-                      🔄 Carregando gráfico de margem...
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Métricas Financeiras Detalhadas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                
-                <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-emerald-800 flex items-center gap-2">
-                      💰 Receita Total
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-emerald-900">
-                      {formatCurrency(metricas?.receita_total || 0)}
-                    </div>
-                    <p className="text-sm text-emerald-700 mt-1">
-                      {Math.ceil((new Date(filters.dataFim).getTime() - new Date(filters.dataInicio).getTime()) / (1000 * 3600 * 24))} dias
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
-                      📊 Margem Bruta
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-blue-900">
-                      {formatCurrency(metricas?.margem_bruta || 0)}
-                    </div>
-                    <p className="text-sm text-blue-700 mt-1">
-                      {metricas?.percentual_margem?.toFixed(1) || 0}% de margem
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-purple-800 flex items-center gap-2">
-                      🎯 Ticket Médio
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-purple-900">
-                      {formatCurrency(metricas?.ticket_medio || 0)}
-                    </div>
-                    <p className="text-sm text-purple-700 mt-1">
-                      Por pedido
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-orange-800 flex items-center gap-2">
-                      📈 Total Pedidos
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-orange-900">
-                      {metricas?.quantidade_total || metricas?.quantidade_pedidos || 0}
-                    </div>
-                    <p className="text-sm text-orange-700 mt-1">
-                      {metricas?.quantidade_sem_valor ? (
-                        <>
-                          {metricas.quantidade_pedidos} com valor, {metricas.quantidade_sem_valor} garantias
-                        </>
-                      ) : (
-                        'No período'
-                      )}
-                    </p>
-                  </CardContent>
-                </Card>
-
-              </div>
-
-              {/* Análise Financeira Detalhada */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span>💹</span> Análise Financeira Detalhada
-                  </CardTitle>
-                  <CardDescription>
-                    Breakdown completo das métricas financeiras do período
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {metricas && (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                          <h4 className="font-semibold text-lg text-slate-800 border-b pb-2">💰 Receitas</h4>
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-center py-2 px-4 bg-emerald-50 rounded-lg">
-                              <span className="text-slate-700">Receita Total</span>
-                              <span className="font-semibold text-emerald-600">{formatCurrency(metricas.receita_total)}</span>
-                            </div>
-                            <div className="flex justify-between items-center py-2 px-4 bg-slate-50 rounded-lg">
-                              <span className="text-slate-700">Pedidos com Valor</span>
-                              <span className="font-semibold">{metricas.quantidade_pedidos}</span>
-                            </div>
-                            {metricas.quantidade_sem_valor && metricas.quantidade_sem_valor > 0 && (
-                              <div className="flex justify-between items-center py-2 px-4 bg-yellow-50 rounded-lg">
-                                <span className="text-slate-700">Garantias/Sem Valor</span>
-                                <span className="font-semibold text-yellow-600">{metricas.quantidade_sem_valor}</span>
-                              </div>
-                            )}
-                            <div className="flex justify-between items-center py-2 px-4 bg-blue-50 rounded-lg">
-                              <span className="text-slate-700">Total Geral</span>
-                              <span className="font-semibold text-blue-600">{metricas.quantidade_total || metricas.quantidade_pedidos}</span>
-                            </div>
-                            <div className="flex justify-between items-center py-2 px-4 bg-purple-50 rounded-lg">
-                              <span className="text-slate-700">Ticket Médio</span>
-                              <span className="font-semibold text-purple-600">{formatCurrency(metricas.ticket_medio)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <h4 className="font-semibold text-lg text-slate-800 border-b pb-2">📊 Custos e Margens</h4>
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-center py-2 px-4 bg-red-50 rounded-lg">
-                              <span className="text-slate-700">Custo Total</span>
-                              <span className="font-semibold text-red-600">{formatCurrency(metricas.custo_total)}</span>
-                            </div>
-                            <div className="flex justify-between items-center py-2 px-4 bg-emerald-50 rounded-lg">
-                              <span className="text-slate-700">Margem Bruta</span>
-                              <span className="font-semibold text-emerald-600">{formatCurrency(metricas.margem_bruta)}</span>
-                            </div>
-                            <div className="flex justify-between items-center py-2 px-4 bg-blue-50 rounded-lg">
-                              <span className="text-slate-700">% Margem</span>
-                              <span className="font-semibold text-blue-600">{metricas.percentual_margem.toFixed(1)}%</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {!metricas && (
-                      <div className="text-center py-8">
-                        <div className="text-4xl mb-4">📊</div>
-                        <p className="text-slate-500">Carregando análise financeira...</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
+              <DashboardFinanceiroCompleto filters={filters} />
             </TabsContent>
 
           </Tabs>
