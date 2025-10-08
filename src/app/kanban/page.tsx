@@ -627,6 +627,14 @@ export default function KanbanBoard() {
     if (!supabase) return
     
     const nextStatus = permissions.getNextStatus(pedido.status)
+    console.log('🔍 handleAdvanceStatus - Debug:', {
+      pedidoId: pedido.id,
+      statusAtual: pedido.status,
+      proximoStatus: nextStatus,
+      allowedMoves: permissions.getAllowedMoves(pedido.status),
+      userRole: userRole
+    })
+    
     if (!nextStatus) {
       alert('Este pedido já está no status final ou você não tem permissão para avançá-lo.')
       return
@@ -646,7 +654,10 @@ export default function KanbanBoard() {
             usuario: userProfile?.nome || user?.email || 'Sistema'
           })
 
-        if (error) throw error
+        if (error) {
+          console.error('❌ Erro ao marcar pagamento:', error)
+          throw error
+        }
       } else {
         const { error } = await supabase
           .rpc('alterar_status_pedido', {
@@ -656,12 +667,16 @@ export default function KanbanBoard() {
             usuario: userProfile?.nome || user?.email || 'Sistema'
           })
 
-        if (error) throw error
+        if (error) {
+          console.error('❌ Erro ao alterar status:', error)
+          throw error
+        }
       }
 
+      console.log('✅ Status avançado com sucesso!')
       await loadPedidos()
     } catch (error) {
-      console.error('Erro ao avançar status:', error)
+      console.error('❌ Erro ao avançar status:', error)
       alert(`Erro ao avançar status: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
