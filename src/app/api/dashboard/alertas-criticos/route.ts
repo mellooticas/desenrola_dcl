@@ -27,11 +27,10 @@ export async function GET(request: NextRequest) {
       dataFim 
     })
     
-    // Definir período de análise (se não especificado, últimos 30 dias)
-    const dataFimAnalise = dataFim || new Date().toISOString().split('T')[0]
-    const dataInicioAnalise = dataInicio || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    // IMPORTANTE: Alertas devem aparecer SEMPRE, independente do filtro de data!
+    // Filtro de data é usado apenas para loja/laboratório, não para alertas críticos
     
-    // 1. PEDIDOS ATRASADOS (considerando período)
+    // 1. PEDIDOS ATRASADOS (TODOS os atrasados, não filtrados por data de criação)
     let queryAtrasados = supabase
       .from('pedidos')
       .select(`
@@ -43,8 +42,6 @@ export async function GET(request: NextRequest) {
       `)
       .not('data_prevista_pronto', 'is', null)
       .not('status', 'in', '("ENTREGUE", "CANCELADO")')
-      .gte('data_pedido', dataInicioAnalise)
-      .lte('data_pedido', dataFimAnalise)
       .lt('data_prevista_pronto', new Date().toISOString().split('T')[0])
       .order('data_prevista_pronto', { ascending: true })
       .limit(10)
@@ -59,7 +56,7 @@ export async function GET(request: NextRequest) {
     
     const { data: pedidosAtrasados } = await queryAtrasados
     
-    // 2. PEDIDOS PRÓXIMOS AO VENCIMENTO (próximos 2 dias dentro do período)
+    // 2. PEDIDOS PRÓXIMOS AO VENCIMENTO (próximos 2 dias - TODOS, não filtrados por data de criação)
     const dataLimite = new Date()
     dataLimite.setDate(dataLimite.getDate() + 2)
     
@@ -74,8 +71,6 @@ export async function GET(request: NextRequest) {
       `)
       .not('data_prevista_pronto', 'is', null)
       .not('status', 'in', '("ENTREGUE", "CANCELADO")')
-      .gte('data_pedido', dataInicioAnalise)
-      .lte('data_pedido', dataFimAnalise)
       .gte('data_prevista_pronto', new Date().toISOString().split('T')[0])
       .lte('data_prevista_pronto', dataLimite.toISOString().split('T')[0])
       .order('data_prevista_pronto', { ascending: true })
@@ -91,7 +86,7 @@ export async function GET(request: NextRequest) {
     
     const { data: pedidosVencimento } = await queryVencimento
     
-    // 3. PAGAMENTOS PENDENTES (mais de 3 dias dentro do período)
+    // 3. PAGAMENTOS PENDENTES (mais de 3 dias - TODOS, não filtrados por data de criação)
     const dataLimitePagamento = new Date()
     dataLimitePagamento.setDate(dataLimitePagamento.getDate() - 3)
     
@@ -105,8 +100,6 @@ export async function GET(request: NextRequest) {
         laboratorios:laboratorio_id (id, nome, telefone)
       `)
       .eq('status', 'AG_PAGAMENTO')
-      .gte('data_pedido', dataInicioAnalise)
-      .lte('data_pedido', dataFimAnalise)
       .lt('data_pedido', dataLimitePagamento.toISOString().split('T')[0])
       .order('data_pedido', { ascending: true })
       .limit(5)
