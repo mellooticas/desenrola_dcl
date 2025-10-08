@@ -39,6 +39,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# ========== SCRIPTS DE DESENVOLVIMENTO ==========
+# Scripts de teste, diagnóstico e debug (não vão para produção)
+scripts/dev/
+
 # ========== ESPECÍFICO PARA ONEDRIVE ==========
 # Evita conflitos de sincronização
 .next/

@@ -125,40 +125,81 @@ Acesse: `http://localhost:3000`
 
 ```
 desenrola_dcl/
-├── app/                        # Pages (Next.js 14)
-│   ├── api/                    # Endpoints API
-│   ├── dashboard/              # BI e analytics
-│   ├── kanban/                 # Board visual
-│   ├── pedidos/                # CRUD pedidos
-│   ├── configuracoes/          # Settings
-│   ├── layout.tsx              # Layout principal
-│   ├── page.tsx                # Redirect para kanban
-│   └── login/page.tsx          # Login
-├── components/
-│   ├── ui/                     # Componentes base
-│   ├── kanban/                 # Componentes do Kanban
-│   ├── forms/                  # Formulários
-│   ├── layout/                 # Header, Sidebar, etc.
-│   ├── common/                 # Componentes comuns
-│   └── providers/              # Context providers
-├── lib/
-│   ├── supabase/               # Cliente Supabase
-│   ├── hooks/                  # Custom hooks
-│   ├── types/                  # Tipos TypeScript
-│   └── utils/                  # Utilitários
-├── config/                     # Arquivos de configuração
-│   ├── eslint.config.mjs       # Config ESLint
-│   ├── postcss.config.js       # Config PostCSS
-│   ├── tailwind.config.ts      # Config Tailwind
-│   └── next.config.js          # Config Next.js
-├── scripts/                    # Scripts utilitários
-│   ├── *.py                    # Scripts Python
-│   ├── *.bat                   # Scripts batch
-│   └── *.sql                   # Scripts SQL
-├── docs/                       # Documentação
+├── src/                        # Código fonte
+│   ├── app/                    # Pages (Next.js 14)
+│   │   ├── api/                # Endpoints API
+│   │   ├── dashboard/          # BI e analytics
+│   │   ├── kanban/             # Board visual
+│   │   ├── pedidos/            # CRUD pedidos
+│   │   ├── mission-control/    # Tarefas diárias
+│   │   ├── configuracoes/      # Settings
+│   │   ├── layout.tsx          # Layout principal
+│   │   ├── page.tsx            # Redirect para kanban
+│   │   └── login/page.tsx      # Login profissional
+│   ├── components/
+│   │   ├── ui/                 # Componentes base (shadcn/ui)
+│   │   ├── kanban/             # Componentes do Kanban
+│   │   ├── forms/              # Formulários
+│   │   ├── layout/             # Header, Sidebar, etc.
+│   │   ├── permissions/        # Sistema de permissões
+│   │   └── providers/          # Context providers
+│   ├── lib/
+│   │   ├── supabase/           # Cliente Supabase
+│   │   ├── hooks/              # Custom hooks
+│   │   ├── types/              # Tipos TypeScript
+│   │   └── utils/              # Utilitários + permissões
+│   └── styles/                 # Estilos globais
+│
+├── scripts/                    # 📜 Scripts organizados
+│   ├── dev/                    # 🔧 Scripts de desenvolvimento (não vão para git)
+│   │   ├── tests/              # Testes (15 arquivos)
+│   │   ├── diagnostics/        # Diagnósticos (12 arquivos)
+│   │   ├── investigations/     # Investigações (8 arquivos)
+│   │   └── debug/              # Debug temporário
+│   ├── setup/                  # ⚙️ Scripts de setup (7 arquivos)
+│   ├── generators/             # 🏗️ Geradores de dados (5 arquivos)
+│   ├── operations/             # 🔄 Operações de sistema
+│   └── README.md               # Guia completo de scripts
+│
+├── database/                   # 💾 Arquivos SQL organizados
+│   ├── setup/                  # Setup inicial (4 arquivos)
+│   ├── migrations/             # Migrações (5 arquivos)
+│   ├── scripts/                # Scripts utilitários (4 arquivos)
+│   └── README.md               # Guia de SQL
+│
+├── docs/                       # 📚 Documentação completa
+│   ├── features/               # Docs de funcionalidades (3 docs)
+│   ├── fixes/                  # Docs de correções (3 docs)
+│   ├── instructions/           # Guias passo-a-passo (2 docs)
+│   ├── api/                    # Documentação de APIs
+│   ├── components/             # Docs de componentes
+│   ├── database/               # Docs de banco
+│   ├── deployment/             # Docs de deploy
+│   ├── development/            # Docs de desenvolvimento
+│   ├── mission-control/        # Docs do Mission Control
+│   └── README_STRUCTURE.md     # Guia da documentação
+│
+├── public/                     # Assets estáticos
+├── supabase/                   # Migrações do Supabase
 ├── .env.example                # Template de variáveis
+├── next.config.js              # Config Next.js
+├── tailwind.config.ts          # Config Tailwind
 └── package.json                # Dependências
 ```
+
+### 📊 Organização Recente (Janeiro 2025)
+
+O projeto foi completamente reorganizado para melhor manutenibilidade:
+- ✅ **68 arquivos** movidos da raiz para pastas apropriadas
+- ✅ **Scripts** organizados por categoria (teste, diagnóstico, setup)
+- ✅ **SQL** separado por finalidade (setup, migrations, scripts)
+- ✅ **Documentação** categorizada (features, fixes, instruções)
+- ✅ **READMEs** criados para cada seção principal
+
+Veja os guias completos:
+- [`scripts/README.md`](./scripts/README.md) - Guia de scripts
+- [`database/README.md`](./database/README.md) - Guia de SQL
+- [`docs/README_STRUCTURE.md`](./docs/README_STRUCTURE.md) - Guia de documentação
 
 ## 🎯 Funcionalidades Implementadas
 
