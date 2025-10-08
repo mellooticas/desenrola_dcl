@@ -11,13 +11,33 @@ const IconesAlertas = {
 }
 import { toast } from 'sonner'
 import type { AlertaCritico } from '@/lib/types/dashboard-bi'
+import type { DashboardFilters } from '@/components/dashboard/FiltrosPeriodo'
 
-export function AlertsSection() {
-  // Hook para buscar alertas críticos usando a API
+interface AlertsSectionProps {
+  filters?: DashboardFilters
+}
+
+export function AlertsSection({ filters }: AlertsSectionProps) {
+  // Construir query params com os filtros
+  const buildQueryParams = () => {
+    const params = new URLSearchParams()
+    
+    if (filters?.dataInicio) params.append('data_inicio', filters.dataInicio)
+    if (filters?.dataFim) params.append('data_fim', filters.dataFim)
+    if (filters?.loja) params.append('loja_id', filters.loja)
+    if (filters?.laboratorio) params.append('laboratorio_id', filters.laboratorio)
+    
+    return params.toString()
+  }
+
+  // Hook para buscar alertas críticos usando a API com filtros
   const { data: responseData, isLoading, error } = useQuery({
-    queryKey: ['dashboard', 'alertas_criticos'],
+    queryKey: ['dashboard', 'alertas_criticos', filters],
     queryFn: async () => {
-      const response = await fetch('/api/dashboard/alertas-criticos')
+      const queryParams = buildQueryParams()
+      const url = `/api/dashboard/alertas-criticos${queryParams ? `?${queryParams}` : ''}`
+      
+      const response = await fetch(url)
       if (!response.ok) {
         throw new Error('Erro ao carregar alertas')
       }

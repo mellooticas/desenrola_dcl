@@ -277,7 +277,7 @@ const DashboardPage = () => {
 
             {/* ABA ALERTAS - Seção Profissional */}
             <TabsContent value="alertas" className="space-y-6">
-              <AlertsSection />
+              <AlertsSection filters={filters} />
             </TabsContent>
 
             {/* ABA OPERACIONAL - Com Gráficos e Rankings */}
