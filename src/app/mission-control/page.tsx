@@ -129,8 +129,9 @@ export default function MissionControlKanban() {
 
     try {
       setLoading(true)
-      console.log('🎯 Carregando missões para loja:', selectedLoja)
-      const response = await fetch(`/api/mission-control?action=missions&data=2025-10-01&loja_id=${selectedLoja}`)
+      const hoje = new Date().toISOString().split('T')[0]
+      console.log('🎯 Carregando missões para loja:', selectedLoja, 'data:', hoje)
+      const response = await fetch(`/api/mission-control?action=missions&data=${hoje}&loja_id=${selectedLoja}`)
       
       if (response.ok) {
         const data = await response.json()
