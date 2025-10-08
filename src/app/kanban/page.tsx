@@ -19,6 +19,8 @@ import { STATUS_COLORS, STATUS_LABELS } from '@/lib/utils/constants'
 import NovaOrdemForm from '@/components/forms/NovaOrdemForm'
 import { KanbanCard } from '@/components/kanban/KanbanCard'
 import { PedidoDetailDrawer } from '@/components/kanban/PedidoDetailDrawer'
+import { usePermissions } from '@/lib/hooks/use-user-permissions'
+import { DemoModeAlert } from '@/components/permissions/DemoModeAlert'
 
 // ========== TYPES E INTERFACES ==========
 type KanbanColumn = {
@@ -302,6 +304,9 @@ export default function KanbanBoard() {
   const router = useRouter()
   // CORREÇÃO: Usar cliente Supabase centralizado do AuthProvider
   const { user, userProfile, loading: authLoading, supabase } = useAuth()
+  
+  // ========== PERMISSÕES DEMO ==========
+  const demoPermissions = usePermissions()
 
   // ========== ESTADO ==========
   const [columns, setColumns] = useState<KanbanColumn[]>([])
@@ -539,6 +544,12 @@ export default function KanbanBoard() {
 
   // ========== FUNÇÕES DE AÇÃO ==========
   const handleDragEnd = async (result: DropResult) => {
+    // 🔒 PROTEÇÃO DEMO: Bloquear drag & drop
+    if (demoPermissions.isDemo) {
+      alert('👁️ Modo Visualização: Você não pode mover cards no Kanban.');
+      return;
+    }
+    
     if (!supabase) return
     
     const { destination, source, draggableId } = result
@@ -792,6 +803,9 @@ export default function KanbanBoard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <main className="container mx-auto py-6 px-4">
         <div className="space-y-6">
+          {/* 🔒 ALERTA MODO DEMO */}
+          <DemoModeAlert message="Você pode visualizar o Kanban, mas não pode mover cards ou criar pedidos." />
+          
           {/* Error Alert */}
           {error && (
             <Alert variant="destructive" className="bg-red-50/80 backdrop-blur-sm border-red-200">
@@ -851,7 +865,8 @@ export default function KanbanBoard() {
                   Atualizar
                 </Button>
 
-                {permissions.canCreateOrder() && (
+                {/* 🔒 PROTEÇÃO: Ocultar botão de criar para demo */}
+                {permissions.canCreateOrder() && !demoPermissions.isDemo && (
                   <NovaOrdemForm onSuccess={loadPedidos} />
                 )}
 

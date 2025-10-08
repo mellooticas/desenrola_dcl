@@ -10,13 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Save, Clock } from 'lucide-react'
+import { ArrowLeft, Save, Clock, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Loja, Laboratorio, ClasseLente, Tratamento, PrioridadeLevel } from '@/lib/types/database'
+import { usePermissions } from '@/lib/hooks/use-user-permissions'
+import { DemoModeAlert } from '@/components/permissions/DemoModeAlert'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 
 export default function NovaOrdemPage() {
   const router = useRouter()
+  const permissions = usePermissions()
   const [loading, setLoading] = useState(false)
   const [carregandoDados, setCarregandoDados] = useState(true)
   
@@ -227,6 +231,48 @@ export default function NovaOrdemPage() {
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-lg">Carregando formulário...</div>
+        </div>
+      </div>
+    )
+  }
+
+  // 🔒 PROTEÇÃO DEMO: Bloquear criação de pedidos
+  if (permissions.isDemo || !permissions.canCreate) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl rounded-lg p-6">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" onClick={() => router.back()}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-slate-800">Nova Ordem</h1>
+                <p className="text-slate-600">Criar novo pedido</p>
+              </div>
+            </div>
+          </div>
+
+          <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
+            <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+            <AlertTitle className="text-yellow-800 dark:text-yellow-200">Acesso Restrito</AlertTitle>
+            <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+              {permissions.isDemo 
+                ? 'Usuários em modo visualização não podem criar novos pedidos. Esta função está disponível apenas para usuários com permissões de criação.'
+                : 'Você não tem permissão para criar novos pedidos. Entre em contato com o administrador se precisar deste acesso.'
+              }
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex gap-4">
+            <Button onClick={() => router.push('/kanban')}>
+              Ir para Kanban
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/pedidos')}>
+              Ver Pedidos
+            </Button>
+          </div>
         </div>
       </div>
     )
