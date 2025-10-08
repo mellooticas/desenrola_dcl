@@ -179,6 +179,17 @@ export function AlertCard({ alerta, onAction, showActions = true, compact = fals
                     {IconesAlertCard.Money} {formatCurrency(alerta.dados.valor_pedido)}
                   </div>
                 )}
+                {/* OSs - NOVO */}
+                {alerta.dados.numero_os_fisica && (
+                  <div className="text-xs text-purple-600 font-medium" title="OS Loja">
+                    📋 {alerta.dados.numero_os_fisica}
+                  </div>
+                )}
+                {alerta.dados.numero_pedido_laboratorio && (
+                  <div className="text-xs text-indigo-600 font-medium" title="OS Laboratório">
+                    🔬 {alerta.dados.numero_pedido_laboratorio}
+                  </div>
+                )}
               </div>
               
               {alerta.dados.lojas && (

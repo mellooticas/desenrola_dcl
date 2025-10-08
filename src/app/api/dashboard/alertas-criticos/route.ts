@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         id, numero_sequencial, cliente_nome, cliente_telefone,
         data_prevista_pronto, status, valor_pedido,
         loja_id, laboratorio_id, data_pedido,
+        numero_os_fisica, numero_pedido_laboratorio,
         lojas:loja_id (id, nome, telefone),
         laboratorios:laboratorio_id (id, nome, contato)
       `)
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
         id, numero_sequencial, cliente_nome, cliente_telefone,
         data_prevista_pronto, status, data_pedido, valor_pedido,
         loja_id, laboratorio_id,
+        numero_os_fisica, numero_pedido_laboratorio,
         lojas:loja_id (id, nome, telefone),
         laboratorios:laboratorio_id (id, nome, contato)
       `)
@@ -96,6 +98,7 @@ export async function GET(request: NextRequest) {
         id, numero_sequencial, cliente_nome, cliente_telefone,
         valor_pedido, data_pedido, status,
         loja_id, laboratorio_id,
+        numero_os_fisica, numero_pedido_laboratorio,
         lojas:loja_id (id, nome, telefone),
         laboratorios:laboratorio_id (id, nome, contato)
       `)
