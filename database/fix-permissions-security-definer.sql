@@ -6,6 +6,11 @@
 -- 1. Alterar função alterar_status_pedido para usar SECURITY DEFINER
 ALTER FUNCTION alterar_status_pedido(uuid, text, text, text) SECURITY DEFINER;
 
+ERROR:  42883: function alterar_status_pedido(uuid, text, text, text) does not exist
+
+
+
+
 -- 2. Alterar função marcar_pagamento para usar SECURITY DEFINER (se existir)
 ALTER FUNCTION marcar_pagamento(uuid, date, text, text) SECURITY DEFINER;
 
