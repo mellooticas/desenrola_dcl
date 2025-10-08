@@ -17,6 +17,7 @@ import { DashboardFinanceiroCompleto } from '@/components/dashboard/DashboardFin
 import { RankingLaboratoriosReal } from '@/components/dashboard/RankingLaboratoriosReal'
 import { FinanceChart } from '@/components/dashboard/FinanceChart'
 import { AlertsSection } from '@/components/dashboard/AlertsSection'
+import GamificationDashboardPremium from '@/components/gamification/GamificationDashboardPremium'
 
 // Hook para KPIs (mantendo o existente por compatibilidade)
 import { useDashboardKPIs } from '@/lib/hooks/useDashboardBI'
@@ -74,6 +75,7 @@ const DashboardPage = () => {
   const [metricas, setMetricas] = useState<MetricasFinanceiras | null>(null)
   const [evolucaoTemporal, setEvolucaoTemporal] = useState([])
   const [loadingData, setLoadingData] = useState(true)
+  const [lojas, setLojas] = useState<Array<{ id: string; nome: string }>>([])
   
   // Hook legado (mantido para compatibilidade)
   const { data: kpis, isLoading: kpisLoading, error: kpisError } = useDashboardKPIs()
@@ -128,7 +130,21 @@ const DashboardPage = () => {
   // Carregar dados na inicialização e quando mudar filtros
   useEffect(() => {
     carregarDadosComandoCenter()
+    carregarLojas()
   }, [filters])
+
+  // Carregar lista de lojas
+  const carregarLojas = async () => {
+    try {
+      const response = await fetch('/api/lojas')
+      if (response.ok) {
+        const data = await response.json()
+        setLojas(data.lojas || [])
+      }
+    } catch (error) {
+      console.error('Erro ao carregar lojas:', error)
+    }
+  }
 
   // Auto-refresh a cada 60 segundos (reduzido para não sobrecarregar)
   useEffect(() => {
@@ -203,9 +219,10 @@ const DashboardPage = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="comando">🎛️ Comando</TabsTrigger>
               <TabsTrigger value="alertas">🚨 Alertas {alertas.length > 0 && `(${alertas.length})`}</TabsTrigger>
+              <TabsTrigger value="gamificacao">🎮 Gamificação</TabsTrigger>
               <TabsTrigger value="operacional">📊 Operacional</TabsTrigger>
               <TabsTrigger value="financeiro">💰 Financeiro</TabsTrigger>
             </TabsList>
@@ -273,6 +290,55 @@ const DashboardPage = () => {
                 </Card>
               </div>
 
+            </TabsContent>
+
+            {/* ABA GAMIFICAÇÃO - Sistema de Missões e Pontos */}
+            <TabsContent value="gamificacao" className="space-y-6">
+              <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-purple-200/50">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                    <span className="text-3xl">🎮</span>
+                    Sistema de Gamificação
+                  </h2>
+                  <p className="text-gray-600 mt-2">
+                    Acompanhe missões diárias, pontuação e ranking das lojas
+                  </p>
+                </div>
+
+                {/* Seletor de Loja */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Selecione a Loja
+                  </label>
+                  <select
+                    value={filters.loja || ''}
+                    onChange={(e) => setFilters({ ...filters, loja: e.target.value })}
+                    className="w-full md:w-96 px-4 py-3 bg-white border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Selecione uma loja...</option>
+                    {lojas.map((loja) => (
+                      <option key={loja.id} value={loja.id}>
+                        {loja.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Dashboard de Gamificação */}
+                {filters.loja ? (
+                  <GamificationDashboardPremium lojaId={filters.loja} />
+                ) : (
+                  <div className="bg-white rounded-xl p-12 text-center border-2 border-dashed border-purple-300">
+                    <div className="text-6xl mb-4">🎯</div>
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                      Selecione uma Loja
+                    </h3>
+                    <p className="text-gray-500">
+                      Escolha uma loja para ver as missões diárias, pontuação e ranking
+                    </p>
+                  </div>
+                )}
+              </div>
             </TabsContent>
 
             {/* ABA ALERTAS - Seção Profissional */}
