@@ -306,13 +306,10 @@ export default function PedidoTimelinePage() {
 
       setPedido(pedidoData)
 
-      // Carregar timeline do pedido
+      // Carregar timeline do pedido usando a view otimizada
       const { data: timelineData, error: timelineError } = await supabase
-        .from('pedidos_timeline')
-        .select(`
-          *,
-          responsavel:responsavel_id (nome)
-        `)
+        .from('v_pedido_timeline_completo')
+        .select('*')
         .eq('pedido_id', pedidoId)
         .order('created_at', { ascending: true })
 
@@ -320,9 +317,10 @@ export default function PedidoTimelinePage() {
         console.error('Erro ao carregar timeline:', timelineError)
         setTimeline([])
       } else {
+        // Os dados já vêm com responsavel_nome
         const timelineFormatted = timelineData.map((entry: TimelineEntry) => ({
           ...entry,
-          responsavel_nome: entry.responsavel?.nome || 'Sistema'
+          responsavel_nome: entry.responsavel_nome || 'Sistema'
         }))
         setTimeline(timelineFormatted)
       }
