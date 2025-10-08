@@ -6,11 +6,11 @@ import type { NextRequest } from 'next/server'
 
 // Mapeamento de rotas e roles permitidos
 const ROUTE_PERMISSIONS = {
-  '/dashboard': ['gestor', 'financeiro'],
-  '/kanban': ['gestor', 'dcl', 'financeiro', 'loja'],
-  '/pedidos': ['gestor', 'dcl', 'financeiro', 'loja'], 
-  '/mission-control': ['gestor', 'loja'], // Página de missões - acesso para gestores e lojas
-  '/configuracoes': ['gestor']
+  '/dashboard': ['gestor', 'financeiro', 'demo_viewer'],
+  '/kanban': ['gestor', 'dcl', 'financeiro', 'loja', 'demo_viewer'],
+  '/pedidos': ['gestor', 'dcl', 'financeiro', 'loja', 'demo_viewer'], 
+  '/mission-control': ['gestor', 'loja', 'demo_viewer'], // Página de missões - acesso para gestores e lojas
+  '/configuracoes': ['gestor'] // Demo NÃO pode acessar configurações
 }
 
 // Rotas que requerem autenticação
@@ -103,6 +103,8 @@ function getDefaultPageForRole(role: string): string {
       return '/kanban'
     case 'loja':
       return '/mission-control' // Página padrão para lojas agora é mission-control
+    case 'demo_viewer':
+      return '/kanban' // Demo vai para kanban (somente visualização)
     default:
       return '/kanban'
   }
