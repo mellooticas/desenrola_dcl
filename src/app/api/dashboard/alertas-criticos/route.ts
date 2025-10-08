@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         data_prevista_pronto, status, valor_pedido,
         loja_id, laboratorio_id, data_pedido,
         lojas:loja_id (id, nome, telefone),
-        laboratorios:laboratorio_id (id, nome, telefone)
+        laboratorios:laboratorio_id (id, nome, contato)
       `)
       .not('data_prevista_pronto', 'is', null)
       .not('status', 'in', '("ENTREGUE", "CANCELADO")')
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         data_prevista_pronto, status, data_pedido, valor_pedido,
         loja_id, laboratorio_id,
         lojas:loja_id (id, nome, telefone),
-        laboratorios:laboratorio_id (id, nome, telefone)
+        laboratorios:laboratorio_id (id, nome, contato)
       `)
       .not('data_prevista_pronto', 'is', null)
       .not('status', 'in', '("ENTREGUE", "CANCELADO")')
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
         valor_pedido, data_pedido, status,
         loja_id, laboratorio_id,
         lojas:loja_id (id, nome, telefone),
-        laboratorios:laboratorio_id (id, nome, telefone)
+        laboratorios:laboratorio_id (id, nome, contato)
       `)
       .eq('status', 'AG_PAGAMENTO')
       .lt('data_pedido', dataLimitePagamento.toISOString().split('T')[0])
