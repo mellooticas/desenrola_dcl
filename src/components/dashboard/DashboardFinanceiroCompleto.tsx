@@ -305,17 +305,24 @@ export function DashboardFinanceiroCompleto({ filters }: DashboardFinanceiroComp
         </div>
         
         <div className="flex gap-2">
-          {(['receita', 'margem', 'formas_pagamento', 'status'] as TipoVisualizacao[]).map((tipo) => (
-            <Button
-              key={tipo}
-              variant={tipoVisualizacao === tipo ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTipoVisualizacao(tipo)}
-              className="capitalize"
-            >
-              {tipo.replace('_', ' ')}
-            </Button>
-          ))}
+          {(['receita', 'margem', 'formas_pagamento', 'status'] as TipoVisualizacao[]).map((tipo) => {
+            const labels = {
+              'receita': '💰 Receita (R$)',
+              'margem': '📈 Margem Real',
+              'formas_pagamento': '💳 Pagamentos',
+              'status': '📊 Quantidade'
+            }
+            return (
+              <Button
+                key={tipo}
+                variant={tipoVisualizacao === tipo ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTipoVisualizacao(tipo)}
+              >
+                {labels[tipo]}
+              </Button>
+            )
+          })}
         </div>
       </div>
 
@@ -496,13 +503,13 @@ export function DashboardFinanceiroCompleto({ filters }: DashboardFinanceiroComp
               {tipoVisualizacao === 'receita' && 'Receita por Status'}
               {tipoVisualizacao === 'margem' && 'Evolução da Margem'}
               {tipoVisualizacao === 'formas_pagamento' && 'Formas de Pagamento'}
-              {tipoVisualizacao === 'status' && 'Distribuição por Status'}
+              {tipoVisualizacao === 'status' && 'Quantidade de Pedidos por Status'}
             </CardTitle>
             <CardDescription>
-              {tipoVisualizacao === 'receita' && 'Receita e quantidade de pedidos por status'}
-              {tipoVisualizacao === 'margem' && 'Percentual de margem ao longo do período'}
+              {tipoVisualizacao === 'receita' && 'Valor total em R$ e quantidade de pedidos por status'}
+              {tipoVisualizacao === 'margem' && 'Margem real (Receita - Custo) e percentual ao longo do período'}
               {tipoVisualizacao === 'formas_pagamento' && 'Distribuição dos pagamentos por método'}
-              {tipoVisualizacao === 'status' && 'Valores totais por status dos pedidos'}
+              {tipoVisualizacao === 'status' && 'Volume de pedidos em cada etapa do processo'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -531,9 +538,18 @@ export function DashboardFinanceiroCompleto({ filters }: DashboardFinanceiroComp
                 <BarChart data={dadosGraficoStatus}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="status" angle={-45} textAnchor="end" height={80} fontSize={12} />
-                  <YAxis tickFormatter={(value) => formatCurrency(value)} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                  <Bar dataKey="valor" fill="#3b82f6" radius={[2, 2, 0, 0]} />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value, name) => {
+                      if (name === 'quantidade') return [`${value} pedidos`, 'Quantidade']
+                      return [value, name]
+                    }}
+                  />
+                  <Bar dataKey="quantidade" fill="#3b82f6" radius={[8, 8, 0, 0]} name="Quantidade de Pedidos">
+                    {dadosGraficoStatus.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={CORES_STATUS[index % CORES_STATUS.length]} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -559,20 +575,48 @@ export function DashboardFinanceiroCompleto({ filters }: DashboardFinanceiroComp
 
             {tipoVisualizacao === 'margem' && (
               <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={dadosParaGrafico}>
+                <ComposedChart data={dadosParaGrafico}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="periodoFormatado" fontSize={12} />
-                  <YAxis tickFormatter={(value) => `${value.toFixed(0)}%`} />
-                  <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
+                  <YAxis 
+                    yAxisId="margem" 
+                    orientation="left" 
+                    tickFormatter={(value) => formatCurrency(value)}
+                    label={{ value: 'Margem (R$)', angle: -90, position: 'insideLeft' }}
+                  />
+                  <YAxis 
+                    yAxisId="percent" 
+                    orientation="right" 
+                    tickFormatter={(value) => `${value.toFixed(0)}%`}
+                    label={{ value: 'Margem (%)', angle: 90, position: 'insideRight' }}
+                  />
+                  <Tooltip 
+                    formatter={(value, name) => {
+                      if (name === 'Margem R$') return [formatCurrency(Number(value)), 'Margem']
+                      if (name === 'Margem %') return [`${Number(value).toFixed(1)}%`, 'Margem %']
+                      return [value, name]
+                    }}
+                  />
+                  <Legend />
                   <Area 
+                    yAxisId="margem"
+                    type="monotone" 
+                    dataKey="margem" 
+                    stroke="#10b981" 
+                    fill="#10b981" 
+                    fillOpacity={0.3}
+                    name="Margem R$"
+                  />
+                  <Line 
+                    yAxisId="percent"
                     type="monotone" 
                     dataKey="margemPercent" 
                     stroke="#f59e0b" 
-                    fill="#f59e0b" 
-                    fillOpacity={0.6}
+                    strokeWidth={3}
+                    dot={{ fill: '#f59e0b', r: 4 }}
                     name="Margem %"
                   />
-                </AreaChart>
+                </ComposedChart>
               </ResponsiveContainer>
             )}
           </CardContent>
