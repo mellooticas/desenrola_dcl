@@ -22,18 +22,14 @@ BEGIN
     
     -- Tentar pegar o responsavel_id de forma segura
     BEGIN
-      v_responsavel_id := COALESCE(
-        CASE 
-          WHEN NEW.updated_by IS NOT NULL AND NEW.updated_by ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-          THEN NEW.updated_by::UUID
-          ELSE NULL
-        END,
-        auth.uid(),
-        '00000000-0000-0000-0000-000000000000'::UUID
-      );
+      v_responsavel_id := CASE 
+        WHEN NEW.updated_by IS NOT NULL AND NEW.updated_by ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        THEN NEW.updated_by::UUID
+        ELSE auth.uid()
+      END;
     EXCEPTION WHEN OTHERS THEN
-      -- Se der erro, usar UUID default
-      v_responsavel_id := '00000000-0000-0000-0000-000000000000'::UUID;
+      -- Se der erro, usar NULL (permite foreign key)
+      v_responsavel_id := NULL;
     END;
     
     -- Inserir registro na timeline
@@ -77,7 +73,17 @@ CREATE TRIGGER trigger_pedidos_timeline
   FOR EACH ROW
   EXECUTE FUNCTION inserir_timeline_pedido();
 
--- PASSO 4: POPULAR TIMELINE COM REGISTROS INICIAIS
+-- ======================================================================
+-- PASSO 3.5: Garantir que responsavel_id aceita NULL
+-- ======================================================================
+-- Permitir NULL caso não tenhamos o responsável
+ALTER TABLE pedidos_timeline 
+ALTER COLUMN responsavel_id DROP NOT NULL;
+
+-- ======================================================================
+-- PASSO 4: Popular a timeline com registros históricos dos pedidos
+-- ======================================================================
+-- Isso vai criar um registro inicial para cada pedido existente
 -- ============================================================================
 -- Limpar timeline existente para evitar duplicados
 TRUNCATE TABLE pedidos_timeline CASCADE;
@@ -125,9 +131,11 @@ BEGIN
   RAISE NOTICE '   Cobertura: %%%', ROUND((v_count::NUMERIC / NULLIF(v_pedidos, 0) * 100)::NUMERIC, 1);
 END $$;
 
--- PASSO 6: TESTAR A TRIGGER
+-- PASSO 6: TESTAR A TRIGGER (OPCIONAL - DESCOMENTADO SE NECESSÁRIO)
 -- ============================================================================
--- Esta query faz um teste da trigger (você pode comentar se não quiser testar)
+-- Esta query faz um teste da trigger
+-- COMENTADO: Execute manualmente se quiser testar
+/*
 DO $$
 DECLARE
   v_test_pedido_id UUID;
@@ -171,6 +179,45 @@ BEGIN
     
   END IF;
 END $$;
+
+
+ERROR:  23503: insert or update on table "pedidos_timeline" violates foreign key constraint "pedidos_timeline_responsavel_id_fkey"
+DETAIL:  Key (responsavel_id)=(00000000-0000-0000-0000-000000000000) is not present in table "usuarios".
+CONTEXT:  SQL statement "INSERT INTO pedidos_timeline (
+      pedido_id,
+      status_anterior,
+      status_novo,
+      responsavel_id,
+      observacoes,
+      created_at
+    ) VALUES (
+      NEW.id,
+      CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.status END,
+      NEW.status,
+      v_responsavel_id,
+      CASE 
+        WHEN TG_OP = 'INSERT' THEN 'Pedido criado'
+        WHEN NEW.status = 'CANCELADO' THEN 'Pedido cancelado'
+        WHEN NEW.status = 'ENTREGUE' THEN 'Pedido entregue ao cliente'
+        WHEN NEW.status = 'AG_PAGAMENTO' THEN 'Aguardando confirmação de pagamento'
+        WHEN NEW.status = 'PAGO' THEN 'Pagamento confirmado'
+        WHEN NEW.status = 'PRODUCAO' THEN 'Enviado para produção'
+        WHEN NEW.status = 'PRONTO' THEN 'Produção concluída'
+        WHEN NEW.status = 'ENVIADO' THEN 'Enviado para a loja'
+        WHEN NEW.status = 'CHEGOU' THEN 'Chegou na loja'
+        ELSE 'Status atualizado: ' || OLD.status || ' → ' || NEW.status
+      END,
+      COALESCE(NEW.updated_at, NEW.created_at, NOW())
+    )"
+PL/pgSQL function inserir_timeline_pedido() line 25 at SQL statement
+SQL statement "UPDATE pedidos 
+    SET 
+      status = CASE WHEN status = 'PAGO' THEN 'PRODUCAO' ELSE 'PAGO' END,
+      updated_at = NOW(),
+      updated_by = 'Teste Trigger'
+    WHERE id = v_test_pedido_id"
+PL/pgSQL function inline_code_block line 17 at SQL statement
+
 
 -- PASSO 7: ATUALIZAR COMENTÁRIOS E DOCUMENTAÇÃO
 -- ============================================================================
