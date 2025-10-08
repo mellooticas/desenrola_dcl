@@ -1,16 +1,4 @@
--- ======-- 2. Verificar-- 4. Criar política para permitir SELECT de qualquer usuário autenticado
-DROP POLICY IF EXISTS "Usuários autenticados podem ver timeline" ON public.pedidos_timeline;
-CREATE POLICY "Usuários autenticados podem ver timeline"
-ON public.pedidos_timeline
-FOR SELECT
-TO authenticated
-USING (true);
-
--- 5. Verificar permissões da função alterar_status_pedidoítica RLS está ativa
-ALTER TABLE public.pedidos_timeline ENABLE ROW LEVEL SECURITY;
-
--- 3. Criar política para permitir INSERT de qualquer usuário autenticado
-DROP POLICY IF EXISTS "Usuários autenticados podem inserir no timeline" ON public.pedidos_timeline;=====================================================
+-- ================================================================
 -- FIX: Permissões da tabela pedidos_timeline
 -- PROBLEMA: Usuários não conseguem avançar status (erro 42501)
 -- CAUSA: Falta permissão INSERT em pedidos_timeline
@@ -38,7 +26,7 @@ FOR SELECT
 TO authenticated
 USING (true);
 
--- 6. Verificar permissões da função alterar_status_pedido
+-- 5. Verificar permissões da função alterar_status_pedido
 -- A função deve ter SECURITY DEFINER ou permissões adequadas
 -- Execute este comando manualmente se necessário:
 -- ALTER FUNCTION alterar_status_pedido(uuid, text, text, text) SECURITY DEFINER;
