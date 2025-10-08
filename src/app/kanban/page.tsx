@@ -127,15 +127,15 @@ const ROLE_PERMISSIONS: Record<string, {
   'dcl': {
     // DCL Laboratório: dcl@oticastatymello.com.br
     visibleColumns: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
-    canEdit: ['REGISTRADO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'], // NÃO pode editar AG_PAGAMENTO
+    canEdit: ['REGISTRADO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO'], // NÃO pode editar AG_PAGAMENTO nem CHEGOU (é da loja)
     canMoveFrom: {
       'REGISTRADO': ['AG_PAGAMENTO', 'CANCELADO'],
-      'AG_PAGAMENTO': [], // Só visualiza, não pode mover
+      'AG_PAGAMENTO': [], // Só visualiza, não pode mover (responsabilidade do financeiro)
       'PAGO': ['PRODUCAO', 'CANCELADO'],
       'PRODUCAO': ['PRONTO', 'CANCELADO'],
       'PRONTO': ['ENVIADO', 'CANCELADO'],
-      'ENVIADO': ['CHEGOU'],
-      'CHEGOU': [], // Final do fluxo para DCL
+      'ENVIADO': ['CHEGOU', 'CANCELADO'],
+      'CHEGOU': [], // Só visualiza, não pode mover (responsabilidade da loja)
       'ENTREGUE': [],
       'CANCELADO': []
     },
@@ -145,12 +145,12 @@ const ROLE_PERMISSIONS: Record<string, {
   },
   'financeiro': {
     // Financeiro ESC: financeiroesc@hotmail.com
-    visibleColumns: ['AG_PAGAMENTO', 'PAGO'],
+    visibleColumns: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO'], // Precisa ver REGISTRADO para acompanhar fluxo
     canEdit: ['AG_PAGAMENTO', 'PAGO'],
     canMoveFrom: {
-      'REGISTRADO': [],
-      'AG_PAGAMENTO': ['PAGO', 'CANCELADO'],
-      'PAGO': ['CANCELADO'], // Pode reverter pagamento
+      'REGISTRADO': [], // Só visualiza
+      'AG_PAGAMENTO': ['PAGO', 'CANCELADO'], // Move para PAGO quando recebe pagamento
+      'PAGO': ['AG_PAGAMENTO', 'CANCELADO'], // Pode reverter pagamento se necessário
       'PRODUCAO': [],
       'PRONTO': [],
       'ENVIADO': [],
@@ -164,16 +164,16 @@ const ROLE_PERMISSIONS: Record<string, {
   },
   'loja': {
     // Operadores Lojas: lojas@oticastatymello.com.br
-    visibleColumns: ['ENVIADO', 'CHEGOU'], // Removido ENTREGUE do Kanban
-    canEdit: ['CHEGOU'], // NÃO pode editar ENVIADO
+    visibleColumns: ['ENVIADO', 'CHEGOU'], // Só vê final do fluxo
+    canEdit: ['CHEGOU'], // Só pode editar CHEGOU para entregar
     canMoveFrom: {
       'REGISTRADO': [],
       'AG_PAGAMENTO': [],
       'PAGO': [],
       'PRODUCAO': [],
       'PRONTO': [],
-      'ENVIADO': [], // Só visualiza
-      'CHEGOU': ['ENTREGUE'], // Move para fora do Kanban
+      'ENVIADO': [], // Só visualiza (aguardando chegada)
+      'CHEGOU': ['ENTREGUE', 'CANCELADO'], // Move para ENTREGUE quando cliente busca
       'ENTREGUE': [],
       'CANCELADO': []
     },
