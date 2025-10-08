@@ -35,9 +35,11 @@ export async function GET(request: NextRequest) {
     let queryAtrasados = supabase
       .from('pedidos')
       .select(`
-        id, numero_sequencial, cliente_nome, 
-        data_prevista_pronto, status,
-        loja_id, laboratorio_id, data_pedido
+        id, numero_sequencial, cliente_nome, cliente_telefone,
+        data_prevista_pronto, status, valor_pedido,
+        loja_id, laboratorio_id, data_pedido,
+        lojas:loja_id (id, nome, telefone),
+        laboratorios:laboratorio_id (id, nome, telefone)
       `)
       .not('data_prevista_pronto', 'is', null)
       .not('status', 'in', '("ENTREGUE", "CANCELADO")')
@@ -64,8 +66,11 @@ export async function GET(request: NextRequest) {
     let queryVencimento = supabase
       .from('pedidos')
       .select(`
-        id, numero_sequencial, cliente_nome,
-        data_prevista_pronto, status, data_pedido
+        id, numero_sequencial, cliente_nome, cliente_telefone,
+        data_prevista_pronto, status, data_pedido, valor_pedido,
+        loja_id, laboratorio_id,
+        lojas:loja_id (id, nome, telefone),
+        laboratorios:laboratorio_id (id, nome, telefone)
       `)
       .not('data_prevista_pronto', 'is', null)
       .not('status', 'in', '("ENTREGUE", "CANCELADO")')
@@ -93,8 +98,11 @@ export async function GET(request: NextRequest) {
     let queryPagamentos = supabase
       .from('pedidos')
       .select(`
-        id, numero_sequencial, cliente_nome,
-        valor_pedido, data_pedido, status
+        id, numero_sequencial, cliente_nome, cliente_telefone,
+        valor_pedido, data_pedido, status,
+        loja_id, laboratorio_id,
+        lojas:loja_id (id, nome, telefone),
+        laboratorios:laboratorio_id (id, nome, telefone)
       `)
       .eq('status', 'AG_PAGAMENTO')
       .gte('data_pedido', dataInicioAnalise)

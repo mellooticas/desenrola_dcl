@@ -50,25 +50,6 @@ export function AlertsSection({ filters }: AlertsSectionProps) {
   // Extrair alertas da resposta da API
   const alertas: AlertaCritico[] = responseData?.alertas || []
   
-  const handleAlertAction = (action: string, alerta: AlertaCritico) => {
-    switch (action) {
-      case 'phone':
-        toast.info(`Ligando para cliente ${alerta.dados?.cliente_nome || 'do alerta'}...`)
-        // Aqui você pode implementar integração com sistema de telefonia
-        break
-      case 'email':
-        toast.info(`Enviando email para cliente ${alerta.dados?.cliente_nome || 'do alerta'}...`)
-        // Aqui você pode implementar envio de email
-        break
-      case 'details':
-        toast.info(`Abrindo detalhes do ${alerta.titulo}...`)
-        // Aqui você pode navegar para página de detalhes
-        break
-      default:
-        break
-    }
-  }
-  
   if (isLoading) {
     return (
       <Card>
@@ -156,7 +137,6 @@ export function AlertsSection({ filters }: AlertsSectionProps) {
                 <AlertCard
                   key={index}
                   alerta={alerta}
-                  onAction={handleAlertAction}
                 />
               ))}
             </div>
