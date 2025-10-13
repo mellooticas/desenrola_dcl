@@ -39,6 +39,8 @@ export interface Loja {
   gerente: string | null
   ativo: boolean
   created_at: string
+  margem_seguranca_dias: number
+  alerta_sla_dias: number
 }
 
 export interface ClasseLente {
@@ -81,6 +83,8 @@ export interface Pedido {
   data_limite_pagamento: string | null
   data_prevista_pronto: string | null
   data_prevista_envio: string | null
+  data_sla_laboratorio: string | null
+  observacoes_sla: string | null
   valor_pedido: number | null
   custo_lentes: number | null
   eh_garantia: boolean
@@ -120,6 +124,8 @@ export interface PedidoCompleto {
   data_limite_pagamento: string | null
   data_prevista_pronto: string | null
   data_prevista_envio: string | null
+  data_sla_laboratorio: string | null
+  observacoes_sla: string | null
   valor_pedido: number | null
   custo_lentes: number | null
   eh_garantia: boolean
@@ -146,6 +152,8 @@ export interface PedidoCompleto {
   loja_codigo: string
   loja_endereco: string | null
   loja_telefone: string | null
+  margem_seguranca_dias: number
+  alerta_sla_dias: number
   
   // Dados do laboratório  
   laboratorio_nome: string
@@ -169,9 +177,15 @@ export interface PedidoCompleto {
   tratamentos_nomes: string  // ← AJUSTADO: não é nullable na view
   tratamentos_count: number
   
-  // Cálculos úteis
+  // Novos campos calculados da view (migração SLA)
+  sla_atrasado: boolean
+  sla_alerta: boolean
+  dias_para_sla: number
+  dias_para_promessa: number
+  
+  // Cálculos úteis (mantidos para compatibilidade)
   dias_desde_pedido: number
-  dias_para_vencer_sla: number | null  // ← AJUSTADO: nome correto da view
+  dias_para_vencer_sla: number | null
   dias_para_vencer_prometido: number | null
   
   // Contadores

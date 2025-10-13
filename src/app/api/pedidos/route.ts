@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
       // Continuar com SLA padrão
     }
 
-    // Ajustar por prioridade
+    // Ajustar por prioridade (apenas para SLA lab)
     switch (body.prioridade) {
       case 'BAIXA': slaDias += 2; break
       case 'ALTA': slaDias -= 1; break
@@ -211,7 +211,23 @@ export async function POST(request: NextRequest) {
     }
     slaDias = Math.max(1, slaDias)
 
-    // Calcular data prevista (dias úteis)
+    // Buscar margem de segurança da loja
+    let margemSegurancaDias = 2 // padrão
+    try {
+      const { data: lojaData } = await supabase
+        .from('lojas')
+        .select('margem_seguranca_dias')
+        .eq('id', body.loja_id)
+        .single()
+      
+      if (lojaData?.margem_seguranca_dias) {
+        margemSegurancaDias = lojaData.margem_seguranca_dias
+      }
+    } catch (error) {
+      console.log('⚠️ Erro ao buscar margem da loja, usando padrão:', error)
+    }
+
+    // Calcular datas (dias úteis)
     const addBusinessDays = (start: Date, days: number) => {
       const d = new Date(start)
       let added = 0
@@ -223,8 +239,17 @@ export async function POST(request: NextRequest) {
       return d
     }
     
-    const dataPrevista = addBusinessDays(new Date(), slaDias)
-    const data_prevista_pronto = dataPrevista.toISOString().split('T')[0]
+    // 1. SLA LAB (controle interno)
+    const dataSlaLab = addBusinessDays(new Date(), slaDias)
+    const data_sla_laboratorio = dataSlaLab.toISOString().split('T')[0]
+    
+    // 2. PROMESSA CLIENTE (SLA + margem)
+    const diasPromessaCliente = slaDias + margemSegurancaDias
+    const dataPromessaCliente = addBusinessDays(new Date(), diasPromessaCliente)
+    const data_prometida = dataPromessaCliente.toISOString().split('T')[0]
+    
+    // 3. LEGADO (compatibilidade - usar SLA lab)
+    const data_prevista_pronto = data_sla_laboratorio
 
     const novoPedido: Partial<Pedido> = {
       loja_id: body.loja_id,
@@ -241,15 +266,20 @@ export async function POST(request: NextRequest) {
       eh_garantia: body.eh_garantia || false,
       observacoes: body.observacoes || null,
       observacoes_garantia: body.observacoes_garantia || null,
-      data_prevista_pronto,
+      // NOVAS DATAS CALCULADAS SEPARADAMENTE
+      data_sla_laboratorio,
+      data_prometida,
+      data_prevista_pronto, // compatibilidade
       created_by: 'api_direct'
     }
     
     // DEBUG: Log do objeto que será inserido
     console.log('📝 Objeto para inserção no banco:', {
-      cliente_telefone: novoPedido.cliente_telefone,
-      numero_os_fisica: novoPedido.numero_os_fisica,
-      valor_pedido: novoPedido.valor_pedido,
+      cliente_nome: novoPedido.cliente_nome,
+      data_sla_laboratorio: novoPedido.data_sla_laboratorio,
+      data_prometida: novoPedido.data_prometida,
+      data_prevista_pronto: novoPedido.data_prevista_pronto,
+      margem_seguranca_dias: margemSegurancaDias,
       custo_lentes: novoPedido.custo_lentes,
       observacoes: novoPedido.observacoes,
       eh_garantia: novoPedido.eh_garantia

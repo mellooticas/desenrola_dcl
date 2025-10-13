@@ -53,18 +53,23 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
     observacoes_garantia: ''
   })
   
-  // SLA calculado
+  // SLA calculado com separação lab vs cliente
   const [slaInfo, setSlaInfo] = useState<{
-    dias: number
-    dataPromessa: string
+    diasSlaLab: number
+    diasPromessaCliente: number
+    dataSlaLab: string
+    dataPromessaCliente: string
     custoTratamentos: number
+    margemSeguranca: number
   } | null>(null)
 
   const calculateSLA = useCallback(() => {
     const classe = classes.find(c => c.id === formData.classe_lente_id)
-    if (!classe) return
+    const loja = lojas.find(l => l.id === formData.loja_id)
+    if (!classe || !loja) return
 
-    let dias = classe.sla_base_dias
+    // 1. CALCULAR SLA REAL DO LABORATÓRIO
+    let diasSlaLab = classe.sla_base_dias
 
     // Somar dias dos tratamentos
     let custoTratamentos = 0
@@ -72,25 +77,35 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
       const tratamentosSelecionados = tratamentos.filter(t => formData.tratamentos_ids.includes(t.id))
       const diasTratamentos = tratamentosSelecionados.reduce((acc, t) => acc + (t.tempo_adicional_dias || 0), 0)
       custoTratamentos = tratamentosSelecionados.reduce((acc, t) => acc + (t.custo_adicional || 0), 0)
-      dias += diasTratamentos
+      diasSlaLab += diasTratamentos
     }
 
-    // Ajustar por prioridade
+    // Ajustar por prioridade (apenas SLA interno)
     switch (formData.prioridade) {
-      case 'BAIXA': dias += 2; break
-      case 'ALTA': dias -= 1; break
-      case 'URGENTE': dias -= 3; break
+      case 'BAIXA': diasSlaLab += 2; break
+      case 'ALTA': diasSlaLab -= 1; break
+      case 'URGENTE': diasSlaLab -= 3; break
     }
 
-    dias = Math.max(1, dias)
-    const dataPromessa = addBusinessDays(new Date(), dias)
+    diasSlaLab = Math.max(1, diasSlaLab)
+
+    // 2. CALCULAR PROMESSA AO CLIENTE (SLA + Margem de Segurança)
+    const margemSeguranca = loja.margem_seguranca_dias || 2
+    const diasPromessaCliente = diasSlaLab + margemSeguranca
+
+    // 3. CALCULAR DATAS
+    const dataSlaLab = addBusinessDays(new Date(), diasSlaLab)
+    const dataPromessaCliente = addBusinessDays(new Date(), diasPromessaCliente)
     
     setSlaInfo({
-      dias,
-      dataPromessa: dataPromessa.toLocaleDateString('pt-BR'),
-      custoTratamentos
+      diasSlaLab,
+      diasPromessaCliente,
+      dataSlaLab: dataSlaLab.toLocaleDateString('pt-BR'),
+      dataPromessaCliente: dataPromessaCliente.toLocaleDateString('pt-BR'),
+      custoTratamentos,
+      margemSeguranca
     })
-  }, [classes, formData.classe_lente_id, formData.prioridade, formData.tratamentos_ids, tratamentos])
+  }, [classes, lojas, formData.classe_lente_id, formData.loja_id, formData.prioridade, formData.tratamentos_ids, tratamentos])
 
   // Carregar dados uma única vez quando abre
   useEffect(() => {
@@ -472,22 +487,34 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
 
         {/* SLA Preview */}
         {slaInfo && (
-          <Card className="bg-green-50 border-green-200">
+          <Card className="bg-gradient-to-r from-blue-50 via-green-50 to-blue-50 border border-blue-200 shadow-lg">
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-green-700 mb-2">
+              <div className="flex items-center gap-2 text-gray-700 mb-3">
                 <CheckCircle2 className="w-4 h-4" />
-                <span className="font-medium">SLA Calculado</span>
+                <span className="font-medium">Prazos Calculados</span>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="font-medium">{slaInfo.dias} dias úteis</div>
-                  <div className="text-green-600">Entrega: {slaInfo.dataPromessa}</div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {/* SLA Lab - Controle Interno */}
+                <div className="bg-blue-100/60 rounded-lg p-3 border border-blue-200">
+                  <div className="text-xs font-medium text-blue-600 mb-1">🔧 SLA Lab (Interno)</div>
+                  <div className="font-bold text-blue-700">{slaInfo.diasSlaLab} dias úteis</div>
+                  <div className="text-xs text-blue-600">{slaInfo.dataSlaLab}</div>
                 </div>
+
+                {/* Promessa Cliente */}
+                <div className="bg-green-100/60 rounded-lg p-3 border border-green-200">
+                  <div className="text-xs font-medium text-green-600 mb-1">🤝 Promessa Cliente</div>
+                  <div className="font-bold text-green-700">{slaInfo.diasPromessaCliente} dias úteis</div>
+                  <div className="text-xs text-green-600">{slaInfo.dataPromessaCliente}</div>
+                </div>
+              </div>
+
+              {/* Informações Adicionais */}
+              <div className="mt-3 pt-2 border-t border-gray-200/50 flex justify-between items-center text-xs text-gray-600">
+                <span>Margem segurança: +{slaInfo.margemSeguranca} dias</span>
                 {slaInfo.custoTratamentos > 0 && (
-                  <div className="text-right">
-                    <div className="font-medium">+R$ {slaInfo.custoTratamentos.toFixed(2)}</div>
-                    <div className="text-green-600">Tratamentos</div>
-                  </div>
+                  <span className="font-medium">Tratamentos: +R$ {slaInfo.custoTratamentos.toFixed(2)}</span>
                 )}
               </div>
             </CardContent>
@@ -576,20 +603,22 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
 
           {/* SLA Preview - mantém na tela */}
           {slaInfo && (
-            <Card className="bg-green-50 border-green-200">
+            <Card className="bg-gradient-to-r from-blue-50 to-green-50 border border-gray-300 shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Clock className="w-4 h-4 text-green-600" />
-                  <span className="font-medium text-green-800">Prazo Calculado</span>
+                  <Clock className="w-4 h-4 text-gray-600" />
+                  <span className="font-medium text-gray-800">Resumo dos Prazos</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Dias úteis:</span>
-                    <div className="font-bold text-green-700">{slaInfo.dias} dias</div>
+                  <div className="bg-blue-100/50 p-2 rounded border-l-2 border-blue-400">
+                    <span className="text-blue-600 font-medium">SLA Lab:</span>
+                    <div className="font-bold text-blue-700">{slaInfo.diasSlaLab} dias</div>
+                    <div className="text-xs text-blue-600">{slaInfo.dataSlaLab}</div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Data prometida:</span>
-                    <div className="font-bold text-green-700">{slaInfo.dataPromessa}</div>
+                  <div className="bg-green-100/50 p-2 rounded border-l-2 border-green-400">
+                    <span className="text-green-600 font-medium">Cliente:</span>
+                    <div className="font-bold text-green-700">{slaInfo.diasPromessaCliente} dias</div>
+                    <div className="text-xs text-green-600">{slaInfo.dataPromessaCliente}</div>
                   </div>
                 </div>
                 {slaInfo.custoTratamentos > 0 && (

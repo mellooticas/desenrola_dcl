@@ -7,7 +7,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Beaker,
-  Sparkles
+  Sparkles,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  Calendar
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
@@ -21,6 +25,67 @@ interface KanbanCardProps {
   canMoveRight?: boolean
 }
 
+// 🎨 SISTEMA DE CORES INTELIGENTE BASEADO EM SLA
+function getSlaStatus(pedido: PedidoCompleto) {
+  const hoje = new Date()
+  const dataSlaLab = pedido.data_sla_laboratorio ? new Date(pedido.data_sla_laboratorio) : null
+  const dataPromessaCliente = pedido.data_prometida ? new Date(pedido.data_prometida) : null
+  
+  // Usar campos calculados da view se disponíveis
+  const slaAtrasado = pedido.sla_atrasado ?? (dataSlaLab ? dataSlaLab < hoje : false)
+  const slaAlerta = pedido.sla_alerta ?? (dataSlaLab ? dataSlaLab <= new Date(hoje.getTime() + 24 * 60 * 60 * 1000) : false)
+  
+  const diasParaSla = pedido.dias_para_sla ?? (dataSlaLab ? Math.ceil((dataSlaLab.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : null)
+  const diasParaPromessa = pedido.dias_para_promessa ?? (dataPromessaCliente ? Math.ceil((dataPromessaCliente.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : null)
+  
+  return {
+    slaAtrasado,
+    slaAlerta,
+    diasParaSla,
+    diasParaPromessa,
+    dataSlaLab,
+    dataPromessaCliente
+  }
+}
+
+function getCardStyles(pedido: PedidoCompleto, slaStatus: ReturnType<typeof getSlaStatus>) {
+  const { slaAtrasado, slaAlerta } = slaStatus
+  
+  // GARANTIA sempre laranja/amber
+  if (pedido.eh_garantia) {
+    return {
+      cardClass: "bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 hover:border-amber-400 shadow-amber-100",
+      headerClass: "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500",
+      badgeClass: "bg-gradient-to-r from-amber-600 to-orange-600 text-white"
+    }
+  }
+  
+  // SLA ATRASADO - Vermelho intenso
+  if (slaAtrasado) {
+    return {
+      cardClass: "bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-400 hover:border-red-500 shadow-red-100",
+      headerClass: "bg-gradient-to-r from-red-500 via-red-600 to-red-700",
+      badgeClass: "bg-gradient-to-r from-red-600 to-red-700 text-white"
+    }
+  }
+  
+  // SLA EM ALERTA - Amarelo/laranja
+  if (slaAlerta) {
+    return {
+      cardClass: "bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 hover:border-orange-400 shadow-yellow-100",
+      headerClass: "bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-600",
+      badgeClass: "bg-gradient-to-r from-yellow-600 to-orange-600 text-white"
+    }
+  }
+  
+  // STATUS NORMAL - Verde/azul
+  return {
+    cardClass: "bg-gradient-to-br from-green-50 to-blue-50 border border-green-200 hover:border-blue-300 shadow-green-50",
+    headerClass: "bg-gradient-to-r from-green-500 via-blue-500 to-indigo-500",
+    badgeClass: "bg-gradient-to-r from-green-600 to-blue-700 text-white"
+  }
+}
+
 export function KanbanCard({ 
   pedido, 
   onClick, 
@@ -30,26 +95,33 @@ export function KanbanCard({
   canMoveLeft = false,
   canMoveRight = false
 }: KanbanCardProps) {
+  
+  const slaStatus = getSlaStatus(pedido)
+  const cardStyles = getCardStyles(pedido, slaStatus)
 
   return (
     <Card
       className={cn(
-        "group relative cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02]",
+        "group relative cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02]",
         isDragging && "opacity-50 rotate-2 scale-95 shadow-xl",
-        pedido.eh_garantia 
-          ? "bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 hover:border-amber-400 shadow-amber-100" 
-          : "bg-white border border-gray-200 hover:border-blue-300",
+        cardStyles.cardClass,
         "rounded-lg overflow-hidden"
       )}
       onClick={onClick}
     >
-      {/* Header colorido com gradiente - Diferente para garantia */}
-      <div className={cn(
-        "h-1",
-        pedido.eh_garantia 
-          ? "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" 
-          : "bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500"
-      )}></div>
+      {/* Header colorido com gradiente inteligente */}
+      <div className={cn("h-1.5", cardStyles.headerClass)}></div>
+      
+      {/* Indicador de status SLA */}
+      {(slaStatus.slaAtrasado || slaStatus.slaAlerta) && (
+        <div className="absolute top-2 right-2 z-10">
+          {slaStatus.slaAtrasado ? (
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-lg"></div>
+          ) : (
+            <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse shadow-lg"></div>
+          )}
+        </div>
+      )}
       
       <CardContent className="p-3">
         
@@ -60,9 +132,7 @@ export function KanbanCard({
               variant="secondary" 
               className={cn(
                 "text-xs font-mono font-bold px-3 py-1 shadow-sm",
-                pedido.eh_garantia
-                  ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white"
-                  : "bg-gradient-to-r from-blue-600 to-blue-700 text-white"
+                cardStyles.badgeClass
               )}
             >
               OS #{pedido.numero_sequencial}
@@ -172,6 +242,91 @@ export function KanbanCard({
             )}>
               {pedido.laboratorio_nome || pedido.laboratorio_codigo || 'Lab não definido'}
             </span>
+          </div>
+        </div>
+
+        {/* 🚀 SEÇÃO PREMIUM: DATAS SLA vs PROMESSA */}
+        <div className="mb-3">
+          {/* Barra de Progresso Visual SLA */}
+          {slaStatus.diasParaSla !== null && (
+            <div className="mb-2">
+              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                <div 
+                  className={cn(
+                    "h-full transition-all duration-500",
+                    slaStatus.slaAtrasado 
+                      ? "bg-gradient-to-r from-red-500 to-red-600" 
+                      : slaStatus.slaAlerta 
+                        ? "bg-gradient-to-r from-yellow-500 to-orange-500"
+                        : "bg-gradient-to-r from-blue-500 to-green-500"
+                  )}
+                  style={{
+                    width: `${Math.min(100, Math.max(0, (10 - Math.abs(slaStatus.diasParaSla)) * 10))}%`
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-2 gap-2">
+            {/* SLA Lab - Controle Interno */}
+            {slaStatus.dataSlaLab && (
+              <div className={cn(
+                "rounded-lg p-2 border text-center",
+                slaStatus.slaAtrasado 
+                  ? "bg-red-100 border-red-300" 
+                  : slaStatus.slaAlerta 
+                    ? "bg-yellow-100 border-yellow-300"
+                    : "bg-blue-100 border-blue-300"
+              )}>
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  {slaStatus.slaAtrasado ? (
+                    <AlertTriangle className="w-3 h-3 text-red-600" />
+                  ) : slaStatus.slaAlerta ? (
+                    <Clock className="w-3 h-3 text-yellow-600" />
+                  ) : (
+                    <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                  )}
+                  <span className={cn(
+                    "text-xs font-medium",
+                    slaStatus.slaAtrasado ? "text-red-600" : slaStatus.slaAlerta ? "text-yellow-600" : "text-blue-600"
+                  )}>
+                    SLA Lab
+                  </span>
+                </div>
+                <div className={cn(
+                  "text-xs font-bold",
+                  slaStatus.slaAtrasado ? "text-red-700" : slaStatus.slaAlerta ? "text-yellow-700" : "text-blue-700"
+                )}>
+                  {slaStatus.diasParaSla !== null ? (
+                    slaStatus.diasParaSla < 0 ? 
+                      `${Math.abs(slaStatus.diasParaSla)}d atraso` :
+                      `${slaStatus.diasParaSla}d restam`
+                  ) : (
+                    slaStatus.dataSlaLab.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Promessa Cliente */}
+            {slaStatus.dataPromessaCliente && (
+              <div className="bg-green-100 border border-green-300 rounded-lg p-2 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Calendar className="w-3 h-3 text-green-600" />
+                  <span className="text-xs font-medium text-green-600">Cliente</span>
+                </div>
+                <div className="text-xs font-bold text-green-700">
+                  {slaStatus.diasParaPromessa !== null ? (
+                    slaStatus.diasParaPromessa < 0 ? 
+                      `${Math.abs(slaStatus.diasParaPromessa)}d atraso` :
+                      `${slaStatus.diasParaPromessa}d restam`
+                  ) : (
+                    slaStatus.dataPromessaCliente.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
