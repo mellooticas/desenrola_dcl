@@ -18,6 +18,7 @@ import { RankingLaboratoriosReal } from '@/components/dashboard/RankingLaborator
 import { FinanceChart } from '@/components/dashboard/FinanceChart'
 import { AlertsSection } from '@/components/dashboard/AlertsSection'
 import GamificationDashboardPremium from '@/components/gamification/GamificationDashboardPremium'
+import SLAIntelligenceDashboard from '@/components/dashboard/SLAIntelligenceDashboard'
 
 // Hook para KPIs (mantendo o existente por compatibilidade)
 import { useDashboardKPIs } from '@/lib/hooks/useDashboardBI'
@@ -219,9 +220,10 @@ const DashboardPage = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="comando">🎛️ Comando</TabsTrigger>
               <TabsTrigger value="alertas">🚨 Alertas {alertas.length > 0 && `(${alertas.length})`}</TabsTrigger>
+              <TabsTrigger value="sla">🎯 SLA Intelligence</TabsTrigger>
               <TabsTrigger value="gamificacao">🎮 Gamificação</TabsTrigger>
               <TabsTrigger value="operacional">📊 Operacional</TabsTrigger>
               <TabsTrigger value="financeiro">💰 Financeiro</TabsTrigger>
@@ -457,6 +459,23 @@ const DashboardPage = () => {
                 </CardContent>
               </Card>
 
+            </TabsContent>
+
+            {/* 🎯 ABA SLA INTELLIGENCE - Nova funcionalidade premium */}
+            <TabsContent value="sla" className="space-y-6">
+              <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200/50">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                    <span className="text-3xl">🎯</span>
+                    SLA Intelligence Dashboard
+                  </h2>
+                  <p className="text-gray-600 mt-2">
+                    Análise inteligente de prazos com insights automáticos e otimização de promessas
+                  </p>
+                </div>
+                
+                <SLAIntelligenceDashboard filters={filters} />
+              </div>
             </TabsContent>
 
             {/* ABA FINANCEIRO - Dashboard Financeiro Completo */}
