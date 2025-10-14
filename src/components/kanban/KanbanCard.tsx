@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
-  Calendar
+  Calendar,
+  DollarSign
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
@@ -236,12 +237,28 @@ export function KanbanCard({
               "w-3 h-3 mr-2",
               pedido.eh_garantia ? "text-amber-700" : "text-purple-700"
             )} />
-            <span className={cn(
-              "text-xs font-semibold",
-              pedido.eh_garantia ? "text-amber-800" : "text-purple-800"
-            )}>
-              {pedido.laboratorio_nome || pedido.laboratorio_codigo || 'Lab não definido'}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "text-xs font-semibold",
+                pedido.eh_garantia ? "text-amber-800" : "text-purple-800"
+              )}>
+                {pedido.laboratorio_nome || pedido.laboratorio_codigo || 'Lab não definido'}
+              </span>
+              {/* Exibir custo apenas para status AGUARDANDO_PAGAMENTO (segurança) */}
+              {pedido.custo_lentes && pedido.status === 'AG_PAGAMENTO' && (
+                <div className={cn(
+                  "flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border",
+                  pedido.eh_garantia 
+                    ? "bg-gradient-to-r from-amber-200 to-amber-300 text-amber-900 border-amber-400" 
+                    : "bg-gradient-to-r from-purple-200 to-purple-300 text-purple-900 border-purple-400"
+                )}>
+                  <DollarSign className="w-3 h-3" />
+                  <span>
+                    {pedido.custo_lentes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
