@@ -144,7 +144,8 @@ export async function POST(request: NextRequest) {
           p_eh_garantia: body.eh_garantia || false,
           p_observacoes: body.observacoes || null,
           p_observacoes_garantia: body.observacoes_garantia || null,
-          p_prioridade: body.prioridade || 'NORMAL'
+          p_prioridade: body.prioridade || 'NORMAL',
+          p_data_prometida_cliente: body.data_prometida_cliente || null
         })
 
       if (!funcaoError && pedidoId) {

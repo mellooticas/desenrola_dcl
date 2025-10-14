@@ -1,5 +1,7 @@
-import { PedidoCompleto } from '@/lib/types/database'
+import React, { useState } from 'react'
+import { PedidoCompleto, Montador } from '@/lib/types/database'
 import { usePermissions } from '@/lib/hooks/use-permissions'
+import { MontadorSelector } from '@/components/forms/MontadorSelector'
 import { 
   Sheet, 
   SheetContent, 
@@ -45,6 +47,7 @@ interface PedidoDetailDrawerProps {
   onAdvanceStatus?: (pedido: PedidoCompleto) => Promise<void>
   onRegressStatus?: (pedido: PedidoCompleto) => Promise<void>
   onCancelPedido?: (pedido: PedidoCompleto) => Promise<void>
+  onSelectMontador?: (pedidoId: string, montador: Montador) => Promise<void>
   // Permissões
   canMoveNext?: boolean
   canMovePrev?: boolean
@@ -61,6 +64,7 @@ export function PedidoDetailDrawer({
   onAdvanceStatus,
   onRegressStatus, 
   onCancelPedido,
+  onSelectMontador,
   canMoveNext = false,
   canMovePrev = false,
   canCancel = false,
@@ -68,6 +72,7 @@ export function PedidoDetailDrawer({
   prevStatusLabel = 'Retroceder'
 }: PedidoDetailDrawerProps) {
   const permissions = usePermissions()
+  const [showMontadorSelector, setShowMontadorSelector] = useState(false)
   
   if (!pedido) return null
 
@@ -91,6 +96,19 @@ export function PedidoDetailDrawer({
   const formatDateTime = (date: string | null) => {
     if (!date) return 'N/A'
     return new Date(date).toLocaleString('pt-BR')
+  }
+
+  const handleMontadorSelect = async (montador: Montador) => {
+    if (onSelectMontador) {
+      try {
+        await onSelectMontador(pedido.id, montador)
+        setShowMontadorSelector(false)
+        // Opcional: mostrar toast de sucesso
+      } catch (error) {
+        console.error('Erro ao selecionar montador:', error)
+        // Opcional: mostrar toast de erro
+      }
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -376,6 +394,19 @@ export function PedidoDetailDrawer({
                         </div>
                       </div>
                     )}
+                    
+                    {/* Botão para trocar montador */}
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="w-full border-blue-300 text-blue-600 hover:bg-blue-50"
+                        onClick={() => setShowMontadorSelector(true)}
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        Trocar Montador
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-4">
@@ -383,7 +414,7 @@ export function PedidoDetailDrawer({
                     <Button 
                       size="sm" 
                       className="bg-blue-600 hover:bg-blue-700 text-white"
-                      // TODO: Implementar onClick para abrir MontadorSelector
+                      onClick={() => setShowMontadorSelector(true)}
                     >
                       <User className="w-4 h-4 mr-2" />
                       Selecionar Montador
@@ -735,6 +766,14 @@ export function PedidoDetailDrawer({
 
         </div>
       </SheetContent>
+
+      {/* Modal do MontadorSelector */}
+      <MontadorSelector
+        isOpen={showMontadorSelector}
+        onClose={() => setShowMontadorSelector(false)}
+        onSelect={handleMontadorSelect}
+        selectedMontadorId={pedido.montador_id}
+      />
     </Sheet>
   )
 }

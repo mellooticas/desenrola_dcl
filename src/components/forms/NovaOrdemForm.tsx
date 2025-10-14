@@ -50,7 +50,8 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
     eh_garantia: false,
     tratamentos_ids: [] as string[],
     observacoes: '',
-    observacoes_garantia: ''
+    observacoes_garantia: '',
+    data_prometida_cliente: '' // Data manual prometida ao cliente
   })
   
   // SLA calculado com separação lab vs cliente
@@ -121,6 +122,24 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
     }
   }, [formData.classe_lente_id, calculateSLA])
 
+  // Sugerir data prometida baseada no SLA (apenas se não foi definida ainda)
+  useEffect(() => {
+    if (slaInfo && !formData.data_prometida_cliente) {
+      const classe = classes.find(c => c.id === formData.classe_lente_id)
+      const loja = lojas.find(l => l.id === formData.loja_id)
+      if (classe && loja) {
+        const diasPromessa = slaInfo.diasPromessaCliente
+        const dataPromessa = addBusinessDays(new Date(), diasPromessa)
+        const dataFormatada = dataPromessa.toISOString().split('T')[0] // formato YYYY-MM-DD
+        
+        setFormData(prev => ({
+          ...prev,
+          data_prometida_cliente: dataFormatada
+        }))
+      }
+    }
+  }, [slaInfo, formData.data_prometida_cliente, formData.classe_lente_id, formData.loja_id, classes, lojas])
+
   const loadInitialData = async () => {
     try {
       setLoadingData(true)
@@ -181,7 +200,8 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
       eh_garantia: false,
       tratamentos_ids: [],
       observacoes: '',
-      observacoes_garantia: ''
+      observacoes_garantia: '',
+      data_prometida_cliente: ''
     })
     setStep(1)
     setSlaInfo(null)
@@ -190,8 +210,8 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.loja_id || !formData.laboratorio_id || !formData.classe_lente_id || !formData.cliente_nome) {
-      alert('Preencha todos os campos obrigatórios')
+    if (!formData.loja_id || !formData.laboratorio_id || !formData.classe_lente_id || !formData.cliente_nome || !formData.data_prometida_cliente) {
+      alert('Preencha todos os campos obrigatórios, incluindo a data prometida ao cliente')
       return
     }
 
@@ -212,7 +232,8 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
         eh_garantia: formData.eh_garantia,
         tratamentos_ids: formData.tratamentos_ids,
         observacoes: formData.observacoes || undefined,
-        observacoes_garantia: formData.eh_garantia ? formData.observacoes_garantia : undefined
+        observacoes_garantia: formData.eh_garantia ? formData.observacoes_garantia : undefined,
+        data_prometida_cliente: formData.data_prometida_cliente
       }
       
       // DEBUG: Log dos dados que estão sendo enviados
@@ -239,7 +260,11 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
 
   const canProceedStep1 = formData.loja_id && formData.laboratorio_id
   const canProceedStep2 = formData.classe_lente_id
-  const canSubmit = Boolean(formData.cliente_nome && formData.numero_pedido_laboratorio)
+  const canSubmit = Boolean(
+    formData.cliente_nome && 
+    formData.numero_pedido_laboratorio && 
+    formData.data_prometida_cliente
+  )
 
   const selectedLoja = lojas.find(l => l.id === formData.loja_id)
   const selectedLab = laboratorios.find(l => l.id === formData.laboratorio_id)
@@ -502,11 +527,27 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
                   <div className="text-xs text-blue-600">{slaInfo.dataSlaLab}</div>
                 </div>
 
-                {/* Promessa Cliente */}
+                {/* Promessa Cliente - CAMPO EDITÁVEL */}
                 <div className="bg-green-100/60 rounded-lg p-3 border border-green-200">
-                  <div className="text-xs font-medium text-green-600 mb-1">🤝 Promessa Cliente</div>
-                  <div className="font-bold text-green-700">{slaInfo.diasPromessaCliente} dias úteis</div>
-                  <div className="text-xs text-green-600">{slaInfo.dataPromessaCliente}</div>
+                  <Label htmlFor="data_prometida_cliente" className="text-xs font-medium text-green-600 mb-2 block">
+                    🤝 Data Prometida ao Cliente (Obrigatório)
+                  </Label>
+                  <Input
+                    id="data_prometida_cliente"
+                    type="date"
+                    value={formData.data_prometida_cliente}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      data_prometida_cliente: e.target.value
+                    }))}
+                    className="w-full text-green-700 font-medium border-green-300 focus:border-green-500"
+                    required
+                  />
+                  {slaInfo && (
+                    <div className="text-xs text-green-600 mt-1">
+                      Sugestão baseada no SLA: {slaInfo.dataPromessaCliente}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -617,8 +658,15 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
                   </div>
                   <div className="bg-green-100/50 p-2 rounded border-l-2 border-green-400">
                     <span className="text-green-600 font-medium">Cliente:</span>
-                    <div className="font-bold text-green-700">{slaInfo.diasPromessaCliente} dias</div>
-                    <div className="text-xs text-green-600">{slaInfo.dataPromessaCliente}</div>
+                    <div className="font-bold text-green-700">
+                      {formData.data_prometida_cliente 
+                        ? new Date(formData.data_prometida_cliente).toLocaleDateString('pt-BR')
+                        : 'Não definida'
+                      }
+                    </div>
+                    <div className="text-xs text-green-600">
+                      {formData.data_prometida_cliente ? 'Data personalizada' : 'Aguardando seleção'}
+                    </div>
                   </div>
                 </div>
                 {slaInfo.custoTratamentos > 0 && (

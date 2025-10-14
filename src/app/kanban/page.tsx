@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Search, Bell, Eye, ArrowLeft, ArrowRight, CheckCircle, Lock, RefreshCw, Copy, Package, AlertCircle, X, DollarSign, Clock, MapPin, Truck } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { PedidoCompleto, StatusPedido, PrioridadeLevel } from '@/lib/types/database'
+import { PedidoCompleto, StatusPedido, PrioridadeLevel, Montador } from '@/lib/types/database'
 import { STATUS_COLORS, STATUS_LABELS } from '@/lib/utils/constants'
 import NovaOrdemForm from '@/components/forms/NovaOrdemForm'
 import { KanbanCard } from '@/components/kanban/KanbanCard'
@@ -744,6 +744,32 @@ export default function KanbanBoard() {
     }
   }
 
+  const handleSelectMontador = async (pedidoId: string, montador: Montador) => {
+    if (!supabase) return
+
+    try {
+      const { error } = await supabase
+        .from('pedidos')
+        .update({
+          montador_id: montador.id,
+          montador_nome: montador.nome,
+          montador_local: montador.local,
+          montador_contato: montador.contato,
+          custo_montagem: montador.preco_base,
+          data_montagem: new Date().toISOString()
+        })
+        .eq('id', pedidoId)
+
+      if (error) throw error
+
+      await loadPedidos()
+      alert(`✅ Montador ${montador.nome} selecionado com sucesso!`)
+    } catch (error) {
+      console.error('Erro ao selecionar montador:', error)
+      alert(`Erro ao selecionar montador: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+    }
+  }
+
   // ========== FILTROS ==========
   const filteredColumns = columns.map(column => ({
     ...column,
@@ -1069,6 +1095,7 @@ export default function KanbanBoard() {
             onAdvanceStatus={handleAdvanceStatus}
             onRegressStatus={handleRegressStatus}
             onCancelPedido={handleCancelPedido}
+            onSelectMontador={handleSelectMontador}
             canMoveNext={selectedPedido ? permissions.canMoveToNext(selectedPedido.status) : false}
             canMovePrev={selectedPedido ? permissions.canMoveToPrev(selectedPedido.status) : false}
             canCancel={selectedPedido ? permissions.canEditColumn(selectedPedido.status) && selectedPedido.status !== 'CANCELADO' : false}

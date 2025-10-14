@@ -229,6 +229,7 @@ export interface CriarPedidoCompletoData {
   tratamentos_ids: string[]       // NOVO
   observacoes?: string
   observacoes_garantia?: string   // NOVO
+  data_prometida_cliente: string  // NOVO: Data prometida ao cliente (manual)
 }
 
 // Evento de pedido atualizado
