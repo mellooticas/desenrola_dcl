@@ -29,6 +29,7 @@ import {
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import PagamentoForm from '../forms/PagamentoPIXForm'
+import { PedidoTimeline } from './PedidoTimeline'
 
 interface CardDetailsProps {
   pedido: PedidoCompleto
@@ -361,12 +362,82 @@ export function CardDetails({ pedido, open, onClose, onUpdate, userProfile }: Ca
 
             {/* Right Column - Dates & Actions */}
             <div className="space-y-4">
+              {/* 🎯 SLA Intelligence */}
+              <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center">
+                    <AlertTriangle className="w-4 h-4 mr-2 text-blue-600" />
+                    SLA Intelligence
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* SLA Laboratório */}
+                  {pedido.data_sla_laboratorio && (
+                    <div className="flex justify-between items-center p-2 bg-white rounded-lg border">
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">SLA Laboratório:</span>
+                        <div className="text-xs text-gray-500">Controle interno</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-blue-700">{formatDate(pedido.data_sla_laboratorio)}</div>
+                        {(() => {
+                          const hoje = new Date()
+                          const dataSla = new Date(pedido.data_sla_laboratorio)
+                          const diasRestantes = Math.ceil((dataSla.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
+                          return (
+                            <div className={`text-xs font-medium ${
+                              diasRestantes < 0 ? 'text-red-600' : 
+                              diasRestantes <= 2 ? 'text-yellow-600' : 'text-green-600'
+                            }`}>
+                              {diasRestantes < 0 ? `${Math.abs(diasRestantes)}d atraso` : `${diasRestantes}d restam`}
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Promessa ao Cliente */}
+                  <div className="flex justify-between items-center p-2 bg-white rounded-lg border">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Promessa Cliente:</span>
+                      <div className="text-xs text-gray-500">Com margem de segurança</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-green-700">{formatDate(pedido.data_prometida)}</div>
+                      {(() => {
+                        const hoje = new Date()
+                        const dataPromessa = pedido.data_prometida ? new Date(pedido.data_prometida) : null
+                        if (!dataPromessa) return <div className="text-xs text-gray-400">Não definida</div>
+                        const diasRestantes = Math.ceil((dataPromessa.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
+                        return (
+                          <div className={`text-xs font-medium ${
+                            diasRestantes < 0 ? 'text-red-600' : 
+                            diasRestantes <= 3 ? 'text-yellow-600' : 'text-green-600'
+                          }`}>
+                            {diasRestantes < 0 ? `${Math.abs(diasRestantes)}d vencido` : `${diasRestantes}d restam`}
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Margem de Segurança */}
+                  {pedido.margem_seguranca_dias && (
+                    <div className="flex justify-between items-center p-2 bg-amber-50 rounded-lg border border-amber-200">
+                      <span className="text-sm font-medium text-amber-700">Margem Segurança:</span>
+                      <span className="font-bold text-amber-800">{pedido.margem_seguranca_dias} dias</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Datas */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center">
                     <Calendar className="w-4 h-4 mr-2" />
-                    Cronologia
+                    Cronologia Completa
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -375,13 +446,16 @@ export function CardDetails({ pedido, open, onClose, onUpdate, userProfile }: Ca
                     <span className="font-medium">{formatDate(pedido.data_pedido)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Prometido:</span>
-                    <span className="font-medium">{formatDate(pedido.data_prometida)}</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Prev. Pronto:</span>
                     <span className="font-medium">{formatDate(pedido.data_prevista_pronto)}</span>
                   </div>
+                  {/* Data de entrega - campo não existe na interface */}
+                  {/* {pedido.data_entrega && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Entregue:</span>
+                      <span className="font-medium text-green-600">{formatDate(pedido.data_entrega)}</span>
+                    </div>
+                  )} */}
                   {pedido.data_pagamento && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Pagamento:</span>
@@ -450,6 +524,11 @@ export function CardDetails({ pedido, open, onClose, onUpdate, userProfile }: Ca
                 </Card>
               )}
             </div>
+          </div>
+
+          {/* 🎯 Timeline Section */}
+          <div className="mt-6">
+            <PedidoTimeline pedido={pedido} />
           </div>
         </DialogContent>
       </Dialog>

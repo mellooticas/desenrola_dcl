@@ -34,6 +34,7 @@ import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { PedidoHeader } from '@/components/pedidos/PedidoHeader'
 import { KPICard } from '@/components/dashboard/KPICard'
+import { PedidoTimeline } from '@/components/kanban/PedidoTimeline'
 import type { StatusPedido, PrioridadeLevel } from '@/lib/types/database'
 
 interface PedidoDetalhes {
@@ -42,6 +43,12 @@ interface PedidoDetalhes {
   numero_sequencial: number
   numero_os_fisica: string | null
   numero_pedido_laboratorio: string | null
+  
+  // IDs para relacionamentos (necessários para PedidoCompleto compatibility)
+  loja_id: string
+  laboratorio_id: string
+  classe_lente_id: string
+  montador_id: string | null
   
   // Status e controle
   status: StatusPedido
@@ -92,8 +99,8 @@ interface PedidoDetalhes {
   data_entregue: string | null
   data_inicio_producao: string | null
   data_conclusao_producao: string | null
-  created_at: string
-  updated_at: string | null
+  created_at: string | undefined
+  updated_at: string | undefined
   
   // Lead time e métricas
   lead_time_producao_horas: number | null
@@ -102,29 +109,52 @@ interface PedidoDetalhes {
   
   // Dados relacionados da loja
   loja_nome: string
-  loja_codigo?: string
-  loja_endereco?: string | null
-  loja_telefone?: string | null
-  loja_whatsapp?: string | null
+  loja_codigo: string
+  loja_endereco: string | null
+  loja_telefone: string | null
+  loja_whatsapp: string | null
+  margem_seguranca_dias: number
+  alerta_sla_dias: number
   
   // Dados relacionados do laboratório
   laboratorio_nome: string
-  laboratorio_codigo?: string | null
-  laboratorio_sla_padrao?: number
-  laboratorio_trabalha_sabado?: boolean
+  laboratorio_codigo: string | null
+  laboratorio_sla_padrao: number
+  laboratorio_trabalha_sabado: boolean
   laboratorio_especialidades?: string[] | null
   
   // Dados relacionados da classe
   classe_nome: string
-  classe_codigo?: string | null
-  classe_categoria?: string | null
-  classe_sla_base?: number
-  classe_cor?: string
+  classe_codigo: string | null
+  classe_categoria: string
+  classe_sla_base: number
+  classe_cor: string
   
   // Auditoria
   created_by?: string | null
   updated_by?: string | null
   vendedor_id?: string | null
+  
+  // SLA Intelligence (campos da view v_pedidos_kanban)
+  sla_atrasado: boolean
+  sla_alerta: boolean
+  dias_para_sla: number
+  dias_para_promessa: number
+  data_sla_laboratorio: string | null
+  observacoes_sla: string | null
+  
+  // Campos adicionais para compatibilidade com PedidoCompleto
+  tratamentos_nomes: string
+  tratamentos_count: number
+  dias_desde_pedido: number
+  dias_para_vencer_sla: number | null
+  dias_para_vencer_prometido: number | null
+  alertas_count: number
+  data_montagem: string | null
+  custo_montagem: number | null
+  montador_nome: string | null
+  montador_local: string | null
+  montador_contato: string | null
 }
 
 export default function PedidoDetalhesPage() {
@@ -238,6 +268,35 @@ export default function PedidoDetalhesPage() {
         created_by: pedidoData.created_by || null,
         updated_by: pedidoData.updated_by || null,
         vendedor_id: pedidoData.vendedor_id || null,
+        
+        // SLA Intelligence (campos da view - se disponíveis)
+        sla_atrasado: pedidoData.sla_atrasado || false,
+        sla_alerta: pedidoData.sla_alerta || false,
+        dias_para_sla: pedidoData.dias_para_sla || null,
+        dias_para_promessa: pedidoData.dias_para_promessa || null,
+        data_sla_laboratorio: pedidoData.data_sla_laboratorio || null,
+        margem_seguranca_dias: pedidoData.margem_seguranca_dias || null,
+        alerta_sla_dias: pedidoData.alerta_sla_dias || null,
+        observacoes_sla: pedidoData.observacoes_sla || null,
+
+        // IDs para relacionamentos (usando dados dos objetos relacionados)
+        loja_id: loja?.id || pedidoData.loja_id || '',
+        laboratorio_id: laboratorio?.id || pedidoData.laboratorio_id || '',
+        classe_lente_id: classe?.id || pedidoData.classe_lente_id || '',
+        montador_id: pedidoData.montador_id || null,
+        
+        // Dados adicionais para compatibilidade
+        tratamentos_nomes: pedidoData.tratamentos_nomes || '',
+        tratamentos_count: pedidoData.tratamentos_count || 0,
+        dias_desde_pedido: pedidoData.dias_desde_pedido || 0,
+        dias_para_vencer_sla: pedidoData.dias_para_vencer_sla || null,
+        dias_para_vencer_prometido: pedidoData.dias_para_vencer_prometido || null,
+        alertas_count: pedidoData.alertas_count || 0,
+        data_montagem: pedidoData.data_montagem || null,
+        custo_montagem: pedidoData.custo_montagem || null,
+        montador_nome: pedidoData.montador_nome || null,
+        montador_local: pedidoData.montador_local || null,
+        montador_contato: pedidoData.montador_contato || null,
         
         // Dados da loja (com fallbacks seguros)
         loja_nome: loja?.nome || 'Loja não encontrada',
@@ -1044,6 +1103,34 @@ export default function PedidoDetalhesPage() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Timeline SLA */}
+              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="w-5 h-5" />
+                    <span>Timeline SLA</span>
+                    {pedido.sla_atrasado && (
+                      <Badge className="bg-red-500 text-white ml-auto">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        SLA ATRASADO
+                      </Badge>
+                    )}
+                    {pedido.sla_alerta && !pedido.sla_atrasado && (
+                      <Badge className="bg-yellow-500 text-white ml-auto">
+                        <Activity className="w-3 h-3 mr-1" />
+                        SLA EM ALERTA
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>
+                    Acompanhe o progresso e prazos do pedido
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PedidoTimeline pedido={pedido} />
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

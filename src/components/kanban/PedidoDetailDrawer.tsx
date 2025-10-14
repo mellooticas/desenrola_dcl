@@ -117,6 +117,34 @@ export function PedidoDetailDrawer({
     return colors[prioridade] || 'bg-gray-100 text-gray-800 border-gray-300'
   }
 
+  // Função para determinar cor baseada no SLA (igual ao KanbanCard)
+  const getSLAColor = () => {
+    if (pedido.sla_atrasado) {
+      return {
+        bg: 'bg-red-50',
+        border: 'border-red-200',
+        accent: 'border-l-red-500',
+        text: 'text-red-700'
+      }
+    }
+    if (pedido.sla_alerta) {
+      return {
+        bg: 'bg-yellow-50',
+        border: 'border-yellow-200', 
+        accent: 'border-l-yellow-500',
+        text: 'text-yellow-700'
+      }
+    }
+    return {
+      bg: 'bg-white',
+      border: 'border-gray-200',
+      accent: 'border-l-blue-500',
+      text: 'text-gray-700'
+    }
+  }
+
+  const slaColors = getSLAColor()
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-2xl lg:max-w-4xl overflow-y-auto">
@@ -150,6 +178,28 @@ export function PedidoDetailDrawer({
             <Badge className={cn("text-xs border", getPriorityColor(pedido.prioridade))}>
               {pedido.prioridade}
             </Badge>
+            
+            {/* Indicadores SLA */}
+            {pedido.sla_atrasado && (
+              <Badge className="bg-red-500 text-white text-xs">
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                SLA ATRASADO
+              </Badge>
+            )}
+            {pedido.sla_alerta && !pedido.sla_atrasado && (
+              <Badge className="bg-yellow-500 text-white text-xs">
+                <Timer className="w-3 h-3 mr-1" />
+                SLA ALERTA
+              </Badge>
+            )}
+            
+            {/* Dias para SLA */}
+            {pedido.dias_para_sla !== null && (
+              <Badge variant="outline" className="text-xs">
+                <Calendar className="w-3 h-3 mr-1" />
+                {pedido.dias_para_sla > 0 ? `${pedido.dias_para_sla}d para SLA` : `${Math.abs(pedido.dias_para_sla)}d em atraso`}
+              </Badge>
+            )}
           </div>
         </SheetHeader>
 
@@ -434,6 +484,61 @@ export function PedidoDetailDrawer({
                   </div>
                 )}
               </div>
+              
+              {/* Seção SLA Visual */}
+              {pedido.data_sla_laboratorio && (
+                <>
+                  <Separator className="my-4" />
+                  <div className={cn(
+                    "p-4 rounded-lg border-l-4",
+                    slaColors.bg,
+                    slaColors.border,
+                    slaColors.accent
+                  )}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className={cn("font-semibold flex items-center gap-2", slaColors.text)}>
+                        <Zap className="w-4 h-4" />
+                        SLA Laboratório
+                      </h4>
+                      {pedido.sla_atrasado && (
+                        <Badge className="bg-red-500 text-white text-xs">
+                          ATRASADO
+                        </Badge>
+                      )}
+                      {pedido.sla_alerta && !pedido.sla_atrasado && (
+                        <Badge className="bg-yellow-500 text-white text-xs">
+                          ALERTA
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Data SLA:</span>
+                        <div className={cn("font-medium", slaColors.text)}>
+                          {formatDate(pedido.data_sla_laboratorio)}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Situação:</span>
+                        <div className={cn("font-medium", slaColors.text)}>
+                          {pedido.dias_para_sla > 0 
+                            ? `${pedido.dias_para_sla} dias restantes`
+                            : `${Math.abs(pedido.dias_para_sla)} dias em atraso`
+                          }
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {pedido.observacoes_sla && (
+                      <div className="mt-3 p-2 bg-white/50 rounded text-sm">
+                        <span className="text-gray-600">Observações SLA:</span>
+                        <div className="text-gray-800 mt-1">{pedido.observacoes_sla}</div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
               
               {(pedido.dias_desde_pedido || pedido.dias_para_vencer_sla) && (
                 <Separator className="my-4" />

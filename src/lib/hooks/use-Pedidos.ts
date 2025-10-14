@@ -159,7 +159,16 @@ export function usePedidos(filters: PedidosFilters = {}) {
             custo_montagem: null,
             montador_nome: null,
             montador_local: null,
-            montador_contato: null
+            montador_contato: null,
+            // Campos SLA Intelligence obrigatórios
+            data_sla_laboratorio: '2024-09-17',
+            observacoes_sla: null,
+            margem_seguranca_dias: 2,
+            alerta_sla_dias: 1,
+            sla_atrasado: false,
+            sla_alerta: false,
+            dias_para_sla: 5,
+            dias_para_promessa: 3
           }
         ]
       }
