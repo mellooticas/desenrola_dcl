@@ -554,8 +554,8 @@ export function PedidoDetailDrawer({
                         <span className="text-gray-600">Situação:</span>
                         <div className={cn("font-medium", slaColors.text)}>
                           {pedido.dias_para_sla > 0 
-                            ? `${pedido.dias_para_sla} dias restantes`
-                            : `${Math.abs(pedido.dias_para_sla)} dias em atraso`
+                            ? `Vence ${new Date(pedido.data_sla_laboratorio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
+                            : `Venceu ${new Date(pedido.data_sla_laboratorio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
                           }
                         </div>
                       </div>
@@ -592,8 +592,8 @@ export function PedidoDetailDrawer({
                     <Target className="w-4 h-4" />
                     <span>
                       {pedido.dias_para_vencer_sla < 0 
-                        ? `Vencido há ${Math.abs(pedido.dias_para_vencer_sla)} dias`
-                        : `Vence em ${pedido.dias_para_vencer_sla} dias`
+                        ? `Venceu ${pedido.data_prometida ? new Date(pedido.data_prometida).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 'data não definida'}`
+                        : `Vence ${pedido.data_prometida ? new Date(pedido.data_prometida).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 'data não definida'}`
                       }
                     </span>
                   </div>

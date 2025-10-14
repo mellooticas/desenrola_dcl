@@ -318,9 +318,9 @@ export function KanbanCard({
                   {slaStatus.diasParaSla !== null ? (
                     slaStatus.diasParaSla < 0 ? 
                       `${Math.abs(slaStatus.diasParaSla)}d atraso` :
-                      `${slaStatus.diasParaSla}d restam`
+                      slaStatus.dataSlaLab?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                   ) : (
-                    slaStatus.dataSlaLab.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                    slaStatus.dataSlaLab?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                   )}
                 </div>
               </div>
@@ -337,9 +337,9 @@ export function KanbanCard({
                   {slaStatus.diasParaPromessa !== null ? (
                     slaStatus.diasParaPromessa < 0 ? 
                       `${Math.abs(slaStatus.diasParaPromessa)}d atraso` :
-                      `${slaStatus.diasParaPromessa}d restam`
+                      slaStatus.dataPromessaCliente?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                   ) : (
-                    slaStatus.dataPromessaCliente.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                    slaStatus.dataPromessaCliente?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                   )}
                 </div>
               </div>

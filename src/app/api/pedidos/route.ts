@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSupabase, hasServerSupabaseEnv } from '@/lib/supabase/server'
-import type { Pedido, CriarPedidoCompletoData } from '@/lib/types/database'
+import { getServerSupabase, hasServerSupabaseEnv } from '../../../lib/supabase/server'
+import type { Pedido, CriarPedidoCompletoData } from '../../../lib/types/database'
+import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -8,7 +9,6 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     if (!hasServerSupabaseEnv()) {
-      // Ambiente local sem SUPABASE_URL/SERVICE_ROLE: retornar mock para evitar 404 no dev
       const useMock = process.env.NEXT_PUBLIC_DEBUG === 'true' || process.env.NEXT_PUBLIC_DEBUG_DEV_MOCK === 'true'
       if (useMock) {
         return NextResponse.json([])
@@ -50,51 +50,57 @@ export async function GET(request: NextRequest) {
         }
       }
       if (prioridade) query = query.eq('prioridade', prioridade)
-      if (eh_garantia !== undefined && (eh_garantia === 'true' || eh_garantia === 'false')) query = query.eq('eh_garantia', eh_garantia === 'true')
+      if (eh_garantia !== null) query = query.eq('eh_garantia', eh_garantia === 'true')
       if (cliente_nome) query = query.ilike('cliente_nome', `%${cliente_nome}%`)
-      if (numero_sequencial) query = query.eq('numero_sequencial', Number(numero_sequencial))
+      if (numero_sequencial) query = query.eq('numero_sequencial', parseInt(numero_sequencial))
       if (numero_os_fisica) query = query.ilike('numero_os_fisica', `%${numero_os_fisica}%`)
-      if (data_inicio) query = query.gte('data_pedido', data_inicio)
-      if (data_fim) query = query.lte('data_pedido', data_fim)
-
-      const { data: pedidos, error } = await query.order('updated_at', { ascending: false })
       
-      if (error) {
-        const debug = process.env.NEXT_PUBLIC_DEBUG === 'true' || process.env.NEXT_PUBLIC_DEBUG === '1'
-        const errPayload = debug
-          ? { error: 'Erro ao buscar pedidos', details: (error as unknown as { message?: string })?.message || 'Falha na consulta' }
-          : { error: 'Erro ao buscar pedidos' }
-        return NextResponse.json(errPayload, { status: 500 })
+      if (data_inicio && data_fim) {
+        query = query.gte('created_at', data_inicio).lte('created_at', data_fim + ' 23:59:59')
       }
-      
-      return NextResponse.json(pedidos)
+
+      query = query.order('created_at', { ascending: false })
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('❌ Erro ao buscar pedidos Kanban:', error)
+        return NextResponse.json({ error: 'Erro ao buscar pedidos' }, { status: 500 })
+      }
+
+      return NextResponse.json(data || [])
     } else {
-      // Busca simples na tabela principal
-      const { data: pedidos, error } = await supabase
+      // Busca simples na tabela pedidos
+      let query = supabase
         .from('pedidos')
         .select(`
           *,
-          loja:lojas(nome, codigo),
-          laboratorio:laboratorios(nome, codigo),
-          classe:classes_lente(nome, categoria, cor_badge)
+          lojas (id, nome, codigo),
+          laboratorios (id, nome, codigo),
+          classes_lente (id, nome, codigo)
         `)
-        .order('updated_at', { ascending: false })
-      
+
+      if (lojaId) query = query.eq('loja_id', lojaId)
+      if (laboratorioId) query = query.eq('laboratorio_id', laboratorioId)
+      if (status) query = query.eq('status', status)
+      if (prioridade) query = query.eq('prioridade', prioridade)
+      if (eh_garantia !== null) query = query.eq('eh_garantia', eh_garantia === 'true')
+      if (cliente_nome) query = query.ilike('cliente_nome', `%${cliente_nome}%`)
+
+      query = query.order('created_at', { ascending: false })
+
+      const { data, error } = await query
+
       if (error) {
-        const debug = process.env.NEXT_PUBLIC_DEBUG === 'true' || process.env.NEXT_PUBLIC_DEBUG === '1'
-        const errPayload = debug
-          ? { error: 'Erro ao buscar pedidos', details: (error as unknown as { message?: string })?.message || 'Falha na consulta' }
-          : { error: 'Erro ao buscar pedidos' }
-        return NextResponse.json(errPayload, { status: 500 })
+        console.error('❌ Erro ao buscar pedidos simples:', error)
+        return NextResponse.json({ error: 'Erro ao buscar pedidos' }, { status: 500 })
       }
-      
-      return NextResponse.json(pedidos)
+
+      return NextResponse.json(data || [])
     }
-  } catch {
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+  } catch (error) {
+    console.error('❌ Erro geral na busca de pedidos:', error)
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
 
@@ -107,16 +113,10 @@ export async function POST(request: NextRequest) {
     const supabase = getServerSupabase()
     const body: CriarPedidoCompletoData = await request.json()
     
-    // DEBUG: Log dos dados recebidos na API
     console.log('🔔 API /pedidos POST - Dados recebidos:', {
       numero_os_fisica: body.numero_os_fisica,
       numero_pedido_laboratorio: body.numero_pedido_laboratorio,
       cliente_nome: body.cliente_nome,
-      cliente_telefone: body.cliente_telefone,
-      valor_pedido: body.valor_pedido,
-      custo_lentes: body.custo_lentes,
-      observacoes: body.observacoes,
-      loja_id: body.loja_id,
       eh_garantia: body.eh_garantia
     })
     
@@ -128,136 +128,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // MÉTODO 1: Usar função SQL (mais confiável para permissões)
-    try {
-      const { data: pedidoId, error: funcaoError } = await supabase
-        .rpc('criar_pedido_simples', {
-          p_loja_id: body.loja_id,
-          p_laboratorio_id: body.laboratorio_id,
-          p_classe_lente_id: body.classe_lente_id,
-          p_cliente_nome: body.cliente_nome,
-          p_cliente_telefone: body.cliente_telefone || null,
-          p_numero_os_fisica: body.numero_os_fisica || null,
-          p_numero_pedido_laboratorio: body.numero_pedido_laboratorio || null,
-          p_valor_pedido: body.valor_pedido || null,
-          p_custo_lentes: body.custo_lentes || null,
-          p_eh_garantia: body.eh_garantia || false,
-          p_observacoes: body.observacoes || null,
-          p_observacoes_garantia: body.observacoes_garantia || null,
-          p_prioridade: body.prioridade || 'NORMAL',
-          p_data_prometida_cliente: body.data_prometida_cliente || null
-        })
-
-      if (!funcaoError && pedidoId) {
-        // DEBUG: Log da função SQL
-        console.log('🔧 Pedido criado via função SQL - ID:', pedidoId)
-        
-        // Buscar dados completos do pedido criado
-        const { data: pedidoCompleto, error: buscaError } = await supabase
-          .from('pedidos')
-          .select('*')
-          .eq('id', pedidoId)
-          .single()
-
-        if (!buscaError && pedidoCompleto) {
-          console.log('✅ Pedido criado com sucesso:', {
-            id: pedidoCompleto.id,
-            numero_sequencial: pedidoCompleto.numero_sequencial,
-            cliente_telefone: pedidoCompleto.cliente_telefone,
-            numero_os_fisica: pedidoCompleto.numero_os_fisica,
-            numero_pedido_laboratorio: pedidoCompleto.numero_pedido_laboratorio,
-            valor_pedido: pedidoCompleto.valor_pedido,
-            custo_lentes: pedidoCompleto.custo_lentes,
-            observacoes: pedidoCompleto.observacoes,
-            eh_garantia: pedidoCompleto.eh_garantia,
-            cliente_nome: pedidoCompleto.cliente_nome
-          })
-          return NextResponse.json(pedidoCompleto, { status: 201 })
-        } else {
-          // Retornar pelo menos o ID
-          return NextResponse.json({ id: pedidoId }, { status: 201 })
-        }
-      } else {
-        console.log('⚠️ Função SQL falhou, erro:', funcaoError)
-      }
-    } catch (error) {
-      console.log('⚠️ Erro ao executar função SQL:', error)
-    }
-
-    // MÉTODO 2: Inserção direta (fallback)
-    // Usar SLA padrão sem acessar laboratorio_sla para evitar problema de permissões
-    let slaDias = 5 // SLA padrão
+    // MÉTODO COM CÁLCULO DE SLA NA API (evita problema de trigger)
+    console.log('🔄 Calculando SLA na API para evitar problemas de trigger')
     
-    // Tentar buscar SLA da classe de lente (com fallback se falhar)
-    try {
-      const { data: classe, error: classeError } = await supabase
-        .from('classes_lente')
-        .select('sla_base_dias')
-        .eq('id', body.classe_lente_id)
-        .single()
+    // Verificar se foi fornecida data prometida manual
+    const dataPrometidaManual = body.data_prometida_manual
+    let dataPrometida: Date
+    
+    if (dataPrometidaManual) {
+      // Usar data manual fornecida pelo usuário
+      dataPrometida = new Date(dataPrometidaManual + 'T00:00:00')
+      console.log('📅 Usando data prometida MANUAL:', dataPrometidaManual)
+    } else {
+      // Calcular data prometida com SLA automático por prioridade
+      const prioridade = body.prioridade || 'NORMAL'
+      let slaDias = 5 // padrão
       
-      if (!classeError && classe && classe.sla_base_dias) {
-        slaDias = classe.sla_base_dias
+      switch (prioridade) {
+        case 'URGENTE':
+          slaDias = 2
+          break
+        case 'ALTA':
+          slaDias = 4
+          break
+        case 'BAIXA':
+          slaDias = 7
+          break
+        default: // NORMAL
+          slaDias = 5
+          break
       }
-    } catch (error) {
-      console.log('⚠️ Erro ao buscar SLA da classe, usando padrão:', error)
-      // Continuar com SLA padrão
-    }
-
-    // Ajustar por prioridade (apenas para SLA lab)
-    switch (body.prioridade) {
-      case 'BAIXA': slaDias += 2; break
-      case 'ALTA': slaDias -= 1; break
-      case 'URGENTE': slaDias -= 3; break
-    }
-    slaDias = Math.max(1, slaDias)
-
-    // Buscar margem de segurança da loja
-    let margemSegurancaDias = 2 // padrão
-    try {
-      const { data: lojaData } = await supabase
-        .from('lojas')
-        .select('margem_seguranca_dias')
-        .eq('id', body.loja_id)
-        .single()
       
-      if (lojaData?.margem_seguranca_dias) {
-        margemSegurancaDias = lojaData.margem_seguranca_dias
-      }
-    } catch (error) {
-      console.log('⚠️ Erro ao buscar margem da loja, usando padrão:', error)
-    }
-
-    // Calcular datas (dias úteis)
-    const addBusinessDays = (start: Date, days: number) => {
-      const d = new Date(start)
-      let added = 0
-      while (added < days) {
-        d.setDate(d.getDate() + 1)
-        const dow = d.getDay()
-        if (dow !== 0 && dow !== 6) added++
-      }
-      return d
+      const hoje = new Date()
+      dataPrometida = new Date(hoje.getTime() + (slaDias * 24 * 60 * 60 * 1000))
+      console.log('🤖 Usando data prometida AUTOMÁTICA:', slaDias, 'dias')
     }
     
-    // 1. SLA LAB (controle interno)
-    const dataSlaLab = addBusinessDays(new Date(), slaDias)
-    const data_sla_laboratorio = dataSlaLab.toISOString().split('T')[0]
+    const hoje = new Date()
+    const prioridade = body.prioridade || 'NORMAL'
     
-    // 2. PROMESSA CLIENTE (SLA + margem)
-    const diasPromessaCliente = slaDias + margemSegurancaDias
-    const dataPromessaCliente = addBusinessDays(new Date(), diasPromessaCliente)
-    const data_prometida = dataPromessaCliente.toISOString().split('T')[0]
-    
-    // 3. LEGADO (compatibilidade - usar SLA lab)
-    const data_prevista_pronto = data_sla_laboratorio
-
-    const novoPedido: Partial<Pedido> = {
+    const novoPedido = {
       loja_id: body.loja_id,
       laboratorio_id: body.laboratorio_id,
       classe_lente_id: body.classe_lente_id,
-      status: 'REGISTRADO',
-      prioridade: body.prioridade || 'NORMAL',
+      status: 'REGISTRADO' as const,
+      prioridade: prioridade,
       cliente_nome: body.cliente_nome,
       cliente_telefone: body.cliente_telefone || null,
       numero_os_fisica: body.numero_os_fisica || null,
@@ -267,63 +182,78 @@ export async function POST(request: NextRequest) {
       eh_garantia: body.eh_garantia || false,
       observacoes: body.observacoes || null,
       observacoes_garantia: body.observacoes_garantia || null,
-      // NOVAS DATAS CALCULADAS SEPARADAMENTE
-      data_sla_laboratorio,
-      data_prometida,
-      data_prevista_pronto, // compatibilidade
-      created_by: 'api_direct'
+      // Calcular datas na API
+      data_pedido: hoje.toISOString().split('T')[0],
+      data_prometida: dataPrometida.toISOString().split('T')[0],
+      created_at: hoje.toISOString(),
+      updated_at: hoje.toISOString()
     }
     
-    // DEBUG: Log do objeto que será inserido
-    console.log('📝 Objeto para inserção no banco:', {
+    console.log('📝 Inserindo pedido com data prometida:', {
       cliente_nome: novoPedido.cliente_nome,
-      data_sla_laboratorio: novoPedido.data_sla_laboratorio,
+      prioridade: novoPedido.prioridade,
       data_prometida: novoPedido.data_prometida,
-      data_prevista_pronto: novoPedido.data_prevista_pronto,
-      margem_seguranca_dias: margemSegurancaDias,
-      custo_lentes: novoPedido.custo_lentes,
-      observacoes: novoPedido.observacoes,
+      tipo_data: dataPrometidaManual ? 'MANUAL' : 'AUTOMÁTICA',
       eh_garantia: novoPedido.eh_garantia
     })
+
+    // Usar função que bypassa triggers
+    console.log('🔄 Usando função que bypassa triggers problemáticos')
     
-    const { data: pedido, error } = await supabase
-      .from('pedidos')
-      .insert(novoPedido)
-      .select()
-      .single()
+    const { data: resultado, error } = await supabase.rpc('inserir_pedido_sem_trigger', {
+      p_loja_id: novoPedido.loja_id,
+      p_laboratorio_id: novoPedido.laboratorio_id,
+      p_classe_lente_id: novoPedido.classe_lente_id,
+      p_status: novoPedido.status,
+      p_prioridade: novoPedido.prioridade,
+      p_cliente_nome: novoPedido.cliente_nome,
+      p_cliente_telefone: novoPedido.cliente_telefone,
+      p_observacoes: novoPedido.observacoes,
+      p_eh_garantia: novoPedido.eh_garantia,
+      p_data_pedido: novoPedido.data_pedido,
+      p_data_prometida: novoPedido.data_prometida
+    })
     
     if (error) {
-      console.error('❌ Erro ao inserir pedido:', error)
-      const debug = process.env.NEXT_PUBLIC_DEBUG === 'true' || process.env.NEXT_PUBLIC_DEBUG === '1'
-      const errPayload = debug
-        ? { error: 'Erro ao criar pedido', details: (error as unknown as { message?: string })?.message || 'Falha na inserção' }
-        : { error: 'Erro ao criar pedido' }
-      return NextResponse.json(errPayload, { status: 500 })
+      console.error('❌ Erro na função bypass:', error)
+      return NextResponse.json({ error: 'Erro ao criar pedido' }, { status: 500 })
+    }
+
+    if (!resultado || resultado.length === 0) {
+      console.error('❌ Função não retornou dados')
+      return NextResponse.json({ error: 'Erro ao criar pedido' }, { status: 500 })
+    }
+
+    // Converter resultado da função para formato esperado
+    const pedido = {
+      id: resultado[0].id,
+      numero_sequencial: resultado[0].numero_sequencial,
+      cliente_nome: resultado[0].cliente_nome,
+      data_pedido: resultado[0].data_pedido,
+      data_prometida: resultado[0].data_prometida,
+      status: resultado[0].status,
+      prioridade: resultado[0].prioridade,
+      loja_id: novoPedido.loja_id,
+      laboratorio_id: novoPedido.laboratorio_id,
+      classe_lente_id: novoPedido.classe_lente_id
     }
     
-    // DEBUG: Log do pedido criado
-    console.log('✅ Pedido criado com sucesso:', {
+    if (error) {
+      console.error('❌ Erro ao inserir pedido com SLA calculado:', error)
+      return NextResponse.json({ error: 'Erro ao criar pedido' }, { status: 500 })
+    }
+
+    console.log('✅ Pedido criado via função bypass:', {
       id: pedido.id,
       numero_sequencial: pedido.numero_sequencial,
-      cliente_telefone: pedido.cliente_telefone,
-      numero_os_fisica: pedido.numero_os_fisica,
-      numero_pedido_laboratorio: pedido.numero_pedido_laboratorio,
-      valor_pedido: pedido.valor_pedido,
-      custo_lentes: pedido.custo_lentes,
-      observacoes: pedido.observacoes,
-      eh_garantia: pedido.eh_garantia,
-      cliente_nome: pedido.cliente_nome
+      cliente_nome: pedido.cliente_nome,
+      data_prometida: pedido.data_prometida
     })
     
     return NextResponse.json(pedido, { status: 201 })
     
   } catch (error) {
-    return NextResponse.json(
-      { 
-        error: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : String(error)
-      },
-      { status: 500 }
-    )
+    console.error('❌ Erro geral na API:', error)
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

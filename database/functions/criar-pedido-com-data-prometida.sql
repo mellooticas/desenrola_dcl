@@ -18,7 +18,8 @@ CREATE OR REPLACE FUNCTION criar_pedido_simples(
   p_observacoes TEXT DEFAULT NULL,
   p_observacoes_garantia TEXT DEFAULT NULL,
   p_prioridade TEXT DEFAULT 'NORMAL',
-  p_data_prometida_cliente DATE DEFAULT NULL  -- NOVO PARÂMETRO
+  p_data_prometida_cliente DATE DEFAULT NULL,  -- NOVO PARÂMETRO
+  p_tratamentos_ids UUID[] DEFAULT NULL        -- NOVO PARÂMETRO para tratamentos
 ) RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -102,9 +103,15 @@ BEGIN
     p_observacoes_garantia,
     v_data_prevista,           -- Compatibilidade com sistema antigo
     v_data_sla_lab,           -- SLA interno do laboratório
-    v_data_prevista,          -- Data prometida ao cliente
+    COALESCE(p_data_prometida_cliente, v_data_prevista), -- Data prometida ao cliente (manual ou calculada)
     'sistema_criar_pedido'
   );
+  
+  -- Inserir tratamentos se houver
+  IF p_tratamentos_ids IS NOT NULL AND array_length(p_tratamentos_ids, 1) > 0 THEN
+    INSERT INTO pedido_tratamentos (pedido_id, tratamento_id)
+    SELECT v_pedido_id, unnest(p_tratamentos_ids);
+  END IF;
   
   RETURN v_pedido_id;
 END;
