@@ -119,17 +119,24 @@ export const supabaseHelpers = {
   },
 
   async criarPedidoCompleto(dadosPedido: CriarPedidoCompletoData) {
+    console.log('🔄 supabaseHelpers.criarPedidoCompleto - Enviando dados:', dadosPedido)
+    
     const res = await fetch('/api/pedidos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dadosPedido),
     })
+    
+    console.log('📡 Resposta da API:', { status: res.status, ok: res.ok })
+    
     if (!res.ok) {
       const txt = await res.text()
-      throw new Error(`API /api/pedidos (POST) falhou: ${res.status} ${txt}`)
+      console.error('❌ Erro na API /api/pedidos:', { status: res.status, response: txt })
+      throw new Error(`API /api/pedidos (POST) falhou: ${res.status} - ${txt}`)
     }
+    
     const pedido = await res.json()
-    // Evento de criação já é tratado no backend no futuro; por ora, mantemos simples
+    console.log('✅ Pedido criado com sucesso:', pedido)
     return pedido
   },
 
