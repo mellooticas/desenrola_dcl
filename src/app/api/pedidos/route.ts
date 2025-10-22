@@ -216,7 +216,8 @@ export async function POST(request: NextRequest) {
       p_prioridade: novoPedido.prioridade,
       p_data_prometida_cliente: dataPrometidaManual || null,
       p_tratamentos_ids: body.tratamentos_ids || null,
-      p_montador_id: body.montador_id || null
+      // Montador será atribuído apenas ao mover para coluna "LENTES NO DCL"
+      p_montador_id: null
     })
     
     if (error) {

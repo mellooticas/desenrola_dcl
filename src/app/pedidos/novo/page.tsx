@@ -10,24 +10,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Save, Clock, AlertCircle, User } from 'lucide-react'
+import { ArrowLeft, Save, Clock, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import type { Loja, Laboratorio, ClasseLente, Tratamento, PrioridadeLevel, Montador } from '@/lib/types/database'
+import type { Loja, Laboratorio, ClasseLente, Tratamento, PrioridadeLevel } from '@/lib/types/database'
 import { usePermissions } from '@/lib/hooks/use-user-permissions'
 import { DemoModeAlert } from '@/components/permissions/DemoModeAlert'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { MontadorSelector } from '@/components/forms/MontadorSelector'
 
 export default function NovaOrdemPage() {
   const router = useRouter()
   const permissions = usePermissions()
   const [loading, setLoading] = useState(false)
   const [carregandoDados, setCarregandoDados] = useState(true)
-  
-  // Modal de seleção de montador
-  const [showMontadorSelector, setShowMontadorSelector] = useState(false)
-  const [montadorSelecionado, setMontadorSelecionado] = useState<Montador | null>(null)
   
   // Dados para selects
   const [lojas, setLojas] = useState<Loja[]>([])
@@ -198,7 +193,7 @@ export default function NovaOrdemPage() {
         tratamentos_ids: formData.tratamentos_ids,
         observacoes: formData.observacoes || null,
         observacoes_garantia: formData.observacoes_garantia || null,
-        montador_id: montadorSelecionado?.id || null,
+        // Montador será atribuído apenas ao mover para coluna "LENTES NO DCL"
         data_prometida_manual: formData.data_prometida_manual || null
       }
 
@@ -469,48 +464,13 @@ export default function NovaOrdemPage() {
           </Card>
         </div>
 
-        {/* Montador e Data Prometida */}
+        {/* Data Prometida */}
         <Card>
           <CardHeader>
-            <CardTitle>Montador e Prazo</CardTitle>
-            <CardDescription>Escolha o montador e defina a data de entrega prometida</CardDescription>
+            <CardTitle>Prazo de Entrega</CardTitle>
+            <CardDescription>Defina a data de entrega prometida ao cliente</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Montador DCL</Label>
-              {montadorSelecionado ? (
-                <div className="flex items-center justify-between p-3 border rounded-lg bg-blue-50 border-blue-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                      {montadorSelecionado.nome.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-medium text-sm">{montadorSelecionado.nome}</div>
-                      <div className="text-xs text-gray-600">{montadorSelecionado.local}</div>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowMontadorSelector(true)}
-                  >
-                    Trocar
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setShowMontadorSelector(true)}
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Selecionar Montador
-                </Button>
-              )}
-            </div>
-
+          <CardContent>
             <div className="space-y-2">
               <Label htmlFor="data_prometida_manual">Data Prometida ao Cliente</Label>
               <Input
@@ -659,17 +619,6 @@ export default function NovaOrdemPage() {
           </Button>
         </div>
       </form>
-      
-      {/* Modal de Seleção de Montador */}
-      <MontadorSelector
-        isOpen={showMontadorSelector}
-        onClose={() => setShowMontadorSelector(false)}
-        onSelect={(montador) => {
-          setMontadorSelecionado(montador)
-          setShowMontadorSelector(false)
-        }}
-        selectedMontadorId={montadorSelecionado?.id}
-      />
       </div>
     </div>
   )
