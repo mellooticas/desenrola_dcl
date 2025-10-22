@@ -18,8 +18,9 @@ CREATE OR REPLACE FUNCTION criar_pedido_simples(
   p_observacoes TEXT DEFAULT NULL,
   p_observacoes_garantia TEXT DEFAULT NULL,
   p_prioridade TEXT DEFAULT 'NORMAL',
-  p_data_prometida_cliente DATE DEFAULT NULL,  -- NOVO PARÂMETRO
-  p_tratamentos_ids UUID[] DEFAULT NULL        -- NOVO PARÂMETRO para tratamentos
+  p_data_prometida_cliente DATE DEFAULT NULL,  -- Data prometida manual ao cliente
+  p_tratamentos_ids UUID[] DEFAULT NULL,       -- Array de tratamentos
+  p_montador_id UUID DEFAULT NULL              -- Montador (atribuído apenas no Kanban)
 ) RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -84,6 +85,7 @@ BEGIN
     data_prevista_pronto,      -- Data antiga (compatibilidade)
     data_sla_laboratorio,      -- SLA do laboratório (interno)
     data_prometida,            -- Data prometida ao cliente (comercial)
+    montador_id,               -- Montador (NULL na criação, atribuído no Kanban)
     created_by
   ) VALUES (
     v_pedido_id,
@@ -104,6 +106,7 @@ BEGIN
     v_data_prevista,           -- Compatibilidade com sistema antigo
     v_data_sla_lab,           -- SLA interno do laboratório
     COALESCE(p_data_prometida_cliente, v_data_prevista), -- Data prometida ao cliente (manual ou calculada)
+    p_montador_id,             -- Montador (NULL na criação)
     'sistema_criar_pedido'
   );
   

@@ -351,8 +351,8 @@ export function PedidoDetailDrawer({
             </CardContent>
           </Card>
 
-          {/* Montador - Apenas para DCL e quando status = PRODUCAO */}
-          {permissions.canSelectMontador() && pedido.status === 'PRODUCAO' && (
+          {/* Montador - Apenas para DCL e quando status = PRONTO (Lentes no DCL) */}
+          {permissions.canSelectMontador() && pedido.status === 'PRONTO' && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
