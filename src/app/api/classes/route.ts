@@ -5,7 +5,7 @@ import type { ClasseLente } from '@/lib/types/database'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
   const supabase = getServerSupabase()
     

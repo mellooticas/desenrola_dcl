@@ -9,5 +9,5 @@ export async function GET(request: Request) {
   return fetch(new URL(newUrl, url.origin))
     .then(res => res.json())
     .then(data => NextResponse.json(data))
-    .catch(error => NextResponse.json({ error: 'Erro ao carregar alertas' }, { status: 500 }))
+    .catch(() => NextResponse.json({ error: 'Erro ao carregar alertas' }, { status: 500 }))
 }

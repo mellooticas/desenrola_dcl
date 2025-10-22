@@ -68,7 +68,7 @@ export const usePedidosStore = create<PedidosState>()(
           const response = await fetch('/api/pedidos')
           const pedidos = await response.json()
           set({ pedidos, loading: false })
-        } catch (error) {
+        } catch {
           set({ erro: 'Erro ao carregar pedidos', loading: false })
         }
       },
@@ -116,7 +116,7 @@ export const usePedidosStore = create<PedidosState>()(
           }
 
           return true
-        } catch (error) {
+        } catch {
           // Reverter se falhou
           get().atualizarPedido(cardId, { status: pedidoAtual.status })
           return false

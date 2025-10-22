@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     return response
 
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Erro interno do servidor' },
       { status: 500 }
