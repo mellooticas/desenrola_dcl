@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 interface DadosEvolucaoFinanceira {
   periodo: string
   receita: number
