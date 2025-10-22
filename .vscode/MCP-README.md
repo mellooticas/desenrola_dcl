@@ -2,11 +2,11 @@
 
 ## ✅ Status da Configuração
 
-| MCP | Status | Descrição |
-|-----|--------|-----------|
-| **Supabase** | ✅ Ativo | Queries SQL, migrations, schema inspection |
-| **Chrome DevTools** | ✅ Configurado | Testes E2E, debug de UI, screenshots |
-| **Context7** | ⏳ API Key pendente | Busca em docs, Stack Overflow, GitHub issues |
+| MCP                 | Status              | Descrição                                    |
+| ------------------- | ------------------- | -------------------------------------------- |
+| **Supabase**        | ✅ Ativo            | Queries SQL, migrations, schema inspection   |
+| **Chrome DevTools** | ✅ Configurado      | Testes E2E, debug de UI, screenshots         |
+| **Context7**        | ⏳ API Key pendente | Busca em docs, Stack Overflow, GitHub issues |
 
 ---
 
@@ -46,12 +46,14 @@ npm run test:e2e
 ## 🎯 Comandos Mais Usados
 
 ### Testes Automáticos
+
 ```bash
 npm run test:e2e              # Teste E2E completo
 npm run test:e2e:watch        # Modo watch (reexecuta ao mudar código)
 ```
 
 ### Via Copilot (recomendado)
+
 ```
 "Chrome MCP: teste criação de pedido"
 "Chrome MCP: screenshot do Kanban"
