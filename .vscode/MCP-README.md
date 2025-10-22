@@ -2,11 +2,11 @@
 
 ## ✅ Status da Configuração
 
-| MCP                 | Status              | Descrição                                    |
-| ------------------- | ------------------- | -------------------------------------------- |
-| **Supabase**        | ✅ Ativo            | Queries SQL, migrations, schema inspection   |
-| **Chrome DevTools** | ✅ Configurado      | Testes E2E, debug de UI, screenshots         |
-| **Context7**        | ⏳ API Key pendente | Busca em docs, Stack Overflow, GitHub issues |
+| MCP                 | Status   | Descrição                                    |
+| ------------------- | -------- | -------------------------------------------- |
+| **Supabase**        | ✅ Ativo | Queries SQL, migrations, schema inspection   |
+| **Chrome DevTools** | ✅ Ativo | Testes E2E, debug de UI, screenshots         |
+| **Context7**        | ✅ Ativo | Busca em docs, Stack Overflow, GitHub issues |
 
 ---
 
@@ -25,12 +25,18 @@ npm run test:e2e
 "Execute o teste E2E do Kanban"
 ```
 
-### 2. Configurar Context7 (opcional)
+### 2. Testar Context7 MCP
+
+**Via Copilot:**
+
+```
+"Use Context7 MCP para buscar na documentação do Next.js sobre Server Actions"
+```
+
+**Via terminal:**
 
 ```bash
-# 1. Obter API key em: https://context7.io
-# 2. Editar .vscode/mcp-settings.json
-# 3. Substituir "your-api-key-here" pela sua chave
+npm run mcp:context7
 ```
 
 ---

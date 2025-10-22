@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test:e2e": "node scripts/test-mcp-chrome.mjs",
     "test:e2e:watch": "nodemon --watch src --exec 'npm run test:e2e'",
+    "test:mcp": "node scripts/test-mcp-status.mjs",
     "mcp:chrome": "npx -y @modelcontextprotocol/server-puppeteer",
     "mcp:context7": "npx -y @context7/mcp-server"
   },

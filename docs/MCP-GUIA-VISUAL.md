@@ -5,7 +5,9 @@
 ### 📝 CENÁRIO 1: Usuário reporta bug ao criar pedido
 
 #### Passo 1: Reproduzir o bug automaticamente
+
 **Digite no Copilot:**
+
 ```
 Use o Chrome DevTools MCP para:
 1. Abrir http://localhost:3000/pedidos/novo
@@ -16,6 +18,7 @@ Use o Chrome DevTools MCP para:
 ```
 
 **O que vai acontecer:**
+
 - ✅ Browser Chrome abre automaticamente
 - ✅ Navega até a página
 - ✅ Captura console.log, console.error, console.warn
@@ -23,10 +26,11 @@ Use o Chrome DevTools MCP para:
 - ✅ Screenshot salvo em `test-results/pedido-novo-inicial.png`
 
 **Resultado esperado:**
+
 ```
 ✅ Página carregada em 1.2s
 ✅ Formulário renderizado
-❌ ERRO ENCONTRADO: 
+❌ ERRO ENCONTRADO:
    "TypeError: Cannot read property 'nome' of undefined"
    Linha: PedidoForm.tsx:145
 📊 APIs chamadas:
@@ -37,13 +41,16 @@ Use o Chrome DevTools MCP para:
 ```
 
 #### Passo 2: Investigar no banco
+
 **Digite no Copilot:**
+
 ```
 Use o Supabase MCP para executar:
 SELECT * FROM lojas ORDER BY created_at DESC LIMIT 3;
 ```
 
 **Resultado:**
+
 ```
 ✅ Query executada
 📊 3 lojas encontradas
@@ -51,36 +58,44 @@ SELECT * FROM lojas ORDER BY created_at DESC LIMIT 3;
 ```
 
 #### Passo 3: Buscar solução
+
 **Digite no Copilot:**
+
 ```
 Use o Context7 MCP para buscar no Stack Overflow:
 "PostgreSQL add column to existing table migration best practices"
 ```
 
 **Resultado:**
+
 ```
 📚 5 resultados encontrados:
 
 1. [Aceita ✓] Adicionar coluna com ALTER TABLE
    ALTER TABLE lojas ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-   
+
 2. [67 votes] Criar trigger para updated_at automático
    CREATE TRIGGER set_updated_at...
 ```
 
 #### Passo 4: Aplicar correção
+
 **Digite no Copilot:**
+
 ```
 Use o Supabase MCP para executar a migration em database/migrations/add-updated-at-columns.sql
 ```
 
 #### Passo 5: Validar fix
+
 **Digite no Copilot:**
+
 ```
 Use o Chrome DevTools MCP para testar criação de pedido novamente
 ```
 
 **Resultado:**
+
 ```
 ✅ Teste passou!
 ✅ API /api/lojas - 200 OK
@@ -93,11 +108,13 @@ Use o Chrome DevTools MCP para testar criação de pedido novamente
 ### 📝 CENÁRIO 2: Testar MontadorSelector após fix
 
 **Digite no Copilot:**
+
 ```
 Execute o script test-mcp-chrome.mjs e mostre os resultados do teste de MontadorSelector
 ```
 
 **O que vai acontecer:**
+
 1. Script abre automaticamente
 2. Navega até `/kanban`
 3. Procura cards com `status="PRONTO"`
@@ -107,6 +124,7 @@ Execute o script test-mcp-chrome.mjs e mostre os resultados do teste de Montador
 7. Salva resultados em JSON
 
 **Resultado esperado:**
+
 ```json
 {
   "test": "Kanban MontadorSelector",
@@ -123,6 +141,7 @@ Execute o script test-mcp-chrome.mjs e mostre os resultados do teste de Montador
 ### 📝 CENÁRIO 3: Validar Performance do Dashboard
 
 **Digite no Copilot:**
+
 ```
 Use Chrome DevTools MCP para:
 1. Abrir /dashboard
@@ -133,6 +152,7 @@ Use Chrome DevTools MCP para:
 ```
 
 **Resultado:**
+
 ```
 📊 Performance Report:
 
@@ -145,7 +165,7 @@ Carregamento Total: 2.8s
 🐌 APIs Lentas:
 1. GET /api/dashboard/evolucao-financeira - 1.2s
    Sugestão: Adicionar índice em pedidos.created_at
-   
+
 2. GET /api/gamificacao/historico - 950ms
    Sugestão: Usar view materializada
 
@@ -162,6 +182,7 @@ Carregamento Total: 2.8s
 **Objetivo:** Implementar notificações push no sistema
 
 **Digite no Copilot:**
+
 ```
 Use Context7 MCP para:
 1. Buscar na documentação do Next.js sobre Web Push API
@@ -171,6 +192,7 @@ Use Context7 MCP para:
 ```
 
 **Resultado:**
+
 ```
 📚 Documentação Next.js - Web Push API
 
@@ -185,7 +207,7 @@ Use Context7 MCP para:
 2. Bibliotecas recomendadas:
    ✅ web-push (8.5k ⭐) - Suporte nativo
    ✅ @supabase/realtime - Para Supabase integration
-   
+
 3. Issues relevantes:
    - #52341 - Push API com App Router (resolvida)
    - #51234 - Service Worker em Next.js 14 (aberta)
@@ -208,6 +230,7 @@ Use Context7 MCP para:
 **Após fazer deploy em produção:**
 
 **Digite no Copilot:**
+
 ```
 Use Chrome DevTools MCP para executar smoke test em https://desenrola-dcl.vercel.app:
 1. Verificar se homepage carrega (< 3s)
@@ -219,12 +242,13 @@ Use Chrome DevTools MCP para executar smoke test em https://desenrola-dcl.vercel
 ```
 
 **Resultado:**
+
 ```
 🔍 Smoke Test - Produção
 
 ✅ Homepage: 1.8s (OK)
 ✅ Login: Sucesso (demo@desenroladcl.com)
-✅ Dashboard: 
+✅ Dashboard:
    ✅ KPIs carregados (4/4)
    ✅ Gráficos renderizados (3/3)
    ✅ Alertas: 2 pendentes
@@ -235,7 +259,7 @@ Use Chrome DevTools MCP para executar smoke test em https://desenrola-dcl.vercel
 ✅ Novo Pedido:
    ✅ Formulário valida campos
    ✅ APIs de busca funcionando
-   
+
 🎉 Status: TUDO FUNCIONANDO
 📸 Screenshots salvos em: test-results/smoke-test-prod/
 ```
@@ -245,6 +269,7 @@ Use Chrome DevTools MCP para executar smoke test em https://desenrola-dcl.vercel
 ## 🎓 Atalhos Rápidos
 
 ### Testes E2E
+
 ```bash
 # Via terminal
 npm run test:e2e
@@ -256,6 +281,7 @@ npm run test:e2e
 ```
 
 ### Debug Rápido
+
 ```
 "Chrome MCP: screenshot de /dashboard"
 "Chrome MCP: capture erros em /kanban"
@@ -263,6 +289,7 @@ npm run test:e2e
 ```
 
 ### Queries Rápidas
+
 ```
 "Supabase: últimos 5 pedidos criados"
 "Supabase: conte pedidos por status"
@@ -270,6 +297,7 @@ npm run test:e2e
 ```
 
 ### Busca Rápida
+
 ```
 "Context7: docs do Supabase sobre RLS"
 "Context7: Next.js 14 Server Actions exemplos"
@@ -283,6 +311,7 @@ npm run test:e2e
 ### ✅ Combine MCPs para máximo poder
 
 **Workflow ideal de debug:**
+
 ```
 1. Chrome MCP: Reproduza o bug
 2. Chrome MCP: Capture logs e APIs
@@ -301,6 +330,7 @@ npm run test:e2e
 ### 📸 Sempre salve evidências
 
 Todos os testes salvam automaticamente:
+
 - Screenshots em `test-results/*.png`
 - Logs em `test-results/results.json`
 - Network requests em formato JSON
@@ -311,18 +341,21 @@ Todos os testes salvam automaticamente:
 ## 🆘 Troubleshooting Rápido
 
 ### "Chrome MCP não responde"
+
 ```bash
 # Reinstalar browsers
 npx playwright install chromium --force
 ```
 
 ### "Context7 API key inválida"
+
 ```bash
 # Verificar configuração
 cat .vscode/mcp-settings.json | grep CONTEXT7_API_KEY
 ```
 
 ### "Teste falhou mas manualmente funciona"
+
 ```
 "Chrome MCP: execute teste com slowMo: 500 para desacelerar e ver o que acontece"
 ```

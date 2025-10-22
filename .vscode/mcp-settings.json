@@ -26,7 +26,9 @@
         "@context7/mcp-server"
       ],
       "env": {
-        "CONTEXT7_API_KEY": "your-api-key-here"
+        "CONTEXT7_API_KEY": "ctx7sk-be60e680-2e0b-438d-a623-18333b855ff6",
+        "CONTEXT7_API_URL": "https://context7.com/api/v1",
+        "CONTEXT7_MCP_URL": "https://mcp.context7.com/mcp"
       },
       "description": "Documentation search and Stack Overflow integration"
     }
