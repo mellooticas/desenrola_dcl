@@ -197,60 +197,73 @@ export async function POST(request: NextRequest) {
       eh_garantia: novoPedido.eh_garantia
     })
 
-    // Usar função que bypassa triggers
-    console.log('🔄 Usando função que bypassa triggers problemáticos')
+    // Usar função criar_pedido_simples
+    console.log('🔄 Usando função criar_pedido_simples')
     
-    const { data: resultado, error } = await supabase.rpc('inserir_pedido_sem_trigger', {
+    const { data: resultado, error } = await supabase.rpc('criar_pedido_simples', {
       p_loja_id: novoPedido.loja_id,
       p_laboratorio_id: novoPedido.laboratorio_id,
       p_classe_lente_id: novoPedido.classe_lente_id,
-      p_status: novoPedido.status,
-      p_prioridade: novoPedido.prioridade,
       p_cliente_nome: novoPedido.cliente_nome,
       p_cliente_telefone: novoPedido.cliente_telefone,
-      p_observacoes: novoPedido.observacoes,
+      p_numero_os_fisica: novoPedido.numero_os_fisica,
+      p_numero_pedido_laboratorio: novoPedido.numero_pedido_laboratorio,
+      p_valor_pedido: novoPedido.valor_pedido,
+      p_custo_lentes: novoPedido.custo_lentes,
       p_eh_garantia: novoPedido.eh_garantia,
-      p_data_pedido: novoPedido.data_pedido,
-      p_data_prometida: novoPedido.data_prometida
+      p_observacoes: novoPedido.observacoes,
+      p_observacoes_garantia: novoPedido.observacoes_garantia,
+      p_prioridade: novoPedido.prioridade,
+      p_data_prometida_cliente: dataPrometidaManual || null,
+      p_tratamentos_ids: body.tratamentos_ids || null,
+      p_montador_id: body.montador_id || null
     })
     
     if (error) {
-      console.error('❌ Erro na função bypass:', error)
+      console.error('❌ Erro na função criar_pedido_simples:', error)
       return NextResponse.json({ error: 'Erro ao criar pedido' }, { status: 500 })
     }
 
-    if (!resultado || resultado.length === 0) {
-      console.error('❌ Função não retornou dados')
+    if (!resultado) {
+      console.error('❌ Função não retornou ID do pedido')
       return NextResponse.json({ error: 'Erro ao criar pedido' }, { status: 500 })
     }
 
-    // Converter resultado da função para formato esperado
-    const pedido = {
-      id: resultado[0].id,
-      numero_sequencial: resultado[0].numero_sequencial,
-      cliente_nome: resultado[0].cliente_nome,
-      data_pedido: resultado[0].data_pedido,
-      data_prometida: resultado[0].data_prometida,
-      status: resultado[0].status,
-      prioridade: resultado[0].prioridade,
-      loja_id: novoPedido.loja_id,
-      laboratorio_id: novoPedido.laboratorio_id,
-      classe_lente_id: novoPedido.classe_lente_id
-    }
+    // A função retorna apenas o UUID do pedido criado
+    const pedidoId = resultado as string
     
-    if (error) {
-      console.error('❌ Erro ao inserir pedido com SLA calculado:', error)
-      return NextResponse.json({ error: 'Erro ao criar pedido' }, { status: 500 })
+    // Buscar o pedido completo para retornar
+    const { data: pedidoCriado, error: errorBusca } = await supabase
+      .from('pedidos')
+      .select(`
+        id,
+        numero_sequencial,
+        cliente_nome,
+        data_pedido,
+        data_prometida,
+        status,
+        prioridade,
+        loja_id,
+        laboratorio_id,
+        classe_lente_id
+      `)
+      .eq('id', pedidoId)
+      .single()
+    
+    if (errorBusca || !pedidoCriado) {
+      console.error('❌ Erro ao buscar pedido criado:', errorBusca)
+      // Retornar ao menos o ID mesmo se não conseguir buscar
+      return NextResponse.json({ id: pedidoId }, { status: 201 })
     }
 
-    console.log('✅ Pedido criado via função bypass:', {
-      id: pedido.id,
-      numero_sequencial: pedido.numero_sequencial,
-      cliente_nome: pedido.cliente_nome,
-      data_prometida: pedido.data_prometida
+    console.log('✅ Pedido criado via função criar_pedido_simples:', {
+      id: pedidoCriado.id,
+      numero_sequencial: pedidoCriado.numero_sequencial,
+      cliente_nome: pedidoCriado.cliente_nome,
+      data_prometida: pedidoCriado.data_prometida
     })
     
-    return NextResponse.json(pedido, { status: 201 })
+    return NextResponse.json(pedidoCriado, { status: 201 })
     
   } catch (error) {
     console.error('❌ Erro geral na API:', error)

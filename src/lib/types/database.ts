@@ -230,6 +230,7 @@ export interface CriarPedidoCompletoData {
   observacoes?: string
   observacoes_garantia?: string   // NOVO
   data_prometida_manual?: string  // NOVO - Data prometida manual
+  montador_id?: string            // NOVO - Montador DCL responsável
 }
 
 // Evento de pedido atualizado
