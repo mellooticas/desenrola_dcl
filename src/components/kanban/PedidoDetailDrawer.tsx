@@ -678,8 +678,14 @@ export function PedidoDetailDrawer({
                       variant="outline"
                       size="sm"
                       onClick={async () => {
-                        await onRegressStatus(pedido)
-                        onClose()
+                        console.log('🔙 Botão Retroceder CLICADO!', { pedidoId: pedido.id, status: pedido.status })
+                        try {
+                          await onRegressStatus(pedido)
+                          console.log('✅ onRegressStatus executado, fechando drawer')
+                          onClose()
+                        } catch (error) {
+                          console.error('❌ Erro ao executar onRegressStatus:', error)
+                        }
                       }}
                       className="flex items-center gap-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
                     >
@@ -693,8 +699,14 @@ export function PedidoDetailDrawer({
                     <Button
                       size="sm"
                       onClick={async () => {
-                        await onAdvanceStatus(pedido)
-                        onClose()
+                        console.log('🔘 Botão Avançar CLICADO!', { pedidoId: pedido.id, status: pedido.status })
+                        try {
+                          await onAdvanceStatus(pedido)
+                          console.log('✅ onAdvanceStatus executado, fechando drawer')
+                          onClose()
+                        } catch (error) {
+                          console.error('❌ Erro ao executar onAdvanceStatus:', error)
+                        }
                       }}
                       className={cn(
                         "flex items-center gap-2 text-white font-semibold",

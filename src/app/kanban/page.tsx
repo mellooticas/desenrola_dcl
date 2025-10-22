@@ -624,7 +624,13 @@ export default function KanbanBoard() {
   }
 
   const handleAdvanceStatus = async (pedido: PedidoCompleto) => {
-    if (!supabase) return
+    console.log('🎯 handleAdvanceStatus CHAMADO!', { pedidoId: pedido.id, status: pedido.status })
+    
+    if (!supabase) {
+      console.error('❌ Supabase não inicializado!')
+      alert('Erro: Sistema não está inicializado corretamente')
+      return
+    }
     
     const nextStatus = permissions.getNextStatus(pedido.status)
     console.log('🔍 handleAdvanceStatus - Debug:', {
@@ -636,9 +642,12 @@ export default function KanbanBoard() {
     })
     
     if (!nextStatus) {
+      console.warn('⚠️ Próximo status não disponível')
       alert('Este pedido já está no status final ou você não tem permissão para avançá-lo.')
       return
     }
+
+    console.log(`⏩ Avançando pedido #${pedido.numero_sequencial} de ${pedido.status} para ${nextStatus}`)
 
     try {
       let observacao = `Avançado de ${STATUS_LABELS[pedido.status]} para ${STATUS_LABELS[nextStatus]} por ${userProfile?.nome || user?.email || 'Sistema'}`
