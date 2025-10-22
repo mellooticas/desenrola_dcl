@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:e2e": "node scripts/test-mcp-chrome.mjs",
+    "test:e2e:watch": "nodemon --watch src --exec 'npm run test:e2e'",
+    "mcp:chrome": "npx -y @modelcontextprotocol/server-puppeteer",
+    "mcp:context7": "npx -y @context7/mcp-server"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
@@ -54,6 +58,7 @@
     "@types/react-dom": "^18.2.18",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.2.15",
+    "playwright": "^1.56.1",
     "typescript": "^5.3.3"
   }
 }
