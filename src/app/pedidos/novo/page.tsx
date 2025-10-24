@@ -10,19 +10,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Save, Clock, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Save, Clock, AlertCircle, Printer, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import type { Loja, Laboratorio, ClasseLente, Tratamento, PrioridadeLevel } from '@/lib/types/database'
+import type { Loja, Laboratorio, ClasseLente, Tratamento, PrioridadeLevel, PedidoCompleto } from '@/lib/types/database'
 import { usePermissions } from '@/lib/hooks/use-user-permissions'
 import { DemoModeAlert } from '@/components/permissions/DemoModeAlert'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { PrintOrderButton } from '@/components/pedidos/PrintOrderButton'
 
 export default function NovaOrdemPage() {
   const router = useRouter()
   const permissions = usePermissions()
   const [loading, setLoading] = useState(false)
   const [carregandoDados, setCarregandoDados] = useState(true)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [pedidoCriado, setPedidoCriado] = useState<PedidoCompleto | null>(null)
   
   // Dados para selects
   const [lojas, setLojas] = useState<Loja[]>([])
@@ -210,8 +214,20 @@ export default function NovaOrdemPage() {
 
       const pedidoCriado = await response.json()
       
+      // Buscar dados completos do pedido para impressão
+      const { data: pedidoCompleto, error: pedidoError } = await supabase
+        .from('view_pedidos_completo')
+        .select('*')
+        .eq('id', pedidoCriado.id)
+        .single()
+
+      if (pedidoError) {
+        console.error('Erro ao buscar pedido completo:', pedidoError)
+      }
+
+      setPedidoCriado(pedidoCompleto || pedidoCriado)
+      setShowSuccessModal(true)
       toast.success('Pedido criado com sucesso!')
-      router.push(`/kanban?highlight=${pedidoCriado.id}`)
     } catch (error: unknown) {
       console.error('Erro ao criar pedido:', error)
       toast.error(error instanceof Error ? error.message : 'Erro ao criar pedido')
@@ -619,6 +635,79 @@ export default function NovaOrdemPage() {
           </Button>
         </div>
       </form>
+
+      {/* Modal de Sucesso com Opção de Impressão */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <DialogTitle>Pedido Criado com Sucesso!</DialogTitle>
+                <DialogDescription>
+                  Pedido #{pedidoCriado?.numero_sequencial || 'N/A'} foi registrado
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-slate-50 rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-600">Cliente:</span>
+                <span className="font-medium">{pedidoCriado?.cliente_nome}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-600">Loja:</span>
+                <span className="font-medium">{pedidoCriado?.loja_nome}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-600">Laboratório:</span>
+                <span className="font-medium">{pedidoCriado?.laboratorio_nome}</span>
+              </div>
+              {pedidoCriado?.numero_os_fisica && (
+                <div className="flex justify-between">
+                  <span className="text-slate-600">OS Loja:</span>
+                  <span className="font-medium">{pedidoCriado.numero_os_fisica}</span>
+                </div>
+              )}
+            </div>
+
+            <Alert>
+              <Printer className="h-4 w-4" />
+              <AlertTitle>Deseja imprimir agora?</AlertTitle>
+              <AlertDescription>
+                Você pode imprimir o pedido agora ou visualizá-lo no Kanban
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSuccessModal(false)
+                router.push(`/kanban?highlight=${pedidoCriado?.id}`)
+              }}
+              className="w-full sm:w-auto"
+            >
+              Ver no Kanban
+            </Button>
+            
+            {pedidoCriado && (
+              <PrintOrderButton 
+                pedido={pedidoCriado}
+                variant="default"
+                size="default"
+                className="w-full sm:w-auto"
+                showLabel={true}
+              />
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
     </div>
   )
