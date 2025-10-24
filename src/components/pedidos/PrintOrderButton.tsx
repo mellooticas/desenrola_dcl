@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Printer, Loader2, Settings } from 'lucide-react'
+import { Printer, Loader2, Settings, Eye, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -23,6 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface PrintOrderButtonProps {
   pedido: PedidoCompleto | null
@@ -30,6 +32,16 @@ interface PrintOrderButtonProps {
   size?: 'default' | 'sm' | 'lg' | 'icon'
   className?: string
   showLabel?: boolean
+}
+
+interface PrintConfig {
+  incluirObservacoes: boolean
+  incluirValores: boolean
+  incluirTelefone: boolean
+  incluirGarantia: boolean
+  incluirSLA: boolean
+  incluirOSLoja: boolean
+  incluirOSLab: boolean
 }
 
 // Configurações de impressoras suportadas
@@ -94,7 +106,11 @@ function quebrarLinha(texto: string, maxChars: number): string {
   return texto.length > maxChars ? texto.substring(0, maxChars - 3) + '...' : texto
 }
 
-function gerarComandoESCPOS(pedido: PedidoCompleto, largura: number = 48): Uint8Array {
+function gerarComandoESCPOS(
+  pedido: PedidoCompleto, 
+  config: PrintConfig,
+  largura: number = 48
+): Uint8Array {
   const ESC = '\x1B'
   const GS = '\x1D'
   
@@ -126,7 +142,7 @@ function gerarComandoESCPOS(pedido: PedidoCompleto, largura: number = 48): Uint8
   comandos += ESC + 'E' + '\x00'
   comandos += quebrarLinha(pedido.cliente_nome || 'N/A', largura - 9) + '\n'
   
-  if (pedido.cliente_telefone) {
+  if (config.incluirTelefone && pedido.cliente_telefone) {
     comandos += ESC + 'E' + '\x01'
     comandos += 'TELEFONE: '
     comandos += ESC + 'E' + '\x00'
@@ -136,14 +152,14 @@ function gerarComandoESCPOS(pedido: PedidoCompleto, largura: number = 48): Uint8
   comandos += '-'.repeat(largura) + '\n'
   
   // ==================== DADOS DO PEDIDO ====================
-  if (pedido.numero_os_fisica) {
+  if (config.incluirOSLoja && pedido.numero_os_fisica) {
     comandos += ESC + 'E' + '\x01'
     comandos += 'OS LOJA: '
     comandos += ESC + 'E' + '\x00'
     comandos += pedido.numero_os_fisica + '\n'
   }
   
-  if (pedido.numero_pedido_laboratorio) {
+  if (config.incluirOSLab && pedido.numero_pedido_laboratorio) {
     comandos += ESC + 'E' + '\x01'
     comandos += 'OS LAB: '
     comandos += ESC + 'E' + '\x00'
@@ -180,7 +196,7 @@ function gerarComandoESCPOS(pedido: PedidoCompleto, largura: number = 48): Uint8
     comandos += dataPrometida + '\n'
   }
   
-  if (pedido.dias_para_vencer_sla !== null) {
+  if (config.incluirSLA && pedido.dias_para_vencer_sla !== null) {
     comandos += ESC + 'E' + '\x01'
     comandos += 'SLA: '
     comandos += ESC + 'E' + '\x00'
@@ -229,7 +245,7 @@ function gerarComandoESCPOS(pedido: PedidoCompleto, largura: number = 48): Uint8
   comandos += (prioridadeLabels[pedido.prioridade] || pedido.prioridade) + '\n'
   
   // ==================== VALORES ====================
-  if (pedido.valor_pedido || pedido.custo_lentes) {
+  if (config.incluirValores && (pedido.valor_pedido || pedido.custo_lentes)) {
     comandos += '-'.repeat(largura) + '\n'
     
     if (pedido.valor_pedido) {
@@ -248,7 +264,7 @@ function gerarComandoESCPOS(pedido: PedidoCompleto, largura: number = 48): Uint8
   }
   
   // ==================== OBSERVAÇÕES ====================
-  if (pedido.observacoes) {
+  if (config.incluirObservacoes && pedido.observacoes) {
     comandos += '-'.repeat(largura) + '\n'
     comandos += ESC + 'E' + '\x01'
     comandos += 'OBSERVACOES:\n'
@@ -260,7 +276,7 @@ function gerarComandoESCPOS(pedido: PedidoCompleto, largura: number = 48): Uint8
     })
   }
   
-  if (pedido.eh_garantia && pedido.observacoes_garantia) {
+  if (config.incluirGarantia && pedido.eh_garantia && pedido.observacoes_garantia) {
     comandos += '-'.repeat(largura) + '\n'
     comandos += ESC + 'E' + '\x01'
     comandos += '*** GARANTIA ***\n'
@@ -294,7 +310,17 @@ export function PrintOrderButton({
 }: PrintOrderButtonProps) {
   const [printing, setPrinting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
   const [impressoraSelecionada, setImpressoraSelecionada] = useState('elgin-i9')
+  const [printConfig, setPrintConfig] = useState<PrintConfig>({
+    incluirObservacoes: true,
+    incluirValores: true,
+    incluirTelefone: true,
+    incluirGarantia: true,
+    incluirSLA: true,
+    incluirOSLoja: true,
+    incluirOSLab: true,
+  })
 
   const handlePrintUSB = async () => {
     if (!pedido) {
@@ -319,7 +345,7 @@ export function PrintOrderButton({
       }
 
       // Gerar comandos ESC/POS
-      const escposData = gerarComandoESCPOS(pedido, configImpressora.largura)
+      const escposData = gerarComandoESCPOS(pedido, printConfig, configImpressora.largura)
 
       // Solicitar acesso ao dispositivo USB
       const filters = configImpressora.vendorId 
@@ -361,6 +387,7 @@ export function PrintOrderButton({
       await device.close()
 
       toast.success(`Pedido impresso na ${configImpressora.nome}!`)
+      setShowPreview(false)
       setDialogOpen(false)
       
     } catch (error: any) {
@@ -485,84 +512,302 @@ export function PrintOrderButton({
   }
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant={variant}
-          size={size}
-          className={className}
-        >
-          <Printer className="w-4 h-4 mr-2" />
-          {showLabel && 'Imprimir'}
-        </Button>
-      </DialogTrigger>
-      
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Settings className="w-5 h-5" />
-            Configurar Impressão
-          </DialogTitle>
-          <DialogDescription>
-            Selecione a impressora que deseja utilizar para imprimir o pedido #{pedido.numero_sequencial}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogTrigger asChild>
+          <Button
+            variant={variant}
+            size={size}
+            className={className}
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            {showLabel && 'Imprimir'}
+          </Button>
+        </DialogTrigger>
         
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="impressora">Impressora</Label>
-            <Select value={impressoraSelecionada} onValueChange={setImpressoraSelecionada}>
-              <SelectTrigger id="impressora">
-                <SelectValue placeholder="Selecione a impressora" />
-              </SelectTrigger>
-              <SelectContent>
-                {IMPRESSORAS_SUPORTADAS.map(impressora => (
-                  <SelectItem key={impressora.id} value={impressora.id}>
-                    {impressora.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              A impressora selecionada será conectada via USB
-            </p>
-          </div>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5" />
+              Preview de Impressão - Pedido #{pedido.numero_sequencial}
+            </DialogTitle>
+            <DialogDescription>
+              Configure o que deseja imprimir e visualize como ficará antes de enviar para a impressora
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Coluna Esquerda: Configurações */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-sm mb-3">Impressora</h3>
+                <Select value={impressoraSelecionada} onValueChange={setImpressoraSelecionada}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {IMPRESSORAS_SUPORTADAS.map(impressora => (
+                      <SelectItem key={impressora.id} value={impressora.id}>
+                        {impressora.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="text-sm text-blue-900">
-              <p className="font-medium mb-1">💡 Dica:</p>
-              <p>Certifique-se de que a impressora está ligada e conectada via USB antes de imprimir.</p>
+              <div>
+                <h3 className="font-semibold text-sm mb-3">O que Imprimir</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="os-loja"
+                      checked={printConfig.incluirOSLoja}
+                      onCheckedChange={(checked) => 
+                        setPrintConfig(prev => ({ ...prev, incluirOSLoja: checked as boolean }))
+                      }
+                    />
+                    <Label htmlFor="os-loja" className="text-sm cursor-pointer">
+                      OS da Loja
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="os-lab"
+                      checked={printConfig.incluirOSLab}
+                      onCheckedChange={(checked) => 
+                        setPrintConfig(prev => ({ ...prev, incluirOSLab: checked as boolean }))
+                      }
+                    />
+                    <Label htmlFor="os-lab" className="text-sm cursor-pointer">
+                      OS do Laboratório
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="telefone"
+                      checked={printConfig.incluirTelefone}
+                      onCheckedChange={(checked) => 
+                        setPrintConfig(prev => ({ ...prev, incluirTelefone: checked as boolean }))
+                      }
+                    />
+                    <Label htmlFor="telefone" className="text-sm cursor-pointer">
+                      Telefone do Cliente
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="sla"
+                      checked={printConfig.incluirSLA}
+                      onCheckedChange={(checked) => 
+                        setPrintConfig(prev => ({ ...prev, incluirSLA: checked as boolean }))
+                      }
+                    />
+                    <Label htmlFor="sla" className="text-sm cursor-pointer">
+                      Informações de SLA
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="valores"
+                      checked={printConfig.incluirValores}
+                      onCheckedChange={(checked) => 
+                        setPrintConfig(prev => ({ ...prev, incluirValores: checked as boolean }))
+                      }
+                    />
+                    <Label htmlFor="valores" className="text-sm cursor-pointer">
+                      Valores (Total/Custo)
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="observacoes"
+                      checked={printConfig.incluirObservacoes}
+                      onCheckedChange={(checked) => 
+                        setPrintConfig(prev => ({ ...prev, incluirObservacoes: checked as boolean }))
+                      }
+                    />
+                    <Label htmlFor="observacoes" className="text-sm cursor-pointer">
+                      Observações
+                    </Label>
+                  </div>
+
+                  {pedido.eh_garantia && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="garantia"
+                        checked={printConfig.incluirGarantia}
+                        onCheckedChange={(checked) => 
+                          setPrintConfig(prev => ({ ...prev, incluirGarantia: checked as boolean }))
+                        }
+                      />
+                      <Label htmlFor="garantia" className="text-sm cursor-pointer">
+                        Informações de Garantia
+                      </Label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t">
+                <p className="text-xs text-muted-foreground">
+                  💡 Marque/desmarque para personalizar a impressão
+                </p>
+              </div>
+            </div>
+
+            {/* Coluna Direita: Preview */}
+            <div className="lg:col-span-2">
+              <h3 className="font-semibold text-sm mb-3">Preview (80mm)</h3>
+              <ScrollArea className="h-[500px] w-full border rounded-lg bg-white">
+                <div 
+                  className="p-6 font-mono text-xs"
+                  style={{ 
+                    width: '80mm',
+                    margin: '0 auto',
+                    backgroundColor: 'white'
+                  }}
+                >
+                  {/* Preview em HTML simulando térmica */}
+                  <div className="text-center font-bold text-lg mb-2">
+                    PEDIDO #{pedido.numero_sequencial}
+                  </div>
+                  <div className="border-t-2 border-dashed my-2"></div>
+                  
+                  <div className="space-y-1">
+                    <div><span className="font-bold">LOJA:</span> {pedido.loja_nome || 'N/A'}</div>
+                    <div><span className="font-bold">CLIENTE:</span> {pedido.cliente_nome || 'N/A'}</div>
+                    {printConfig.incluirTelefone && pedido.cliente_telefone && (
+                      <div><span className="font-bold">TELEFONE:</span> {pedido.cliente_telefone}</div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-dashed my-2"></div>
+
+                  <div className="space-y-1">
+                    {printConfig.incluirOSLoja && pedido.numero_os_fisica && (
+                      <div><span className="font-bold">OS LOJA:</span> {pedido.numero_os_fisica}</div>
+                    )}
+                    {printConfig.incluirOSLab && pedido.numero_pedido_laboratorio && (
+                      <div><span className="font-bold">OS LAB:</span> {pedido.numero_pedido_laboratorio}</div>
+                    )}
+                    <div><span className="font-bold">LABORATÓRIO:</span> {pedido.laboratorio_nome || 'N/A'}</div>
+                    <div><span className="font-bold">CLASSE:</span> {pedido.classe_nome || 'N/A'}</div>
+                  </div>
+
+                  <div className="border-t border-dashed my-2"></div>
+
+                  <div className="space-y-1">
+                    <div>
+                      <span className="font-bold">DATA PEDIDO:</span> {' '}
+                      {pedido.data_pedido ? format(new Date(pedido.data_pedido), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'N/A'}
+                    </div>
+                    {pedido.data_prometida && (
+                      <div>
+                        <span className="font-bold">DATA PROMETIDA:</span> {' '}
+                        {format(new Date(pedido.data_prometida), 'dd/MM/yyyy', { locale: ptBR })}
+                      </div>
+                    )}
+                    {printConfig.incluirSLA && pedido.dias_para_vencer_sla !== null && (
+                      <div>
+                        <span className="font-bold">SLA:</span> {' '}
+                        {pedido.dias_para_vencer_sla < 0 
+                          ? `ATRASADO (${Math.abs(pedido.dias_para_vencer_sla)} dias)`
+                          : pedido.dias_para_vencer_sla === 0
+                          ? 'VENCE HOJE'
+                          : `${pedido.dias_para_vencer_sla} dias restantes`
+                        }
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-dashed my-2"></div>
+
+                  <div className="space-y-1">
+                    <div><span className="font-bold">STATUS:</span> {pedido.status}</div>
+                    <div><span className="font-bold">PRIORIDADE:</span> {pedido.prioridade}</div>
+                  </div>
+
+                  {printConfig.incluirValores && (pedido.valor_pedido || pedido.custo_lentes) && (
+                    <>
+                      <div className="border-t border-dashed my-2"></div>
+                      <div className="space-y-1">
+                        {pedido.valor_pedido && (
+                          <div>
+                            <span className="font-bold">VALOR TOTAL:</span> R$ {pedido.valor_pedido.toFixed(2).replace('.', ',')}
+                          </div>
+                        )}
+                        {pedido.custo_lentes && (
+                          <div>
+                            <span className="font-bold">CUSTO LENTES:</span> R$ {pedido.custo_lentes.toFixed(2).replace('.', ',')}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {printConfig.incluirObservacoes && pedido.observacoes && (
+                    <>
+                      <div className="border-t border-dashed my-2"></div>
+                      <div>
+                        <div className="font-bold mb-1">OBSERVAÇÕES:</div>
+                        <div className="whitespace-pre-wrap">{pedido.observacoes}</div>
+                      </div>
+                    </>
+                  )}
+
+                  {printConfig.incluirGarantia && pedido.eh_garantia && pedido.observacoes_garantia && (
+                    <>
+                      <div className="border-t border-dashed my-2"></div>
+                      <div>
+                        <div className="font-bold mb-1">*** GARANTIA ***</div>
+                        <div className="whitespace-pre-wrap">{pedido.observacoes_garantia}</div>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="border-t-2 border-dashed my-2"></div>
+                  <div className="text-center text-xs">
+                    Impresso em: {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                  </div>
+                </div>
+              </ScrollArea>
             </div>
           </div>
-        </div>
 
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setDialogOpen(false)}
-            className="flex-1"
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handlePrintUSB}
-            disabled={printing}
-            className="flex-1"
-          >
-            {printing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Imprimindo...
-              </>
-            ) : (
-              <>
-                <Printer className="w-4 h-4 mr-2" />
-                Imprimir
-              </>
-            )}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          <div className="flex gap-3 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              className="flex-1"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button
+              onClick={handlePrintUSB}
+              disabled={printing}
+              className="flex-1"
+            >
+              {printing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Imprimindo...
+                </>
+              ) : (
+                <>
+                  <Printer className="w-4 h-4 mr-2" />
+                  Confirmar e Imprimir
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
