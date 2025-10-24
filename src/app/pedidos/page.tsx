@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -42,6 +41,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { usePermissions } from '@/lib/hooks/use-permissions'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
+import { FilterBar, type FiltrosAvancados } from '@/components/pedidos/FilterBar'
 
 // Configuração de cores otimizada
 const STATUS_CONFIG: Record<StatusPedido, { color: string; label: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -72,14 +72,20 @@ export default function PedidosPage() {
   const [pedidosOriginais, setPedidosOriginais] = useState<PedidoCompleto[]>([]) // Dataset completo
   const [loading, setLoading] = useState(true)
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false)
-  const [filtros, setFiltros] = useState({
-    busca: '',
+  const [filtros, setFiltros] = useState<FiltrosAvancados>({
+    busca_geral: '',
+    numero_os_loja: '',
+    numero_os_lab: '',
+    numero_pedido: '',
+    telefone_cliente: '',
     status: '',
     loja_id: '',
     laboratorio_id: '',
+    prioridade: '',
+    periodo_predefinido: 'todos',
     data_inicio: '',
     data_fim: '',
-    prioridade: ''
+    situacao_sla: 'todos'
   })
 
   // Estados de paginação
@@ -135,17 +141,53 @@ export default function PedidosPage() {
   const pedidosFiltrados = useMemo(() => {
     let resultado = pedidosOriginais
 
-    // Aplicar filtros
-    if (filtros.busca) {
-      const busca = filtros.busca.toLowerCase()
+    // ========== BUSCAS ESPECÍFICAS ==========
+    
+    // Busca por número da OS da loja
+    if (filtros.numero_os_loja) {
+      const busca = filtros.numero_os_loja.toLowerCase().trim()
       resultado = resultado.filter(p => 
-        p.cliente_nome?.toLowerCase().includes(busca) ||
-        p.numero_sequencial?.toString().includes(busca) ||
-        p.numero_os_fisica?.toLowerCase().includes(busca) ||
-        p.loja_nome?.toLowerCase().includes(busca) ||
-        p.laboratorio_nome?.toLowerCase().includes(busca)
+        p.numero_os_fisica?.toLowerCase().includes(busca)
       )
     }
+
+    // Busca por número da OS do laboratório
+    if (filtros.numero_os_lab) {
+      const busca = filtros.numero_os_lab.toLowerCase().trim()
+      resultado = resultado.filter(p => 
+        p.numero_pedido_laboratorio?.toLowerCase().includes(busca)
+      )
+    }
+
+    // Busca por número do pedido (sequencial)
+    if (filtros.numero_pedido) {
+      const numero = filtros.numero_pedido.trim()
+      resultado = resultado.filter(p => 
+        p.numero_sequencial?.toString().includes(numero)
+      )
+    }
+
+    // Busca por telefone do cliente
+    if (filtros.telefone_cliente) {
+      const telefone = filtros.telefone_cliente.replace(/\D/g, '') // Remove não-dígitos
+      resultado = resultado.filter(p => {
+        const tel = p.cliente_telefone?.replace(/\D/g, '') || ''
+        return tel.includes(telefone)
+      })
+    }
+
+    // Busca geral (nome cliente, loja, laboratório)
+    if (filtros.busca_geral) {
+      const busca = filtros.busca_geral.toLowerCase()
+      resultado = resultado.filter(p => 
+        p.cliente_nome?.toLowerCase().includes(busca) ||
+        p.loja_nome?.toLowerCase().includes(busca) ||
+        p.laboratorio_nome?.toLowerCase().includes(busca) ||
+        p.classe_nome?.toLowerCase().includes(busca)
+      )
+    }
+
+    // ========== FILTROS DE CATEGORIA ==========
 
     if (filtros.status && filtros.status !== 'all' && isStatusValido(filtros.status)) {
       resultado = resultado.filter(p => p.status === filtros.status)
@@ -163,12 +205,36 @@ export default function PedidosPage() {
       resultado = resultado.filter(p => p.prioridade === filtros.prioridade)
     }
 
+    // ========== FILTROS DE DATA ==========
+    
     if (filtros.data_inicio) {
       resultado = resultado.filter(p => p.data_pedido >= filtros.data_inicio)
     }
 
     if (filtros.data_fim) {
       resultado = resultado.filter(p => p.data_pedido <= filtros.data_fim)
+    }
+
+    // ========== FILTRO DE SLA ==========
+    
+    if (filtros.situacao_sla && filtros.situacao_sla !== 'todos') {
+      resultado = resultado.filter(p => {
+        const dias = p.dias_para_vencer_sla
+        if (dias === null || dias === undefined) return false
+        
+        switch (filtros.situacao_sla) {
+          case 'no_prazo':
+            return dias >= 5
+          case 'atencao':
+            return dias >= 1 && dias <= 4
+          case 'atrasado':
+            return dias === 0
+          case 'critico':
+            return dias < 0
+          default:
+            return true
+        }
+      })
     }
 
     return resultado
@@ -221,18 +287,6 @@ export default function PedidosPage() {
 
   // Não precisamos mais de debounce pois a filtragem é local
   // Os filtros aplicam instantaneamente via useMemo
-
-  const limparFiltros = () => {
-    setFiltros({
-      busca: '',
-      status: '',
-      loja_id: '',
-      laboratorio_id: '',
-      data_inicio: '',
-      data_fim: '',
-      prioridade: ''
-    })
-  }
 
   const exportarCSV = () => {
     const headers = [
@@ -406,137 +460,18 @@ export default function PedidosPage() {
               </Card>
             </div>
 
-            {/* Filtros Avançados */}
-            {filtrosVisiveis && (
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-slate-800">
-                    <Filter className="w-5 h-5 mr-2" />
-                    Filtros Avançados
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {/* Busca */}
-                    <div className="space-y-2">
-                      <Label>Buscar Cliente</Label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
-                        <Input
-                          placeholder="Nome do cliente..."
-                          value={filtros.busca}
-                          onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Status */}
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      <Select value={filtros.status} onValueChange={(value) => setFiltros({ ...filtros, status: value })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Todos os status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos os status</SelectItem>
-                          {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-                            <SelectItem key={status} value={status}>{config.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Loja */}
-                    <div className="space-y-2">
-                      <Label>Loja</Label>
-                      <Select value={filtros.loja_id} onValueChange={(value) => setFiltros({ ...filtros, loja_id: value })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Todas as lojas" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas as lojas</SelectItem>
-                          {lojas.map(loja => (
-                            <SelectItem key={loja.id} value={loja.id}>{loja.nome}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Laboratório */}
-                    <div className="space-y-2">
-                      <Label>Laboratório</Label>
-                      <Select value={filtros.laboratorio_id} onValueChange={(value) => setFiltros({ ...filtros, laboratorio_id: value })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Todos os labs" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos os laboratórios</SelectItem>
-                          {laboratorios.map(lab => (
-                            <SelectItem key={lab.id} value={lab.id}>{lab.nome}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Data Início */}
-                    <div className="space-y-2">
-                      <Label>Data Início</Label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
-                        <Input
-                          type="date"
-                          value={filtros.data_inicio}
-                          onChange={(e) => setFiltros({ ...filtros, data_inicio: e.target.value })}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Data Fim */}
-                    <div className="space-y-2">
-                      <Label>Data Fim</Label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
-                        <Input
-                          type="date"
-                          value={filtros.data_fim}
-                          onChange={(e) => setFiltros({ ...filtros, data_fim: e.target.value })}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Prioridade */}
-                    <div className="space-y-2">
-                      <Label>Prioridade</Label>
-                      <Select value={filtros.prioridade} onValueChange={(value) => setFiltros({ ...filtros, prioridade: value })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Todas" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas</SelectItem>
-                          {Object.entries(PRIORIDADE_CONFIG).map(([prioridade, config]) => (
-                            <SelectItem key={prioridade} value={prioridade}>{config.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={limparFiltros}>
-                      Limpar Filtros
-                    </Button>
-                    <Button onClick={carregarTodosPedidos} disabled={loading}>
-                      {loading ? 'Carregando...' : 'Aplicar Filtros'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {/* Novo Componente de Filtros Avançados */}
+            <FilterBar
+              filtros={filtros}
+              onChange={setFiltros}
+              lojas={lojas}
+              laboratorios={laboratorios}
+              statusConfig={STATUS_CONFIG}
+              prioridadeConfig={PRIORIDADE_CONFIG}
+              isVisible={filtrosVisiveis}
+              totalFiltrados={pedidosFiltrados.length}
+              totalGeral={estatisticas.total}
+            />
 
             {/* Tabela de Pedidos Melhorada */}
             <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
@@ -579,15 +514,15 @@ export default function PedidosPage() {
                     <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum pedido encontrado</h3>
                     <p className="text-gray-600 mb-6">
-                      {Object.values(filtros).some(v => v) 
+                      {Object.values(filtros).some(v => v && v !== 'todos') 
                         ? 'Tente ajustar os filtros para encontrar pedidos'
                         : 'Comece criando seu primeiro pedido'
                       }
                     </p>
                     <div className="flex justify-center gap-3">
-                      {Object.values(filtros).some(v => v) && (
-                        <Button variant="outline" onClick={limparFiltros}>
-                          Limpar Filtros
+                      {Object.values(filtros).some(v => v && v !== 'todos') && (
+                        <Button variant="outline" onClick={() => setFiltrosVisiveis(true)}>
+                          Ver Filtros
                         </Button>
                       )}
                       <Button asChild>
