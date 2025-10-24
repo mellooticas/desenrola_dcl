@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Slider } from '@/components/ui/slider'
 
 interface PrintOrderButtonProps {
   pedido: PedidoCompleto | null
@@ -42,7 +43,15 @@ interface PrintConfig {
   incluirSLA: boolean
   incluirOSLoja: boolean
   incluirOSLab: boolean
+  tamanhoFonte: 'pequeno' | 'medio' | 'grande'
 }
+
+// Mapeamento de tamanhos de fonte
+const TAMANHOS_FONTE = {
+  pequeno: { preview: '10px', escpos: 0x00 }, // Fonte normal
+  medio: { preview: '12px', escpos: 0x10 },   // Fonte 2x altura
+  grande: { preview: '14px', escpos: 0x11 }   // Fonte 2x largura e altura
+} as const
 
 // Configurações de impressoras suportadas
 const IMPRESSORAS_SUPORTADAS = [
@@ -119,12 +128,15 @@ function gerarComandoESCPOS(
   // Reset da impressora
   comandos += ESC + '@'
   
+  // Configurar tamanho de fonte base
+  const tamanhoESCPOS = TAMANHOS_FONTE[config.tamanhoFonte].escpos
+  
   // ==================== CABEÇALHO ====================
   comandos += ESC + 'a' + '\x01' // Centralizar
   comandos += ESC + 'E' + '\x01' // Negrito ON
-  comandos += GS + '!' + '\x11' // Fonte 2x
+  comandos += GS + '!' + '\x11' // Fonte 2x (título sempre grande)
   comandos += 'PEDIDO #' + pedido.numero_sequencial + '\n'
-  comandos += GS + '!' + '\x00' // Reset tamanho
+  comandos += GS + '!' + String.fromCharCode(tamanhoESCPOS) // Aplicar tamanho configurado
   comandos += ESC + 'E' + '\x00' // Negrito OFF
   
   comandos += ESC + 'a' + '\x00' // Alinhar esquerda
@@ -320,7 +332,18 @@ export function PrintOrderButton({
     incluirSLA: true,
     incluirOSLoja: true,
     incluirOSLab: true,
+    tamanhoFonte: 'medio',
   })
+
+  // Converter tamanho para valor do slider (0, 1, 2)
+  const tamanhoParaSlider = (tamanho: 'pequeno' | 'medio' | 'grande'): number => {
+    return tamanho === 'pequeno' ? 0 : tamanho === 'medio' ? 1 : 2
+  }
+
+  // Converter valor do slider para tamanho
+  const sliderParaTamanho = (valor: number): 'pequeno' | 'medio' | 'grande' => {
+    return valor === 0 ? 'pequeno' : valor === 1 ? 'medio' : 'grande'
+  }
 
   const handlePrintUSB = async () => {
     if (!pedido) {
@@ -556,6 +579,33 @@ export function PrintOrderButton({
               </div>
 
               <div>
+                <h3 className="font-semibold text-sm mb-3">Tamanho da Fonte</h3>
+                <div className="space-y-2">
+                  <Slider
+                    value={[tamanhoParaSlider(printConfig.tamanhoFonte)]}
+                    onValueChange={(value: number[]) => 
+                      setPrintConfig(prev => ({ ...prev, tamanhoFonte: sliderParaTamanho(value[0]) }))
+                    }
+                    min={0}
+                    max={2}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span className={printConfig.tamanhoFonte === 'pequeno' ? 'font-semibold text-foreground' : ''}>
+                      Pequeno
+                    </span>
+                    <span className={printConfig.tamanhoFonte === 'medio' ? 'font-semibold text-foreground' : ''}>
+                      Médio
+                    </span>
+                    <span className={printConfig.tamanhoFonte === 'grande' ? 'font-semibold text-foreground' : ''}>
+                      Grande
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
                 <h3 className="font-semibold text-sm mb-3">O que Imprimir</h3>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
@@ -665,11 +715,12 @@ export function PrintOrderButton({
               <h3 className="font-semibold text-sm mb-3">Preview (80mm)</h3>
               <ScrollArea className="h-[500px] w-full border rounded-lg bg-white">
                 <div 
-                  className="p-6 font-mono text-xs"
+                  className="p-6 font-mono"
                   style={{ 
                     width: '80mm',
                     margin: '0 auto',
-                    backgroundColor: 'white'
+                    backgroundColor: 'white',
+                    fontSize: TAMANHOS_FONTE[printConfig.tamanhoFonte].preview
                   }}
                 >
                   {/* Preview em HTML simulando térmica */}
