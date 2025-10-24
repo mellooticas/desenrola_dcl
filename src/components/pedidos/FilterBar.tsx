@@ -153,10 +153,10 @@ export function FilterBar({
       numero_os_lab: '',
       numero_pedido: '',
       telefone_cliente: '',
-      status: '',
-      loja_id: '',
-      laboratorio_id: '',
-      prioridade: '',
+      status: 'all',
+      loja_id: 'all',
+      laboratorio_id: 'all',
+      prioridade: 'all',
       periodo_predefinido: 'todos',
       data_inicio: '',
       data_fim: '',
@@ -165,7 +165,14 @@ export function FilterBar({
   }
 
   const removerFiltro = (campo: keyof FiltrosAvancados) => {
-    handleChange(campo, '')
+    // Para os selects, voltar para 'all' ou 'todos'
+    if (campo === 'status' || campo === 'loja_id' || campo === 'laboratorio_id' || campo === 'prioridade') {
+      handleChange(campo, 'all')
+    } else if (campo === 'periodo_predefinido' || campo === 'situacao_sla') {
+      handleChange(campo, 'todos')
+    } else {
+      handleChange(campo, '')
+    }
   }
 
   // Contar filtros ativos
@@ -307,12 +314,12 @@ export function FilterBar({
             {/* Status */}
             <div className="space-y-1">
               <Label className="text-xs text-slate-600">Status</Label>
-              <Select value={filtros.status} onValueChange={(value) => handleChange('status', value)}>
+              <Select value={filtros.status || 'all'} onValueChange={(value) => handleChange('status', value === 'all' ? '' : value)}>
                 <SelectTrigger className="bg-white/50">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os status</SelectItem>
+                  <SelectItem value="all">Todos os status</SelectItem>
                   {Object.entries(statusConfig).map(([status, config]) => (
                     <SelectItem key={status} value={status}>{config.label}</SelectItem>
                   ))}
@@ -323,12 +330,12 @@ export function FilterBar({
             {/* Prioridade */}
             <div className="space-y-1">
               <Label className="text-xs text-slate-600">Prioridade</Label>
-              <Select value={filtros.prioridade} onValueChange={(value) => handleChange('prioridade', value)}>
+              <Select value={filtros.prioridade || 'all'} onValueChange={(value) => handleChange('prioridade', value === 'all' ? '' : value)}>
                 <SelectTrigger className="bg-white/50">
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas prioridades</SelectItem>
+                  <SelectItem value="all">Todas prioridades</SelectItem>
                   {Object.entries(prioridadeConfig).map(([prio, config]) => (
                     <SelectItem key={prio} value={prio}>{config.label}</SelectItem>
                   ))}
@@ -384,12 +391,12 @@ export function FilterBar({
                 {/* Loja */}
                 <div className="space-y-1">
                   <Label className="text-xs text-slate-600">Loja</Label>
-                  <Select value={filtros.loja_id} onValueChange={(value) => handleChange('loja_id', value)}>
+                  <Select value={filtros.loja_id || 'all'} onValueChange={(value) => handleChange('loja_id', value === 'all' ? '' : value)}>
                     <SelectTrigger className="bg-white/50">
                       <SelectValue placeholder="Todas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas as lojas</SelectItem>
+                      <SelectItem value="all">Todas as lojas</SelectItem>
                       {lojas.map(loja => (
                         <SelectItem key={loja.id} value={loja.id}>{loja.nome}</SelectItem>
                       ))}
@@ -400,12 +407,12 @@ export function FilterBar({
                 {/* Laboratório */}
                 <div className="space-y-1">
                   <Label className="text-xs text-slate-600">Laboratório</Label>
-                  <Select value={filtros.laboratorio_id} onValueChange={(value) => handleChange('laboratorio_id', value)}>
+                  <Select value={filtros.laboratorio_id || 'all'} onValueChange={(value) => handleChange('laboratorio_id', value === 'all' ? '' : value)}>
                     <SelectTrigger className="bg-white/50">
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os laboratórios</SelectItem>
+                      <SelectItem value="all">Todos os laboratórios</SelectItem>
                       {laboratorios.map(lab => (
                         <SelectItem key={lab.id} value={lab.id}>{lab.nome}</SelectItem>
                       ))}
