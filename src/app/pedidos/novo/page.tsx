@@ -215,17 +215,36 @@ export default function NovaOrdemPage() {
       const pedidoCriado = await response.json()
       
       // Buscar dados completos do pedido para impressão
-      const { data: pedidoCompleto, error: pedidoError } = await supabase
-        .from('view_pedidos_completo')
+      const { data: pedidoBase, error: pedidoError } = await supabase
+        .from('pedidos')
         .select('*')
         .eq('id', pedidoCriado.id)
         .single()
 
       if (pedidoError) {
-        console.error('Erro ao buscar pedido completo:', pedidoError)
+        console.error('Erro ao buscar pedido:', pedidoError)
+        setPedidoCriado(null)
+        setShowSuccessModal(true)
+        toast.success('Pedido criado com sucesso!')
+        return
       }
 
-      setPedidoCriado(pedidoCompleto || pedidoCriado)
+      // Buscar dados relacionados
+      const [lojaData, labData, classeData] = await Promise.allSettled([
+        supabase.from('lojas').select('nome').eq('id', pedidoBase.loja_id).single(),
+        supabase.from('laboratorios').select('nome').eq('id', pedidoBase.laboratorio_id).single(),
+        supabase.from('classes_lente').select('nome').eq('id', pedidoBase.classe_lente_id).single()
+      ])
+
+      // Montar objeto completo
+      const pedidoCompleto: PedidoCompleto = {
+        ...pedidoBase,
+        loja_nome: lojaData.status === 'fulfilled' ? lojaData.value.data?.nome || 'N/A' : 'N/A',
+        laboratorio_nome: labData.status === 'fulfilled' ? labData.value.data?.nome || 'N/A' : 'N/A',
+        classe_nome: classeData.status === 'fulfilled' ? classeData.value.data?.nome || 'N/A' : 'N/A',
+      }
+
+      setPedidoCriado(pedidoCompleto)
       setShowSuccessModal(true)
       toast.success('Pedido criado com sucesso!')
     } catch (error: unknown) {
