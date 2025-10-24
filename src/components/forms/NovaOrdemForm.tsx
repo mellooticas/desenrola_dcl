@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,12 +12,15 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { 
   Plus, Clock, Calculator, AlertCircle, Shield, DollarSign, 
-  Building2, MapPin, User, CheckCircle2, ArrowLeft, ArrowRight, Calendar
+  Building2, MapPin, User, CheckCircle2, ArrowLeft, ArrowRight, Calendar, Printer, CheckCircle
 } from 'lucide-react'
 import { supabaseHelpers } from '@/lib/supabase/helpers'
-import { Laboratorio, Loja, ClasseLente, Tratamento, PrioridadeLevel, PRIORIDADE_LABELS } from '@/lib/types/database'
+import { Laboratorio, Loja, ClasseLente, Tratamento, PrioridadeLevel, PRIORIDADE_LABELS, PedidoCompleto } from '@/lib/types/database'
+import { PrintOrderButton } from '@/components/pedidos/PrintOrderButton'
+import { supabase } from '@/lib/supabase/client'
 
 interface NovaOrdemFormProps {
   onSuccess?: () => void
@@ -28,6 +31,8 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
   const [loadingData, setLoadingData] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [pedidoCriado, setPedidoCriado] = useState<PedidoCompleto | null>(null)
   
   // Dados para seleção
   const [lojas, setLojas] = useState<Loja[]>([])
@@ -226,10 +231,39 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
         eh_garantia: pedidoData.eh_garantia
       })
       
-      await supabaseHelpers.criarPedidoCompleto(pedidoData)
+      const resultado = await supabaseHelpers.criarPedidoCompleto(pedidoData)
+
+      // Buscar dados completos do pedido para impressão
+      if (resultado?.id) {
+        const { data: pedidoBase, error: pedidoError } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', resultado.id)
+          .single()
+
+        if (!pedidoError && pedidoBase) {
+          // Buscar dados relacionados
+          const [lojaData, labData, classeData] = await Promise.allSettled([
+            supabase.from('lojas').select('nome').eq('id', pedidoBase.loja_id).single(),
+            supabase.from('laboratorios').select('nome').eq('id', pedidoBase.laboratorio_id).single(),
+            supabase.from('classes_lente').select('nome').eq('id', pedidoBase.classe_lente_id).single()
+          ])
+
+          // Montar objeto completo
+          const pedidoCompleto: PedidoCompleto = {
+            ...pedidoBase,
+            loja_nome: lojaData.status === 'fulfilled' ? lojaData.value.data?.nome || 'N/A' : 'N/A',
+            laboratorio_nome: labData.status === 'fulfilled' ? labData.value.data?.nome || 'N/A' : 'N/A',
+            classe_nome: classeData.status === 'fulfilled' ? classeData.value.data?.nome || 'N/A' : 'N/A',
+          }
+
+          setPedidoCriado(pedidoCompleto)
+        }
+      }
 
       resetForm()
       setOpen(false)
+      setShowSuccessModal(true)
       onSuccess?.()
     } catch (error) {
       // Erro ao criar pedido
@@ -826,43 +860,114 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Ordem
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 mx-4 w-[calc(100vw-2rem)] sm:w-full bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-xl border-white/20 shadow-2xl">
-        <DialogHeader className="sticky top-0 bg-gradient-to-r from-white/90 to-gray-50/90 backdrop-blur-lg z-10 p-4 sm:p-6 pb-3 sm:pb-4 border-b border-white/30">
-          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-            Nova Ordem Completa
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Ordem
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 mx-4 w-[calc(100vw-2rem)] sm:w-full bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-xl border-white/20 shadow-2xl">
+          <DialogHeader className="sticky top-0 bg-gradient-to-r from-white/90 to-gray-50/90 backdrop-blur-lg z-10 p-4 sm:p-6 pb-3 sm:pb-4 border-b border-white/30">
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              Nova Ordem Completa
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 text-sm">
+              Crie um novo pedido em 3 etapas simples
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="sticky top-[100px] sm:top-[120px] bg-white z-10 px-4 sm:px-6 py-2 sm:py-3 border-b">
+            {renderStepIndicator()}
+          </div> 
+
+          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+            {loadingData ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-gray-600">Carregando dados...</span>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                {step === 1 && renderStep1()}
+                {step === 2 && renderStep2()}
+                {step === 3 && renderStep3()} 
+              </form>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Sucesso */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mx-auto mb-4">
+            <CheckCircle className="w-6 h-6 text-green-600" />
+          </div>
+          <DialogTitle className="text-center text-xl font-bold">
+            Pedido Criado com Sucesso!
           </DialogTitle>
-          <DialogDescription className="text-gray-600 text-sm">
-            Crie um novo pedido em 3 etapas simples
+          <DialogDescription className="text-center">
+            {pedidoCriado && `Pedido #${pedidoCriado.numero_sequencial} foi criado`}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="sticky top-[100px] sm:top-[120px] bg-white z-10 px-4 sm:px-6 py-2 sm:py-3 border-b">
-          {renderStepIndicator()}
-        </div> 
-
-        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-          {loadingData ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-600">Carregando dados...</span>
+        {pedidoCriado && (
+          <div className="space-y-4">
+            <div className="bg-slate-50 rounded-lg p-4 space-y-2">
+              <div>
+                <p className="text-sm text-slate-500">Cliente</p>
+                <p className="font-medium">{pedidoCriado.cliente_nome}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Loja</p>
+                <p className="font-medium">{pedidoCriado.loja_nome}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Laboratório</p>
+                <p className="font-medium">{pedidoCriado.laboratorio_nome}</p>
+              </div>
+              {pedidoCriado.numero_os_fisica && (
+                <div>
+                  <p className="text-sm text-slate-500">OS Loja</p>
+                  <p className="font-medium">{pedidoCriado.numero_os_fisica}</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <form onSubmit={handleSubmit}>
-              {step === 1 && renderStep1()}
-              {step === 2 && renderStep2()}
-              {step === 3 && renderStep3()} 
-            </form>
+
+            <Alert className="border-blue-200 bg-blue-50">
+              <Printer className="h-4 w-4 text-blue-600" />
+              <AlertTitle className="text-blue-900">Deseja imprimir agora?</AlertTitle>
+              <AlertDescription className="text-blue-700">
+                Você pode imprimir os detalhes deste pedido antes de continuar.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowSuccessModal(false)}
+            className="w-full sm:w-auto"
+          >
+            Fechar
+          </Button>
+          {pedidoCriado && (
+            <PrintOrderButton
+              pedido={pedidoCriado}
+              variant="default"
+              size="default"
+              className="w-full sm:w-auto"
+            />
           )}
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   )
 }
