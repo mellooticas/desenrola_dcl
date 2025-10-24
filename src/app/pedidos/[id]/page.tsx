@@ -35,7 +35,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { PedidoHeader } from '@/components/pedidos/PedidoHeader'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { PedidoTimeline } from '@/components/kanban/PedidoTimeline'
-import type { StatusPedido, PrioridadeLevel } from '@/lib/types/database'
+import type { StatusPedido, PrioridadeLevel, PedidoCompleto } from '@/lib/types/database'
 
 interface PedidoDetalhes {
   // Identificação básica
@@ -501,6 +501,7 @@ export default function PedidoDetalhesPage() {
           numeroSequencial={pedido.numero_sequencial}
           status={pedido.status}
           prioridade={pedido.prioridade}
+          pedido={pedido as PedidoCompleto}
         />
       </div>
 

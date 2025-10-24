@@ -14,6 +14,8 @@ import {
   Eye
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { PrintOrderButton } from './PrintOrderButton'
+import type { PedidoCompleto } from '@/lib/types/database'
 
 interface PedidoHeaderProps {
   mode?: 'list' | 'details' | 'timeline' | 'edit'
@@ -21,6 +23,7 @@ interface PedidoHeaderProps {
   numeroSequencial?: number
   status?: string
   prioridade?: string
+  pedido?: PedidoCompleto | null
   onExport?: () => void
   onFilter?: () => void
   totalCount?: number
@@ -35,6 +38,7 @@ export function PedidoHeader({
   numeroSequencial,
   status,
   prioridade,
+  pedido,
   onExport,
   onFilter,
   totalCount,
@@ -172,6 +176,13 @@ export function PedidoHeader({
       case 'details':
         return (
           <div className="flex items-center space-x-3">
+            {pedido && (
+              <PrintOrderButton 
+                pedido={pedido}
+                variant="outline"
+                className="backdrop-blur-sm bg-white/50 border-white/30 shadow-lg hover:bg-white/70"
+              />
+            )}
             <Button variant="outline" asChild className="backdrop-blur-sm bg-white/50 border-white/30 shadow-lg hover:bg-white/70">
               <Link href={`/pedidos/${pedidoId}/timeline`}>
                 <Clock className="w-4 h-4 mr-2" />
