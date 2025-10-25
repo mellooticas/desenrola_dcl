@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Printer, Loader2, Settings, Eye, X } from 'lucide-react'
+import { Printer, Loader2, Eye, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -16,13 +16,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Slider } from '@/components/ui/slider'
@@ -48,270 +41,10 @@ interface PrintConfig {
 
 // Mapeamento de tamanhos de fonte
 const TAMANHOS_FONTE = {
-  pequeno: { preview: '10px', escpos: 0x00 }, // Fonte normal
-  medio: { preview: '12px', escpos: 0x10 },   // Fonte 2x altura
-  grande: { preview: '14px', escpos: 0x11 }   // Fonte 2x largura e altura
+  pequeno: '10px',
+  medio: '12px',
+  grande: '14px'
 } as const
-
-// Configurações de impressoras suportadas
-const IMPRESSORAS_SUPORTADAS = [
-  {
-    id: 'elgin-i9',
-    nome: 'Elgin i9',
-    vendorId: 0x0483, // Substitua pelo vendor ID correto da Elgin
-    largura: 48, // caracteres por linha
-    usarESCPOS: true
-  },
-  {
-    id: 'elgin-i7',
-    nome: 'Elgin i7',
-    vendorId: 0x0483,
-    largura: 48,
-    usarESCPOS: true
-  },
-  {
-    id: 'daruma',
-    nome: 'Daruma DR800',
-    vendorId: 0x0dd4, // Vendor ID Daruma
-    largura: 48,
-    usarESCPOS: true
-  },
-  {
-    id: 'bematech',
-    nome: 'Bematech MP-4200',
-    vendorId: 0x0b1b, // Vendor ID Bematech
-    largura: 48,
-    usarESCPOS: true
-  },
-  {
-    id: 'generico',
-    nome: 'Impressora Genérica (ESC/POS)',
-    vendorId: null, // Qualquer vendor
-    largura: 48,
-    usarESCPOS: true
-  }
-]
-
-// Funções auxiliares para formatação
-function quebrarTexto(texto: string, maxChars: number): string[] {
-  const palavras = texto.split(' ')
-  const linhas: string[] = []
-  let linhaAtual = ''
-
-  palavras.forEach(palavra => {
-    if ((linhaAtual + palavra).length <= maxChars) {
-      linhaAtual += (linhaAtual ? ' ' : '') + palavra
-    } else {
-      if (linhaAtual) linhas.push(linhaAtual)
-      linhaAtual = palavra
-    }
-  })
-  
-  if (linhaAtual) linhas.push(linhaAtual)
-  return linhas
-}
-
-function quebrarLinha(texto: string, maxChars: number): string {
-  return texto.length > maxChars ? texto.substring(0, maxChars - 3) + '...' : texto
-}
-
-function gerarComandoESCPOS(
-  pedido: PedidoCompleto, 
-  config: PrintConfig,
-  largura: number = 48
-): Uint8Array {
-  const ESC = '\x1B'
-  const GS = '\x1D'
-  
-  let comandos = ''
-  
-  // Reset da impressora
-  comandos += ESC + '@'
-  
-  // Configurar tamanho de fonte base
-  const tamanhoESCPOS = TAMANHOS_FONTE[config.tamanhoFonte].escpos
-  
-  // ==================== CABEÇALHO ====================
-  comandos += ESC + 'a' + '\x01' // Centralizar
-  comandos += ESC + 'E' + '\x01' // Negrito ON
-  comandos += GS + '!' + '\x11' // Fonte 2x (título sempre grande)
-  comandos += 'PEDIDO #' + pedido.numero_sequencial + '\n'
-  comandos += GS + '!' + String.fromCharCode(tamanhoESCPOS) // Aplicar tamanho configurado
-  comandos += ESC + 'E' + '\x00' // Negrito OFF
-  
-  comandos += ESC + 'a' + '\x00' // Alinhar esquerda
-  comandos += '='.repeat(largura) + '\n'
-  
-  // ==================== LOJA ====================
-  comandos += ESC + 'E' + '\x01'
-  comandos += 'LOJA: '
-  comandos += ESC + 'E' + '\x00'
-  comandos += quebrarLinha(pedido.loja_nome || 'N/A', largura - 6) + '\n'
-  
-  // ==================== CLIENTE ====================
-  comandos += ESC + 'E' + '\x01'
-  comandos += 'CLIENTE: '
-  comandos += ESC + 'E' + '\x00'
-  comandos += quebrarLinha(pedido.cliente_nome || 'N/A', largura - 9) + '\n'
-  
-  if (config.incluirTelefone && pedido.cliente_telefone) {
-    comandos += ESC + 'E' + '\x01'
-    comandos += 'TELEFONE: '
-    comandos += ESC + 'E' + '\x00'
-    comandos += pedido.cliente_telefone + '\n'
-  }
-  
-  comandos += '-'.repeat(largura) + '\n'
-  
-  // ==================== DADOS DO PEDIDO ====================
-  if (config.incluirOSLoja && pedido.numero_os_fisica) {
-    comandos += ESC + 'E' + '\x01'
-    comandos += 'OS LOJA: '
-    comandos += ESC + 'E' + '\x00'
-    comandos += pedido.numero_os_fisica + '\n'
-  }
-  
-  if (config.incluirOSLab && pedido.numero_pedido_laboratorio) {
-    comandos += ESC + 'E' + '\x01'
-    comandos += 'OS LAB: '
-    comandos += ESC + 'E' + '\x00'
-    comandos += pedido.numero_pedido_laboratorio + '\n'
-  }
-  
-  comandos += ESC + 'E' + '\x01'
-  comandos += 'LABORATORIO: '
-  comandos += ESC + 'E' + '\x00'
-  comandos += quebrarLinha(pedido.laboratorio_nome || 'N/A', largura - 13) + '\n'
-  
-  comandos += ESC + 'E' + '\x01'
-  comandos += 'CLASSE: '
-  comandos += ESC + 'E' + '\x00'
-  comandos += quebrarLinha(pedido.classe_nome || 'N/A', largura - 8) + '\n'
-  
-  comandos += '-'.repeat(largura) + '\n'
-  
-  // ==================== DATAS ====================
-  const dataPedido = pedido.data_pedido 
-    ? format(new Date(pedido.data_pedido), "dd/MM/yyyy 'as' HH:mm", { locale: ptBR })
-    : 'N/A'
-  
-  comandos += ESC + 'E' + '\x01'
-  comandos += 'DATA PEDIDO: '
-  comandos += ESC + 'E' + '\x00'
-  comandos += dataPedido + '\n'
-  
-  if (pedido.data_prometida) {
-    const dataPrometida = format(new Date(pedido.data_prometida), 'dd/MM/yyyy', { locale: ptBR })
-    comandos += ESC + 'E' + '\x01'
-    comandos += 'DATA PROMETIDA: '
-    comandos += ESC + 'E' + '\x00'
-    comandos += dataPrometida + '\n'
-  }
-  
-  if (config.incluirSLA && pedido.dias_para_vencer_sla !== null) {
-    comandos += ESC + 'E' + '\x01'
-    comandos += 'SLA: '
-    comandos += ESC + 'E' + '\x00'
-    
-    const dias = pedido.dias_para_vencer_sla
-    if (dias < 0) {
-      comandos += `ATRASADO (${Math.abs(dias)} dias)`
-    } else if (dias === 0) {
-      comandos += 'VENCE HOJE'
-    } else {
-      comandos += `${dias} dias restantes`
-    }
-    comandos += '\n'
-  }
-  
-  comandos += '-'.repeat(largura) + '\n'
-  
-  // ==================== STATUS E PRIORIDADE ====================
-  comandos += ESC + 'E' + '\x01'
-  comandos += 'STATUS: '
-  comandos += ESC + 'E' + '\x00'
-  
-  const statusLabels: Record<string, string> = {
-    'REGISTRADO': 'Registrado',
-    'AG_PAGAMENTO': 'Aguard. Pagamento',
-    'PAGO': 'Pago',
-    'PRODUCAO': 'Em Producao',
-    'PRONTO': 'Pronto',
-    'ENVIADO': 'Enviado',
-    'CHEGOU': 'Chegou',
-    'ENTREGUE': 'Entregue',
-    'CANCELADO': 'Cancelado'
-  }
-  comandos += (statusLabels[pedido.status] || pedido.status) + '\n'
-  
-  comandos += ESC + 'E' + '\x01'
-  comandos += 'PRIORIDADE: '
-  comandos += ESC + 'E' + '\x00'
-  
-  const prioridadeLabels: Record<string, string> = {
-    'BAIXA': 'Baixa',
-    'NORMAL': 'Normal',
-    'ALTA': 'Alta',
-    'URGENTE': 'URGENTE'
-  }
-  comandos += (prioridadeLabels[pedido.prioridade] || pedido.prioridade) + '\n'
-  
-  // ==================== VALORES ====================
-  if (config.incluirValores && (pedido.valor_pedido || pedido.custo_lentes)) {
-    comandos += '-'.repeat(largura) + '\n'
-    
-    if (pedido.valor_pedido) {
-      comandos += ESC + 'E' + '\x01'
-      comandos += 'VALOR TOTAL: '
-      comandos += ESC + 'E' + '\x00'
-      comandos += 'R$ ' + pedido.valor_pedido.toFixed(2).replace('.', ',') + '\n'
-    }
-    
-    if (pedido.custo_lentes) {
-      comandos += ESC + 'E' + '\x01'
-      comandos += 'CUSTO LENTES: '
-      comandos += ESC + 'E' + '\x00'
-      comandos += 'R$ ' + pedido.custo_lentes.toFixed(2).replace('.', ',') + '\n'
-    }
-  }
-  
-  // ==================== OBSERVAÇÕES ====================
-  if (config.incluirObservacoes && pedido.observacoes) {
-    comandos += '-'.repeat(largura) + '\n'
-    comandos += ESC + 'E' + '\x01'
-    comandos += 'OBSERVACOES:\n'
-    comandos += ESC + 'E' + '\x00'
-    
-    const linhas = quebrarTexto(pedido.observacoes, largura)
-    linhas.forEach(linha => {
-      comandos += linha + '\n'
-    })
-  }
-  
-  if (config.incluirGarantia && pedido.eh_garantia && pedido.observacoes_garantia) {
-    comandos += '-'.repeat(largura) + '\n'
-    comandos += ESC + 'E' + '\x01'
-    comandos += '*** GARANTIA ***\n'
-    comandos += ESC + 'E' + '\x00'
-    const linhas = quebrarTexto(pedido.observacoes_garantia, largura)
-    linhas.forEach(linha => {
-      comandos += linha + '\n'
-    })
-  }
-  
-  // ==================== RODAPÉ ====================
-  comandos += '='.repeat(largura) + '\n'
-  comandos += ESC + 'a' + '\x01' // Centralizar
-  comandos += 'Impresso em: '
-  comandos += format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR }) + '\n'
-  comandos += ESC + 'a' + '\x00'
-  
-  comandos += '\n\n\n'
-  comandos += GS + 'V' + '\x00' // Corte total
-  
-  const encoder = new TextEncoder()
-  return encoder.encode(comandos)
-}
 
 export function PrintOrderButton({ 
   pedido, 
@@ -323,7 +56,6 @@ export function PrintOrderButton({
   const [printing, setPrinting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
-  const [impressoraSelecionada, setImpressoraSelecionada] = useState('elgin-i9')
   const [printConfig, setPrintConfig] = useState<PrintConfig>({
     incluirObservacoes: true,
     incluirValores: true,
@@ -345,101 +77,19 @@ export function PrintOrderButton({
     return valor === 0 ? 'pequeno' : valor === 1 ? 'medio' : 'grande'
   }
 
-  const handlePrintUSB = async () => {
-    if (!pedido) {
-      toast.error('Nenhum pedido para imprimir')
-      return
-    }
-
-    try {
-      setPrinting(true)
-
-      // Verificar se o navegador suporta Web USB API
-      if (!('usb' in navigator)) {
-        toast.error('Seu navegador não suporta impressão USB. Use Chrome/Edge.')
-        handlePrintFallback()
-        return
-      }
-
-      const configImpressora = IMPRESSORAS_SUPORTADAS.find(i => i.id === impressoraSelecionada)
-      if (!configImpressora) {
-        toast.error('Impressora não configurada')
-        return
-      }
-
-      // Gerar comandos ESC/POS
-      const escposData = gerarComandoESCPOS(pedido, printConfig, configImpressora.largura)
-
-      // Solicitar acesso ao dispositivo USB
-      const filters = configImpressora.vendorId 
-        ? [{ vendorId: configImpressora.vendorId }]
-        : []
-
-      const device = await (navigator as any).usb.requestDevice({ filters })
-      
-      if (!device) {
-        toast.error('Nenhuma impressora selecionada')
-        return
-      }
-
-      // Abrir conexão
-      await device.open()
-      
-      // Selecionar configuração (geralmente a primeira)
-      if (device.configuration === null) {
-        await device.selectConfiguration(1)
-      }
-
-      // Encontrar interface de impressão (geralmente interface 0)
-      const interfaceNumber = device.configuration.interfaces[0].interfaceNumber
-      await device.claimInterface(interfaceNumber)
-
-      // Encontrar endpoint de saída (OUT)
-      const endpoints = device.configuration.interfaces[0].alternate.endpoints
-      const outEndpoint = endpoints.find((ep: any) => ep.direction === 'out')
-
-      if (!outEndpoint) {
-        throw new Error('Endpoint de saída não encontrado')
-      }
-
-      // Enviar dados para impressora
-      await device.transferOut(outEndpoint.endpointNumber, escposData)
-
-      // Fechar conexão
-      await device.releaseInterface(interfaceNumber)
-      await device.close()
-
-      toast.success(`Pedido impresso na ${configImpressora.nome}!`)
-      setShowPreview(false)
-      setDialogOpen(false)
-      
-    } catch (error: any) {
-      console.error('Erro ao imprimir:', error)
-      
-      if (error.name === 'NotFoundError') {
-        toast.error('Nenhuma impressora selecionada')
-      } else if (error.name === 'NetworkError') {
-        toast.error('Erro de comunicação com a impressora')
-      } else if (error.name === 'SecurityError') {
-        toast.error('Permissão negada para acessar a impressora')
-      } else {
-        toast.error('Erro ao imprimir: ' + error.message)
-        // Fallback para impressão via navegador
-        handlePrintFallback()
-      }
-    } finally {
-      setPrinting(false)
-    }
-  }
-
-  const handlePrintFallback = () => {
+  const handlePrint = () => {
     if (!pedido) return
+    
+    setPrinting(true)
 
-    const printWindow = window.open('', '_blank')
+    const printWindow = window.open('', '_blank', 'width=350,height=600')
     if (!printWindow) {
       toast.error('Pop-up bloqueado. Habilite pop-ups para imprimir.')
+      setPrinting(false)
       return
     }
+
+    const tamanhoFonte = TAMANHOS_FONTE[printConfig.tamanhoFonte]
 
     const html = `
       <!DOCTYPE html>
@@ -453,20 +103,43 @@ export function PrintOrderButton({
               size: 80mm auto;
               margin: 0;
             }
-            body { margin: 0; padding: 10px; }
+            body { margin: 0; padding: 5mm; }
           }
           body {
             font-family: 'Courier New', monospace;
-            font-size: 12px;
+            font-size: ${tamanhoFonte};
             width: 80mm;
             margin: 0 auto;
-            padding: 10px;
+            padding: 5mm;
+            line-height: 1.4;
           }
-          h1 { text-align: center; font-size: 18px; margin: 10px 0; }
-          .linha { border-top: 1px dashed #000; margin: 10px 0; }
-          .label { font-weight: bold; }
-          .section { margin: 10px 0; }
-          .center { text-align: center; }
+          h1 { 
+            text-align: center; 
+            font-size: calc(${tamanhoFonte} + 4px); 
+            margin: 5px 0 10px 0; 
+            font-weight: bold;
+          }
+          .linha { 
+            border-top: 1px dashed #000; 
+            margin: 8px 0; 
+          }
+          .label { 
+            font-weight: bold; 
+            display: inline-block;
+            min-width: 80px;
+          }
+          .section { 
+            margin: 8px 0; 
+          }
+          .center { 
+            text-align: center; 
+          }
+          .observacoes {
+            margin-top: 5px;
+            padding-left: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+          }
         </style>
       </head>
       <body>
@@ -476,14 +149,14 @@ export function PrintOrderButton({
         <div class="section">
           <div><span class="label">LOJA:</span> ${pedido.loja_nome || 'N/A'}</div>
           <div><span class="label">CLIENTE:</span> ${pedido.cliente_nome || 'N/A'}</div>
-          ${pedido.cliente_telefone ? `<div><span class="label">TELEFONE:</span> ${pedido.cliente_telefone}</div>` : ''}
+          ${printConfig.incluirTelefone && pedido.cliente_telefone ? `<div><span class="label">TELEFONE:</span> ${pedido.cliente_telefone}</div>` : ''}
         </div>
         
         <div class="linha"></div>
         
         <div class="section">
-          ${pedido.numero_os_fisica ? `<div><span class="label">OS LOJA:</span> ${pedido.numero_os_fisica}</div>` : ''}
-          ${pedido.numero_pedido_laboratorio ? `<div><span class="label">OS LAB:</span> ${pedido.numero_pedido_laboratorio}</div>` : ''}
+          ${printConfig.incluirOSLoja && pedido.numero_os_fisica ? `<div><span class="label">OS LOJA:</span> ${pedido.numero_os_fisica}</div>` : ''}
+          ${printConfig.incluirOSLab && pedido.numero_pedido_laboratorio ? `<div><span class="label">OS LAB:</span> ${pedido.numero_pedido_laboratorio}</div>` : ''}
           <div><span class="label">LABORATÓRIO:</span> ${pedido.laboratorio_nome || 'N/A'}</div>
           <div><span class="label">CLASSE:</span> ${pedido.classe_nome || 'N/A'}</div>
         </div>
@@ -492,7 +165,14 @@ export function PrintOrderButton({
         
         <div class="section">
           <div><span class="label">DATA PEDIDO:</span> ${pedido.data_pedido ? format(new Date(pedido.data_pedido), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : 'N/A'}</div>
-          ${pedido.data_prometida ? `<div><span class="label">DATA PROMETIDA:</span> ${format(new Date(pedido.data_prometida), 'dd/MM/yyyy', { locale: ptBR })}</div>` : ''}
+          ${pedido.data_prometida ? `<div><span class="label">DATA PROM.:</span> ${format(new Date(pedido.data_prometida), 'dd/MM/yyyy', { locale: ptBR })}</div>` : ''}
+          ${printConfig.incluirSLA && pedido.dias_para_vencer_sla !== null ? `<div><span class="label">SLA:</span> ${
+            pedido.dias_para_vencer_sla < 0 
+              ? `ATRASADO (${Math.abs(pedido.dias_para_vencer_sla)} dias)`
+              : pedido.dias_para_vencer_sla === 0
+              ? 'VENCE HOJE'
+              : `${pedido.dias_para_vencer_sla} dias restantes`
+          }</div>` : ''}
         </div>
         
         <div class="linha"></div>
@@ -502,11 +182,27 @@ export function PrintOrderButton({
           <div><span class="label">PRIORIDADE:</span> ${pedido.prioridade}</div>
         </div>
         
-        ${pedido.observacoes ? `
+        ${printConfig.incluirValores && (pedido.valor_pedido || pedido.custo_lentes) ? `
+          <div class="linha"></div>
+          <div class="section">
+            ${pedido.valor_pedido ? `<div><span class="label">VALOR TOTAL:</span> R$ ${pedido.valor_pedido.toFixed(2).replace('.', ',')}</div>` : ''}
+            ${pedido.custo_lentes ? `<div><span class="label">CUSTO LENTES:</span> R$ ${pedido.custo_lentes.toFixed(2).replace('.', ',')}</div>` : ''}
+          </div>
+        ` : ''}
+        
+        ${printConfig.incluirObservacoes && pedido.observacoes ? `
           <div class="linha"></div>
           <div class="section">
             <div class="label">OBSERVAÇÕES:</div>
-            <div>${pedido.observacoes}</div>
+            <div class="observacoes">${pedido.observacoes}</div>
+          </div>
+        ` : ''}
+        
+        ${printConfig.incluirGarantia && pedido.eh_garantia && pedido.observacoes_garantia ? `
+          <div class="linha"></div>
+          <div class="section">
+            <div class="label">*** GARANTIA ***</div>
+            <div class="observacoes">${pedido.observacoes_garantia}</div>
           </div>
         ` : ''}
         
@@ -519,10 +215,18 @@ export function PrintOrderButton({
     printWindow.document.write(html)
     printWindow.document.close()
     
-    setTimeout(() => {
-      printWindow.print()
-      printWindow.close()
-    }, 500)
+    printWindow.onload = function() {
+      setTimeout(() => {
+        printWindow.print()
+        printWindow.onafterprint = function() {
+          printWindow.close()
+          setPrinting(false)
+          toast.success('Pedido enviado para impressão!')
+          setShowPreview(false)
+          setDialogOpen(false)
+        }
+      }, 250)
+    }
   }
 
   if (!pedido) {
@@ -562,22 +266,6 @@ export function PrintOrderButton({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Coluna Esquerda: Configurações */}
             <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-sm mb-3">Impressora</h3>
-                <Select value={impressoraSelecionada} onValueChange={setImpressoraSelecionada}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {IMPRESSORAS_SUPORTADAS.map(impressora => (
-                      <SelectItem key={impressora.id} value={impressora.id}>
-                        {impressora.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div>
                 <h3 className="font-semibold text-sm mb-3">Tamanho da Fonte</h3>
                 <div className="space-y-2">
@@ -720,7 +408,7 @@ export function PrintOrderButton({
                     width: '80mm',
                     margin: '0 auto',
                     backgroundColor: 'white',
-                    fontSize: TAMANHOS_FONTE[printConfig.tamanhoFonte].preview
+                    fontSize: TAMANHOS_FONTE[printConfig.tamanhoFonte]
                   }}
                 >
                   {/* Preview em HTML simulando térmica */}
@@ -840,7 +528,7 @@ export function PrintOrderButton({
               Cancelar
             </Button>
             <Button
-              onClick={handlePrintUSB}
+              onClick={handlePrint}
               disabled={printing}
               className="flex-1"
             >
