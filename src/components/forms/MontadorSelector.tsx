@@ -22,7 +22,7 @@ interface MontadorSelectorProps {
 // DADOS MOCKADOS DOS MONTADORES (posteriormente virão do banco)
 const MONTADORES_MOCK: Montador[] = [
   {
-    id: '1',
+    id: '550e8400-e29b-41d4-a716-446655440001',
     nome: 'Douglas',
     local: 'DCL Matriz - SP',
     contato: '(11) 9999-1111',
@@ -31,7 +31,7 @@ const MONTADORES_MOCK: Montador[] = [
     especialidades: ['Multifocal', 'Progressive', 'Transitions']
   },
   {
-    id: '2',
+    id: '550e8400-e29b-41d4-a716-446655440002',
     nome: 'Thiago',
     local: 'DCL Vila Madalena - SP',
     contato: '(11) 9999-2222',
@@ -40,7 +40,7 @@ const MONTADORES_MOCK: Montador[] = [
     especialidades: ['Bifocal', 'Antirreflexo', 'Blue Block']
   },
   {
-    id: '3',
+    id: '550e8400-e29b-41d4-a716-446655440003',
     nome: '2K',
     local: 'DCL Campinas - SP',
     contato: '(19) 9999-3333',

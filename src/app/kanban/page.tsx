@@ -754,28 +754,45 @@ export default function KanbanBoard() {
   }
 
   const handleSelectMontador = async (pedidoId: string, montador: Montador) => {
-    if (!supabase) return
+    if (!supabase) {
+      console.error('❌ Supabase não inicializado')
+      alert('Erro: Sistema não inicializado')
+      return
+    }
 
     try {
-      const { error } = await supabase
-        .from('pedidos')
-        .update({
-          montador_id: montador.id,
-          montador_nome: montador.nome,
-          montador_local: montador.local,
-          montador_contato: montador.contato,
-          custo_montagem: montador.preco_base,
-          data_montagem: new Date().toISOString()
-        })
-        .eq('id', pedidoId)
+      console.log('🔧 Selecionando montador:', { pedidoId, montador })
+      
+      const updateData = {
+        montador_id: montador.id,
+        montador_nome: montador.nome,
+        montador_local: montador.local,
+        montador_contato: montador.contato,
+        custo_montagem: montador.preco_base,
+        data_montagem: new Date().toISOString()
+      }
+      
+      console.log('📤 Dados do update:', updateData)
 
-      if (error) throw error
+      const { data, error } = await supabase
+        .from('pedidos')
+        .update(updateData)
+        .eq('id', pedidoId)
+        .select()
+
+      if (error) {
+        console.error('❌ Erro do Supabase:', error)
+        throw error
+      }
+
+      console.log('✅ Update bem-sucedido:', data)
 
       await loadPedidos()
       alert(`✅ Montador ${montador.nome} selecionado com sucesso!`)
     } catch (error) {
-      console.error('Erro ao selecionar montador:', error)
-      alert(`Erro ao selecionar montador: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+      console.error('❌ Erro ao selecionar montador:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+      alert(`❌ Erro ao selecionar montador: ${errorMessage}`)
     }
   }
 
