@@ -25,8 +25,13 @@ export async function GET(request: NextRequest) {
     const supabase = createRouteHandlerClient({ cookies })
     const { searchParams } = new URL(request.url)
     
-    const dataInicio = searchParams.get('data_inicio') || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    const dataFim = searchParams.get('data_fim') || new Date().toISOString().split('T')[0]
+    // Usar mês atual como padrão se não especificado
+    const hoje = new Date()
+    const primeiroDiaMesPassado = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)
+    const ultimoDiaHoje = hoje
+    
+    const dataInicio = searchParams.get('data_inicio') || primeiroDiaMesPassado.toISOString().split('T')[0]
+    const dataFim = searchParams.get('data_fim') || ultimoDiaHoje.toISOString().split('T')[0]
     const agrupamento = searchParams.get('agrupamento') || 'mes' // dia, semana, mes, ano
     const laboratorioId = searchParams.get('laboratorio_id')
     const lojaId = searchParams.get('loja_id')

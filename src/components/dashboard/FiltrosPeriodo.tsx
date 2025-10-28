@@ -66,23 +66,43 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
 
   const presetPeriods = [
     { label: 'Últimos 7 dias', days: 7 },
+    { label: 'Mês Atual', days: 'month' as const },
     { label: 'Últimos 30 dias', days: 30 },
     { label: 'Últimos 90 dias', days: 90 },
     { label: 'Este ano', days: 365 }
-]
+  ]
 
-  const setPresetPeriod = (days: number) => {
+  const setPresetPeriod = (days: number | 'month') => {
+    let dataInicio: string
     const dataFim = new Date().toISOString().split('T')[0]
-    const dataInicio = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-      .toISOString().split('T')[0]
+    
+    if (days === 'month') {
+      // Mês atual: do dia 1 até hoje
+      const hoje = new Date()
+      dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+        .toISOString().split('T')[0]
+    } else {
+      dataInicio = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+        .toISOString().split('T')[0]
+    }
+    
     const newFilters = { ...filters, dataInicio, dataFim }
     onFiltersChange(newFilters)
   }
 
-  const isActivePeriod = (days: number) => {
+  const isActivePeriod = (days: number | 'month') => {
     const expectedDataFim = new Date().toISOString().split('T')[0]
-    const expectedDataInicio = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-      .toISOString().split('T')[0]
+    let expectedDataInicio: string
+    
+    if (days === 'month') {
+      const hoje = new Date()
+      expectedDataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+        .toISOString().split('T')[0]
+    } else {
+      expectedDataInicio = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+        .toISOString().split('T')[0]
+    }
+    
     return filters.dataInicio === expectedDataInicio && filters.dataFim === expectedDataFim
   }
 
