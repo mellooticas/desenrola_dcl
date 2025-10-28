@@ -84,10 +84,13 @@ export function EvolucaoTemporalMelhorada({ filters }: EvolucaoTemporalMelhorada
       case 'semana':
         return `Sem ${periodo}`
       case 'mes':
-        return new Date(periodo + '-01').toLocaleDateString('pt-BR', { 
+        // Formato esperado: "2024-09" ou "2024-10"
+        const [ano, mes] = periodo.split('-')
+        const date = new Date(parseInt(ano), parseInt(mes) - 1, 1)
+        return date.toLocaleDateString('pt-BR', { 
           month: 'short', 
           year: '2-digit' 
-        })
+        }).replace('.', '')
       case 'ano':
         return periodo
       default:

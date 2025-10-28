@@ -56,13 +56,16 @@ export function TrendsChartReal({
 
   const formatPeriod = (periodo: string) => {
     try {
-      const date = new Date(periodo + 'T00:00:00')
+      // Formato esperado: "2024-09" ou "2024-10"
+      const [ano, mes] = periodo.split('-')
+      const date = new Date(parseInt(ano), parseInt(mes) - 1, 1)
+      
       return date.toLocaleDateString('pt-BR', { 
-        day: '2-digit', 
-        month: 'short' 
-      })
+        month: 'short',
+        year: '2-digit'
+      }).replace('.', '')
     } catch {
-      return periodo.slice(-5) // Fallback: últimos 5 caracteres
+      return periodo // Fallback: retorna o período original
     }
   }
 
