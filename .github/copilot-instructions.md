@@ -138,4 +138,4 @@ npm run build
 - **Arquivos**: kebab-case para pastas, PascalCase para componentes
 - **Imports**: Absolute paths com @ alias configurado
 - **Styling**: Tailwind first, CSS modules para casos específicos
-- **DB**: snake_case para tabelas/colunas, camelCase no TypeScript
+- **DB**: snake_case para tabelas/colunas, camelCase no TypeScrip
