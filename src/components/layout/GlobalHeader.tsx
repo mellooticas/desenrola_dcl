@@ -29,7 +29,6 @@ interface GlobalHeaderProps {
 
 // Navigation configuration
 const NAVIGATION_ITEMS = [
-  { name: 'Mission Control', href: '/mission-control', icon: Target },
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Kanban', href: '/kanban', icon: Package },
   { name: 'Pedidos', href: '/pedidos', icon: FileText },

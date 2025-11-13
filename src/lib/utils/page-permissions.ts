@@ -4,7 +4,6 @@
 export const PAGE_PERMISSIONS = {
   dashboard: ['gestor', 'financeiro'],
   kanban: ['gestor', 'dcl', 'financeiro', 'loja'], 
-  'mission-control': ['gestor', 'loja'], // Permissão para gestores e lojas
   pedidos: ['gestor', 'dcl', 'financeiro', 'loja'],
   configuracoes: ['gestor']
 } as const

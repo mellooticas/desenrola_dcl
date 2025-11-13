@@ -9,7 +9,6 @@ const ROUTE_PERMISSIONS = {
   '/dashboard': ['gestor', 'financeiro', 'demo_viewer'],
   '/kanban': ['gestor', 'dcl', 'financeiro', 'loja', 'demo_viewer'],
   '/pedidos': ['gestor', 'dcl', 'financeiro', 'loja', 'demo_viewer'], 
-  '/mission-control': ['gestor', 'loja', 'demo_viewer'], // Página de missões - acesso para gestores e lojas
   '/configuracoes': ['gestor'] // Demo NÃO pode acessar configurações
 }
 
@@ -18,7 +17,6 @@ const protectedRoutes = [
   '/dashboard',
   '/pedidos', 
   '/kanban',
-  '/mission-control',
   '/configuracoes',
 ]
 
@@ -102,7 +100,7 @@ function getDefaultPageForRole(role: string): string {
     case 'dcl':
       return '/kanban'
     case 'loja':
-      return '/mission-control' // Página padrão para lojas agora é mission-control
+      return '/kanban' // Página padrão para lojas é kanban
     case 'demo_viewer':
       return '/kanban' // Demo vai para kanban (somente visualização)
     default:
