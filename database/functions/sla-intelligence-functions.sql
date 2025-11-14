@@ -102,14 +102,14 @@ BEGIN
     -- Dias médio real (para entregues)
     COALESCE(AVG(
       CASE WHEN p.data_entregue IS NOT NULL 
-      THEN EXTRACT(days FROM (p.data_entregue - p.data_pedido))
+      THEN (p.data_entregue - p.data_pedido)::INTEGER
       ELSE NULL END
     ), 0)::NUMERIC(3,1) as dias_medio_real,
     -- SLA prometido médio
     COALESCE(AVG(p.sla_padrao_dias), 0)::NUMERIC(3,1) as dias_sla_prometido,
     -- Economia potencial (se entregar antes do SLA)
     (COUNT(*) * 50 * 
-     CASE WHEN AVG(EXTRACT(days FROM (COALESCE(p.data_entregue, CURRENT_DATE) - p.data_pedido))) < AVG(p.sla_padrao_dias) 
+     CASE WHEN AVG((COALESCE(p.data_entregue, CURRENT_DATE) - p.data_pedido)::INTEGER) < AVG(p.sla_padrao_dias) 
      THEN 1 ELSE -0.5 END
     )::NUMERIC as economia_potencial,
     -- Tendência baseada na performance
@@ -249,10 +249,10 @@ $$;
 -- PERMISSÕES: Garantir acesso às funções
 -- ===================================================================
 
-GRANT EXECUTE ON FUNCTION get_sla_metricas TO authenticated, anon, service_role;
-GRANT EXECUTE ON FUNCTION get_performance_laboratorios TO authenticated, anon, service_role;
-GRANT EXECUTE ON FUNCTION get_alertas_sla_criticos TO authenticated, anon, service_role;
-GRANT EXECUTE ON FUNCTION get_timeline_sla_7_dias TO authenticated, anon, service_role;
+GRANT EXECUTE ON FUNCTION get_sla_metricas(UUID, DATE, DATE) TO authenticated, anon, service_role;
+GRANT EXECUTE ON FUNCTION get_performance_laboratorios(UUID, DATE, DATE) TO authenticated, anon, service_role;
+GRANT EXECUTE ON FUNCTION get_alertas_sla_criticos(UUID) TO authenticated, anon, service_role;
+GRANT EXECUTE ON FUNCTION get_timeline_sla_7_dias(UUID) TO authenticated, anon, service_role;
 
 -- ===================================================================
 -- TESTE: Validar se as funções funcionam
@@ -261,11 +261,54 @@ GRANT EXECUTE ON FUNCTION get_timeline_sla_7_dias TO authenticated, anon, servic
 -- Testar métricas
 SELECT * FROM get_sla_metricas();
 
+| total_pedidos | sla_lab_cumprido | promessas_cumpridas | taxa_sla_lab | taxa_promessa_cliente | economia_margem | custo_atrasos |
+| ------------- | ---------------- | ------------------- | ------------ | --------------------- | --------------- | ------------- |
+| 299           | 99               | 134                 | 33.11        | 44.82                 | 22425           | 30000         |
+
+
 -- Testar performance
-SELECT * FROM get_performance_laboratorios();
+SELECT * FROM get_performance_laboratorios(NULL, NULL, NULL);
+
+
+| laboratorio_id                       | laboratorio_nome             | total_pedidos | sla_cumprido | sla_atrasado | taxa_sla | dias_medio_real | dias_sla_prometido | economia_potencial | tendencia |
+| ------------------------------------ | ---------------------------- | ------------- | ------------ | ------------ | -------- | --------------- | ------------------ | ------------------ | --------- |
+| 21e9cb25-ca46-42f9-b297-db1e693325ed | 2K                           | 40            | 26           | 14           | 65.00    | 7.5             | 2.0                | -1000.0            | down      |
+| 3e51a952-326f-4300-86e4-153df8d7f893 | Style                        | 63            | 26           | 37           | 41.27    | 16.4            | 7.0                | -1575.0            | down      |
+| 74dc986a-1063-4b8e-8964-59eb396e10eb | Express                      | 5             | 2            | 3            | 40.00    | 11.6            | 3.0                | -125.0             | down      |
+| d7cc1746-0749-40d6-97b6-94e50c7a1d1b | Braslentes                   | 14            | 5            | 9            | 35.71    | 10.5            | 10.0               | -350.0             | down      |
+| 8ce109c1-69d3-484a-a87b-8accf7984132 | Brascor                      | 78            | 27           | 51           | 34.62    | 13.2            | 7.0                | -1950.0            | down      |
+| 2861abfc-7a83-4929-9e9f-7c2541f863f0 | Sygma                        | 76            | 11           | 65           | 14.47    | 12.8            | 7.0                | -1900.0            | down      |
+| 3ba3d7e1-95c4-41dc-8127-073ad47f62e4 | HighVision                   | 17            | 1            | 16           | 5.88     | 14.1            | 7.0                | -425.0             | down      |
+| 7a45dd7b-127c-40a0-9af5-e732ca3f02a9 | Solótica - Lentes de Contato | 5             | 0            | 5            | 0.00     | 15.0            | 2.0                | -125.0             | down      |
+
+
 
 -- Testar alertas  
-SELECT * FROM get_alertas_sla_criticos();
+SELECT * FROM get_alertas_sla_criticos(NULL);
+
+| id                                          | tipo           | titulo                          | descricao                 | pedido_os | laboratorio | acao_sugerida                                                      | severidade | dias_restantes |
+| ------------------------------------------- | -------------- | ------------------------------- | ------------------------- | --------- | ----------- | ------------------------------------------------------------------ | ---------- | -------------- |
+| atraso_069e36b5-dba4-4fdf-abb3-82f9e3d2ae1a | atraso_critico | SLA Crítico - 46 dias de atraso | OS #44 - Style - GARANTIA | #44       | Style       | Contatar laboratório imediatamente + verificar compensação cliente | critica    | -46            |
+| atraso_64f3718c-dd2e-455a-af12-248e5b903b45 | atraso_critico | SLA Crítico - 45 dias de atraso | OS #53 - Sygma            | #53       | Sygma       | Contatar laboratório imediatamente + verificar compensação cliente | critica    | -45            |
+| atraso_0635d170-35ab-44ce-9b8f-6b290184bcdb | atraso_critico | SLA Crítico - 45 dias de atraso | OS #51 - Sygma            | #51       | Sygma       | Contatar laboratório imediatamente + verificar compensação cliente | critica    | -45            |
+| atraso_f1f8e925-b175-4eeb-aa20-1215447c98ca | atraso_critico | SLA Crítico - 44 dias de atraso | OS #61 - Braslentes       | #61       | Braslentes  | Contatar laboratório imediatamente + verificar compensação cliente | critica    | -44            |
+| atraso_b4630636-7cbe-4c28-9c0d-16d73c1fb0a6 | atraso_critico | SLA Crítico - 44 dias de atraso | OS #57 - Sygma            | #57       | Sygma       | Contatar laboratório imediatamente + verificar compensação cliente | critica    | -44            |
+| atraso_db3526b7-c80d-49a3-99be-11a0f31f06fc | atraso_critico | SLA Crítico - 44 dias de atraso | OS #72 - Sygma            | #72       | Sygma       | Contatar laboratório imediatamente + verificar compensação cliente | critica    | -44            |
+| atraso_fdd50d40-189a-4426-85a7-b134b0156a06 | atraso_critico | SLA Crítico - 42 dias de atraso | OS #13 - Style            | #13       | Style       | Contatar laboratório imediatamente + verificar compensação cliente | critica    | -42            |
+| atraso_7375f8c3-6559-43d1-87f5-845d079bf2cf | atraso_critico | SLA Crítico - 30 dias de atraso | OS #179 - Brascor         | #179      | Brascor     | Contatar laboratório imediatamente + verificar compensação cliente | critica    | -30            |
+| atraso_f877833c-fbd7-4300-889c-28ca866e5ba3 | atraso_critico | SLA Crítico - 30 dias de atraso | OS #130 - Style           | #130      | Style       | Contatar laboratório imediatamente + verificar compensação cliente | critica    | -30            |
+| atraso_fcbef31b-7be6-4bae-a00f-8afe0887264c | atraso_critico | SLA Crítico - 27 dias de atraso | OS #141 - Sygma           | #141      | Sygma       | Contatar laboratório imediatamente + verificar compensação cliente | critica    | -27            |
 
 -- Testar timeline
 SELECT * FROM get_timeline_sla_7_dias();
+
+
+| dia | data       | sla_vencendo | promessas_vencendo | status  |
+| --- | ---------- | ------------ | ------------------ | ------- |
+| SEX | 2025-11-14 | 1            | 6                  | ok      |
+| SAB | 2025-11-15 | 10           | 5                  | atencao |
+| DOM | 2025-11-16 | 3            | 4                  | folga   |
+| SEG | 2025-11-17 | 0            | 6                  | ok      |
+| TER | 2025-11-18 | 3            | 2                  | ok      |
+| QUA | 2025-11-19 | 1            | 0                  | ok      |
+| QUI | 2025-11-20 | 0            | 3                  | ok      |

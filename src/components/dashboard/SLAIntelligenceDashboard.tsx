@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -70,6 +71,7 @@ interface InsightIA {
 }
 
 export default function SLAIntelligenceDashboard({ filters }: SLAIntelligenceProps) {
+  const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [metricas, setMetricas] = useState<MetricasSLA | null>(null)
   const [performanceLabs, setPerformanceLabs] = useState<PerformanceLab[]>([])
@@ -78,8 +80,14 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
   const [proximosDias, setProximosDias] = useState<any[]>([])
 
   useEffect(() => {
-    carregarDadosSLA()
-  }, [filters])
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted) {
+      carregarDadosSLA()
+    }
+  }, [filters, mounted])
 
   const carregarDadosSLA = async () => {
     setLoading(true)
@@ -139,10 +147,10 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
 
   const getSeverityColor = (severidade: string) => {
     switch (severidade) {
-      case 'critica': return 'border-red-500 bg-red-50 text-red-800'
-      case 'alta': return 'border-orange-500 bg-orange-50 text-orange-800'  
-      case 'media': return 'border-yellow-500 bg-yellow-50 text-yellow-800'
-      default: return 'border-blue-500 bg-blue-50 text-blue-800'
+      case 'critica': return 'border-red-500 dark:border-red-700 bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300'
+      case 'alta': return 'border-orange-500 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/30 text-orange-800 dark:text-orange-300'  
+      case 'media': return 'border-yellow-500 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-950/30 text-yellow-800 dark:text-yellow-300'
+      default: return 'border-blue-500 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300'
     }
   }
 
@@ -154,12 +162,24 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
     }
   }
 
+  // Prevenir hidratação SSR
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Analisando dados de SLA...</p>
+          <p className="text-gray-600 dark:text-gray-400">Analisando dados de SLA...</p>
         </div>
       </div>
     )
@@ -209,7 +229,7 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
             </p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold" suppressHydrationWarning>
               {metricas?.taxa_promessa_cliente.toFixed(1)}%
             </div>
             <div className="text-sm text-blue-100">
@@ -226,10 +246,10 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 dark:text-green-400 font-medium">SLA Lab</p>
-                <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                <p className="text-2xl font-bold text-green-700 dark:text-green-300" suppressHydrationWarning>
                   {metricas?.taxa_sla_lab.toFixed(1)}%
                 </p>
-                <p className="text-xs text-green-600 dark:text-green-400">
+                <p className="text-xs text-green-600 dark:text-green-400" suppressHydrationWarning>
                   {metricas?.sla_lab_cumprido}/{metricas?.total_pedidos}
                 </p>
               </div>
@@ -243,10 +263,10 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Promessas</p>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300" suppressHydrationWarning>
                   {metricas?.taxa_promessa_cliente.toFixed(1)}%
                 </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400">
+                <p className="text-xs text-blue-600 dark:text-blue-400" suppressHydrationWarning>
                   {metricas?.promessas_cumpridas}/{metricas?.total_pedidos}
                 </p>
               </div>
@@ -260,7 +280,7 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">Economia</p>
-                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300" suppressHydrationWarning>
                   R$ {metricas?.economia_margem.toLocaleString()}
                 </p>
                 <p className="text-xs text-emerald-600 dark:text-emerald-400">Potencial/mês</p>
@@ -275,7 +295,7 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-red-600 dark:text-red-400 font-medium">Custos</p>
-                <p className="text-2xl font-bold text-red-700 dark:text-red-300">
+                <p className="text-2xl font-bold text-red-700 dark:text-red-300" suppressHydrationWarning>
                   R$ {metricas?.custo_atrasos.toLocaleString()}
                 </p>
                 <p className="text-xs text-red-600 dark:text-red-400">Atrasos/mês</p>
@@ -299,43 +319,43 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
               Análise comparativa de SLA real vs prometido
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="max-h-[500px] overflow-y-auto space-y-4 pr-2">
             {performanceLabs.map((lab) => (
-              <div key={lab.laboratorio_id} className="p-4 border rounded-lg bg-gray-50">
+              <div key={lab.laboratorio_id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-semibold">{lab.laboratorio_nome}</h4>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{lab.laboratorio_nome}</h4>
                     {getTendenciaIcon(lab.tendencia)}
                   </div>
-                  <Badge variant={lab.taxa_sla >= 90 ? "default" : "destructive"}>
+                  <Badge variant={lab.taxa_sla >= 90 ? "default" : "destructive"} suppressHydrationWarning>
                     {lab.taxa_sla.toFixed(1)}%
                   </Badge>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div className="text-center">
-                    <p className="text-gray-600">Real Médio</p>
-                    <p className="font-bold text-blue-600">{lab.dias_medio_real}d</p>
+                    <p className="text-gray-600 dark:text-gray-400">Real Médio</p>
+                    <p className="font-bold text-blue-600 dark:text-blue-400" suppressHydrationWarning>{lab.dias_medio_real}d</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-gray-600">SLA Prometido</p>
-                    <p className="font-bold text-gray-700">{lab.dias_sla_prometido}d</p>
+                    <p className="text-gray-600 dark:text-gray-400">SLA Prometido</p>
+                    <p className="font-bold text-gray-700 dark:text-gray-300" suppressHydrationWarning>{lab.dias_sla_prometido}d</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-gray-600">Economia</p>
+                    <p className="text-gray-600 dark:text-gray-400">Economia</p>
                     <p className={cn(
                       "font-bold",
-                      lab.economia_potencial >= 0 ? "text-green-600" : "text-red-600"
-                    )}>
+                      lab.economia_potencial >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                    )} suppressHydrationWarning>
                       R$ {lab.economia_potencial}
                     </p>
                   </div>
                 </div>
                 
                 <div className="mt-3">
-                  <div className="flex justify-between text-xs text-gray-600 mb-1">
+                  <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
                     <span>SLA Compliance</span>
-                    <span>{lab.taxa_sla.toFixed(1)}%</span>
+                    <span suppressHydrationWarning>{lab.taxa_sla.toFixed(1)}%</span>
                   </div>
                   <Progress value={lab.taxa_sla} className="h-2" />
                 </div>
@@ -355,7 +375,7 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
               Ações urgentes e oportunidades identificadas
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="max-h-[500px] overflow-y-auto space-y-3 pr-2">
             {alertasSLA.map((alerta) => (
               <Alert key={alerta.id} className={getSeverityColor(alerta.severidade)}>
                 <AlertDescription>
@@ -375,7 +395,7 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
                         )}
                       </div>
                       <p className="text-sm mb-2">{alerta.descricao}</p>
-                      <div className="bg-white/50 rounded px-2 py-1">
+                      <div className="bg-white/50 dark:bg-white/10 rounded px-2 py-1">
                         <p className="text-xs font-medium">💡 Ação: {alerta.acao_sugerida}</p>
                       </div>
                     </div>
@@ -398,26 +418,26 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
             Análise inteligente com sugestões baseadas em padrões históricos
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="max-h-[600px] overflow-y-auto pr-2">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {insights.map((insight, index) => (
-              <div key={index} className="p-4 border rounded-lg bg-gradient-to-br from-purple-50 to-indigo-50">
+              <div key={index} className="p-4 border border-purple-200 dark:border-purple-800 rounded-lg bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30">
                 <div className="flex items-start gap-3 mb-3">
                   <div className="text-2xl">{insight.icone}</div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-sm mb-1">{insight.titulo}</h4>
-                    <p className="text-xs text-gray-600 mb-2">{insight.descricao}</p>
+                    <h4 className="font-semibold text-sm mb-1 text-gray-900 dark:text-white">{insight.titulo}</h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{insight.descricao}</p>
                   </div>
                 </div>
                 
-                <div className="bg-white/50 rounded p-2 mb-2">
-                  <p className="text-xs font-medium text-green-700">
+                <div className="bg-white/50 dark:bg-white/10 rounded p-2 mb-2">
+                  <p className="text-xs font-medium text-green-700 dark:text-green-400">
                     📈 {insight.impacto_estimado}
                   </p>
                 </div>
                 
-                <div className="bg-blue-100 rounded p-2">
-                  <p className="text-xs font-medium text-blue-800">
+                <div className="bg-blue-100 dark:bg-blue-900/40 rounded p-2">
+                  <p className="text-xs font-medium text-blue-800 dark:text-blue-300">
                     🎯 {insight.acao_recomendada}
                   </p>
                 </div>
@@ -475,19 +495,19 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
             ))}
           </div>
           
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                  <span>🔧 SLA Lab</span>
+                  <span className="text-gray-700 dark:text-gray-300">🔧 SLA Lab</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-green-500 rounded"></div>
-                  <span>🤝 Promessa Cliente</span>
+                  <span className="text-gray-700 dark:text-gray-300">🤝 Promessa Cliente</span>
                 </div>
               </div>
-              <div className="text-blue-600 font-medium">
+              <div className="text-blue-600 dark:text-blue-400 font-medium">
                 💡 Quarta-feira: sugerir reforço na equipe
               </div>
             </div>
