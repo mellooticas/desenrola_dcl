@@ -215,9 +215,9 @@ export function EvolucaoTemporalMelhorada({ filters }: EvolucaoTemporalMelhorada
       <CardContent>
         {dadosFormatados.length > 0 ? (
           <>
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer width="100%" height={500}>
               <ComposedChart data={dadosFormatados} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:stroke-gray-700" />
                 <XAxis 
                   dataKey="periodoFormatado" 
                   stroke="#64748b"

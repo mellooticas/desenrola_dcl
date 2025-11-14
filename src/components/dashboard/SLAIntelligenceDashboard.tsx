@@ -172,19 +172,19 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
 
   if (!temDados) {
     return (
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl p-8 text-center">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-8 text-center border border-blue-200 dark:border-blue-800">
         <div className="max-w-md mx-auto">
-          <Target className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-gray-800 mb-2">
+          <Target className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
             📊 Dashboard SLA Intelligence
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             Para visualizar dados reais, execute as stored procedures no banco de dados:
           </p>
-          <div className="bg-white rounded-lg p-4 text-left text-sm font-mono text-gray-700 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 text-left text-sm font-mono text-gray-700 dark:text-gray-300 mb-4 border border-gray-200 dark:border-gray-700">
             <code>database/functions/sla-dashboard-real-data.sql</code>
           </div>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             ✅ Total de pedidos no sistema: 145<br/>
             🔧 Aguardando execução das funções para análise completa
           </p>
@@ -221,66 +221,66 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
 
       {/* Métricas Principais */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-green-600 font-medium">SLA Lab</p>
-                <p className="text-2xl font-bold text-green-700">
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium">SLA Lab</p>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {metricas?.taxa_sla_lab.toFixed(1)}%
                 </p>
-                <p className="text-xs text-green-600">
+                <p className="text-xs text-green-600 dark:text-green-400">
                   {metricas?.sla_lab_cumprido}/{metricas?.total_pedidos}
                 </p>
               </div>
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
+              <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-50 border-blue-200">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-50 dark:from-blue-950/30 dark:to-blue-950/30 border-blue-200 dark:border-blue-800">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-600 font-medium">Promessas</p>
-                <p className="text-2xl font-bold text-blue-700">
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Promessas</p>
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                   {metricas?.taxa_promessa_cliente.toFixed(1)}%
                 </p>
-                <p className="text-xs text-blue-600">
+                <p className="text-xs text-blue-600 dark:text-blue-400">
                   {metricas?.promessas_cumpridas}/{metricas?.total_pedidos}
                 </p>
               </div>
-              <Target className="w-8 h-8 text-blue-600" />
+              <Target className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
+        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border-emerald-200 dark:border-emerald-800">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-emerald-600 font-medium">Economia</p>
-                <p className="text-2xl font-bold text-emerald-700">
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">Economia</p>
+                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
                   R$ {metricas?.economia_margem.toLocaleString()}
                 </p>
-                <p className="text-xs text-emerald-600">Potencial/mês</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400">Potencial/mês</p>
               </div>
-              <TrendingUp className="w-8 h-8 text-emerald-600" />
+              <TrendingUp className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-50 to-red-50 border-red-200">
+        <Card className="bg-gradient-to-br from-red-50 to-red-50 dark:from-red-950/30 dark:to-red-950/30 border-red-200 dark:border-red-800">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-red-600 font-medium">Custos</p>
-                <p className="text-2xl font-bold text-red-700">
+                <p className="text-sm text-red-600 dark:text-red-400 font-medium">Custos</p>
+                <p className="text-2xl font-bold text-red-700 dark:text-red-300">
                   R$ {metricas?.custo_atrasos.toLocaleString()}
                 </p>
-                <p className="text-xs text-red-600">Atrasos/mês</p>
+                <p className="text-xs text-red-600 dark:text-red-400">Atrasos/mês</p>
               </div>
-              <Clock className="w-8 h-8 text-red-600" />
+              <Clock className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
           </CardContent>
         </Card>
@@ -428,13 +428,13 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
       </Card>
 
       {/* Timeline Preditiva */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-indigo-600" />
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+            <Calendar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             Timeline Preditiva - Próximos 7 Dias
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
             Previsão de vencimentos SLA e promessas para planejamento
           </CardDescription>
         </CardHeader>
@@ -444,30 +444,30 @@ export default function SLAIntelligenceDashboard({ filters }: SLAIntelligencePro
               <div key={index} className={cn(
                 "text-center p-3 rounded-lg border-2",
                 dia.status === 'pico' 
-                  ? "bg-red-50 border-red-300"
+                  ? "bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800"
                   : dia.status === 'atencao'
-                    ? "bg-yellow-50 border-yellow-300"
+                    ? "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-800"
                     : dia.status === 'folga'
-                      ? "bg-gray-50 border-gray-200"
-                      : "bg-green-50 border-green-300"
+                      ? "bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700"
+                      : "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800"
               )}>
-                <div className="font-bold text-sm mb-2">{dia.dia}</div>
+                <div className="font-bold text-sm mb-2 text-gray-900 dark:text-white">{dia.dia}</div>
                 <div className="space-y-1">
                   <div className={cn(
                     "text-xs px-2 py-1 rounded",
-                    dia.sla_vencendo > 0 ? "bg-blue-200 text-blue-800" : "bg-gray-200 text-gray-600"
+                    dia.sla_vencendo > 0 ? "bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300" : "bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                   )}>
                     🔧 {dia.sla_vencendo}
                   </div>
                   <div className={cn(
                     "text-xs px-2 py-1 rounded",
-                    dia.promessas_vencendo > 0 ? "bg-green-200 text-green-800" : "bg-gray-200 text-gray-600"
+                    dia.promessas_vencendo > 0 ? "bg-green-200 dark:bg-green-900/50 text-green-800 dark:text-green-300" : "bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                   )}>
                     🤝 {dia.promessas_vencendo}
                   </div>
                 </div>
                 {dia.status === 'pico' && (
-                  <div className="text-xs mt-1 text-red-600 font-medium">
+                  <div className="text-xs mt-1 text-red-600 dark:text-red-400 font-medium">
                     ⚠️ PICO
                   </div>
                 )}

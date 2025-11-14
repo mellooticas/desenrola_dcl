@@ -373,13 +373,13 @@ export default function ConfigSLAsPage() {
       </div>
 
       {Object.keys(slasAgrupados).length === 0 && (
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <AlertTriangle className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">
+            <AlertTriangle className="w-12 h-12 text-muted-foreground dark:text-gray-600 mb-4" />
+            <p className="text-muted-foreground dark:text-gray-400 mb-4">
               Nenhuma configuração de SLA personalizada
             </p>
-            <p className="text-sm text-muted-foreground mb-4 text-center">
+            <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4 text-center">
               O sistema usará os SLAs padrão dos laboratórios até que configurações específicas sejam criadas
             </p>
             <Button onClick={() => setDialogOpen(true)}>
@@ -391,10 +391,10 @@ export default function ConfigSLAsPage() {
       )}
 
       {Object.entries(slasAgrupados).map(([laboratorioNome, slasLab]) => (
-        <Card key={laboratorioNome}>
+        <Card key={laboratorioNome} className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-xl">{laboratorioNome}</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl dark:text-white">{laboratorioNome}</CardTitle>
+            <CardDescription className="dark:text-gray-300">
               {slasLab.length} configuração(ões) específica(s)
             </CardDescription>
           </CardHeader>
@@ -403,7 +403,7 @@ export default function ConfigSLAsPage() {
               {slasLab.map((sla) => (
                 <div
                   key={`${sla.laboratorio_id}-${sla.classe_lente_id}`}
-                  className="border rounded-lg p-4 space-y-3"
+                  className="border dark:border-gray-700 rounded-lg p-4 space-y-3 dark:bg-gray-700/30"
                 >
                   <div className="flex justify-between items-start">
                     <h4 className="font-medium">{sla.classe_nome}</h4>

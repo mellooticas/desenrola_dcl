@@ -317,17 +317,17 @@ export default function NovaOrdemPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto p-6 space-y-6">
-        <div className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl rounded-lg p-6">
+        <div className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl rounded-lg p-6">
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={() => router.back()}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-slate-800">Nova Ordem</h1>
-              <p className="text-slate-600">Criar novo pedido em 10 segundos</p>
+              <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Nova Ordem</h1>
+              <p className="text-slate-600 dark:text-gray-300">Criar novo pedido em 10 segundos</p>
             </div>
           </div>
         </div>
@@ -335,16 +335,16 @@ export default function NovaOrdemPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
           {/* Coluna 1: Dados Básicos */}
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Dados Básicos</CardTitle>
-              <CardDescription>Informações essenciais do pedido</CardDescription>
+              <CardTitle className="dark:text-white">Dados Básicos</CardTitle>
+              <CardDescription className="dark:text-gray-400">Informações essenciais do pedido</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="loja">Loja *</Label>
+                <Label htmlFor="loja" className="dark:text-gray-200">Loja *</Label>
                 <Select value={formData.loja_id} onValueChange={(value) => setFormData({ ...formData, loja_id: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     <SelectValue placeholder="Selecione a loja" />
                   </SelectTrigger>
                   <SelectContent>
@@ -425,20 +425,21 @@ export default function NovaOrdemPage() {
           </Card>
 
           {/* Coluna 2: Cliente e Financeiro */}
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Cliente e Financeiro</CardTitle>
-              <CardDescription>Dados do cliente e valores</CardDescription>
+              <CardTitle className="dark:text-white">Cliente e Financeiro</CardTitle>
+              <CardDescription className="dark:text-gray-400">Dados do cliente e valores</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="cliente_nome">Nome do Cliente *</Label>
+                <Label htmlFor="cliente_nome" className="dark:text-gray-200">Nome do Cliente *</Label>
                 <Input
                   id="cliente_nome"
                   value={formData.cliente_nome}
                   onChange={(e) => setFormData({ ...formData, cliente_nome: e.target.value })}
                   placeholder="Nome completo do cliente"
                   required
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                 />
               </div>
 
@@ -488,9 +489,9 @@ export default function NovaOrdemPage() {
               </div>
 
               {valorTotal > 0 && (
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <span className="text-sm font-medium text-green-800">Valor Total:</span>
-                  <span className="text-lg font-bold text-green-800">
+                <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border dark:border-green-800">
+                  <span className="text-sm font-medium text-green-800 dark:text-green-300">Valor Total:</span>
+                  <span className="text-lg font-bold text-green-800 dark:text-green-300">
                     R$ {valorTotal.toFixed(2).replace('.', ',')}
                   </span>
                 </div>
@@ -524,10 +525,10 @@ export default function NovaOrdemPage() {
         </Card>
 
         {/* Números de Controle */}
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Números de Controle</CardTitle>
-            <CardDescription>Números de referência opcionais</CardDescription>
+            <CardTitle className="dark:text-white">Números de Controle</CardTitle>
+            <CardDescription className="dark:text-gray-400">Números de referência opcionais</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -554,10 +555,10 @@ export default function NovaOrdemPage() {
 
         {/* Tratamentos */}
         {tratamentos.length > 0 && (
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Tratamentos Adicionais</CardTitle>
-              <CardDescription>Selecione os tratamentos desejados</CardDescription>
+              <CardTitle className="dark:text-white">Tratamentos Adicionais</CardTitle>
+              <CardDescription className="dark:text-gray-400">Selecione os tratamentos desejados</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -566,16 +567,16 @@ export default function NovaOrdemPage() {
                     key={tratamento.id}
                     className={`border rounded-lg p-3 cursor-pointer transition-colors ${
                       formData.tratamentos_ids.includes(tratamento.id)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-700'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 dark:bg-gray-700/30'
                     }`}
                     onClick={() => toggleTratamento(tratamento.id)}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-medium">{tratamento.nome}</h4>
+                        <h4 className="font-medium dark:text-white">{tratamento.nome}</h4>
                         {tratamento.descricao && (
-                          <p className="text-xs text-muted-foreground">{tratamento.descricao}</p>
+                          <p className="text-xs text-muted-foreground dark:text-gray-400">{tratamento.descricao}</p>
                         )}
                       </div>
                       <div className="text-right">
@@ -597,10 +598,10 @@ export default function NovaOrdemPage() {
         )}
 
         {/* Observações */}
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Observações</CardTitle>
-            <CardDescription>Informações adicionais sobre o pedido</CardDescription>
+            <CardTitle className="dark:text-white">Observações</CardTitle>
+            <CardDescription className="dark:text-gray-400">Informações adicionais sobre o pedido</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">

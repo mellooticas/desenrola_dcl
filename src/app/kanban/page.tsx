@@ -16,8 +16,13 @@ import { Search, Bell, Eye, ArrowLeft, ArrowRight, CheckCircle, Lock, RefreshCw,
 import { useAuth } from '@/components/providers/AuthProvider'
 import { PedidoCompleto, StatusPedido, PrioridadeLevel, Montador } from '@/lib/types/database'
 import { STATUS_COLORS, STATUS_LABELS } from '@/lib/utils/constants'
+import { cn } from '@/lib/utils'
 import NovaOrdemForm from '@/components/forms/NovaOrdemForm'
 import { KanbanCard } from '@/components/kanban/KanbanCard'
+import { KanbanCardModern } from '@/components/kanban/KanbanCardModern'
+import { KanbanColumnHeader } from '@/components/kanban/KanbanColumnHeader'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { PedidoDetailDrawer } from '@/components/kanban/PedidoDetailDrawer'
 import { usePermissions } from '@/lib/hooks/use-user-permissions'
 import { DemoModeAlert } from '@/components/permissions/DemoModeAlert'
@@ -76,6 +81,27 @@ const STATUS_ICONS: Record<StatusPedido, React.ComponentType<any>> = {
   // Removidos ENTREGUE e CANCELADO - não aparecem no Kanban
   'ENTREGUE': CheckCircle, // Mantido para compatibilidade com modal
   'CANCELADO': X // Mantido para compatibilidade com modal
+}
+
+// Gradientes por status para modernização
+const STATUS_GRADIENTS: Record<StatusPedido, string> = {
+  'REGISTRADO': 'from-blue-500 to-cyan-500',
+  'AG_PAGAMENTO': 'from-yellow-500 to-amber-500',
+  'PAGO': 'from-green-500 to-emerald-500',
+  'PRODUCAO': 'from-orange-500 to-red-500',
+  'PRONTO': 'from-purple-500 to-pink-500',
+  'ENVIADO': 'from-indigo-500 to-blue-500',
+  'CHEGOU': 'from-teal-500 to-cyan-500',
+  'ENTREGUE': 'from-green-600 to-emerald-600',
+  'CANCELADO': 'from-gray-500 to-slate-500'
+}
+
+// Mapeamento lab → gradiente
+const LAB_GRADIENTS: Record<string, string> = {
+  'Essilor': 'from-blue-500 to-cyan-500',
+  'Zeiss': 'from-purple-500 to-pink-500',
+  'Hoya': 'from-green-500 to-emerald-500',
+  'default': 'from-gray-500 to-slate-500'
 }
 
 // Permissões por role
@@ -814,7 +840,7 @@ export default function KanbanBoard() {
   const totalAlertas = columns.reduce((acc, col) => acc + col.pedidos.reduce((sum, p) => sum + p.alertas_count, 0), 0)
 
   // ========== RENDER CARD DO PEDIDO ==========
-  const renderPedidoCard = (pedido: PedidoCompleto, index: number) => {
+  const renderPedidoCard = (pedido: PedidoCompleto, index: number, laboratorioGradient?: string) => {
     const canEdit = permissions.canEditColumn(pedido.status)
     const canMoveNext = permissions.canMoveToNext(pedido.status)
     const canMovePrev = permissions.canMoveToPrev(pedido.status)
@@ -834,14 +860,11 @@ export default function KanbanBoard() {
             {...provided.dragHandleProps}
             className="mb-3"
           >
-            <KanbanCard
+            <KanbanCardModern
               pedido={pedido}
-              onClick={() => setSelectedPedido(pedido)}
+              laboratorioGradient={laboratorioGradient || LAB_GRADIENTS['default']}
               isDragging={snapshot.isDragging}
-              onMoveLeft={canMovePrev ? () => handleRegressStatus(pedido) : undefined}
-              onMoveRight={canMoveNext ? () => handleAdvanceStatus(pedido) : undefined}
-              canMoveLeft={canMovePrev && canEdit}
-              canMoveRight={canMoveNext && canEdit}
+              onClick={() => setSelectedPedido(pedido)}
             />
           </div>
         )}
@@ -852,10 +875,10 @@ export default function KanbanBoard() {
   // ========== LOADING E ERROR STATES ==========
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-        <div className="text-center bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/20">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-700 font-medium text-lg">Verificando autenticação...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="text-center bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 dark:border-blue-800 border-t-blue-600 dark:border-t-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-700 dark:text-gray-300 font-medium text-lg">Verificando autenticação...</p>
         </div>
       </div>
     )
@@ -867,9 +890,7 @@ export default function KanbanBoard() {
 
   // ========== RENDER PRINCIPAL ==========
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <main className="container mx-auto py-6 px-4">
-        <div className="space-y-6">
+    <div className="space-y-6">
           {/* 🔒 ALERTA MODO DEMO */}
           <DemoModeAlert message="Você pode visualizar o Kanban, mas não pode mover cards ou criar pedidos." />
           
@@ -892,7 +913,7 @@ export default function KanbanBoard() {
           )}
 
           {/* Header do Kanban */}
-          <div className="bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl p-6">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-lg rounded-2xl p-6">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
               <div className="flex items-center space-x-4">
                 <div className="relative group">
@@ -902,16 +923,16 @@ export default function KanbanBoard() {
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                     Kanban - {userRole.toUpperCase()}
                   </h1>
-                  <p className="text-gray-600 font-medium">
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">
                     {visibleColumns.length} colunas operacionais • {totalPedidos} pedidos ativos
                     {totalAlertas > 0 && (
                       <span className="text-red-600 font-semibold"> • {totalAlertas} alertas</span>
                     )}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Perfil: <strong>{userRole}</strong> •
                     Permissões: {permissions.canCreateOrder() ? 'Criar' : ''}
                     {permissions.canViewFinancialData() ? ' • Financeiro' : ''}
@@ -926,7 +947,7 @@ export default function KanbanBoard() {
                   onClick={loadPedidos}
                   variant="outline"
                   disabled={loading}
-                  className="bg-white/70 backdrop-blur-sm border-gray-300 hover:bg-white/90 transition-all duration-200"
+                  className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
                 >
                   <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                   Atualizar
@@ -938,13 +959,13 @@ export default function KanbanBoard() {
                 )}
 
                 <Link href="/pedidos">
-                  <Button variant="outline" className="bg-white/70 backdrop-blur-sm border-gray-300 hover:bg-white/90">
+                  <Button variant="outline" className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                     📋 Ver Pedidos Concluídos
                   </Button>
                 </Link>
 
                 <Link href="/dashboard">
-                  <Button variant="outline" className="bg-white/70 backdrop-blur-sm border-gray-300 hover:bg-white/90">
+                  <Button variant="outline" className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                     📊 Dashboard
                   </Button>
                 </Link>
@@ -953,18 +974,18 @@ export default function KanbanBoard() {
           </div>
 
           {/* Filtros */}
-          <div className="bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-xl border border-white/20 shadow-xl rounded-2xl p-6">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-lg rounded-2xl p-6">
             {/* Filtros existentes */}
             <div className="flex flex-wrap gap-4">
             {/* Busca */}
             <div className="flex-1 min-w-[280px]">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-blue-600" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-blue-600 dark:text-blue-400" />
                 <Input
                   placeholder="Buscar por número, cliente, loja, OS, pedido lab..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/70 backdrop-blur-sm border-gray-300 hover:bg-white/90 transition-all duration-200"
+                  className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 transition-all"
                 />
               </div>
             </div>
@@ -972,10 +993,10 @@ export default function KanbanBoard() {
             {/* Filtro Loja */}
             {lojas.length > 0 && (
               <Select value={selectedLoja} onValueChange={setSelectedLoja}>
-                <SelectTrigger className="w-[220px] bg-white/70 backdrop-blur-sm border-gray-300 hover:bg-white/90 transition-all duration-200">
+                <SelectTrigger className="w-[220px] bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 text-gray-900 dark:text-white transition-all">
                   <SelectValue placeholder="Todas as lojas" />
                 </SelectTrigger>
-                <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20">
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                   <SelectItem value="all">Todas as lojas</SelectItem>
                   {lojas.map(loja => (
                     <SelectItem key={loja.id} value={loja.id}>
@@ -989,10 +1010,10 @@ export default function KanbanBoard() {
             {/* Filtro Laboratório */}
             {laboratorios.length > 0 && (
               <Select value={selectedLab} onValueChange={setSelectedLab}>
-                <SelectTrigger className="w-[220px] bg-white/70 backdrop-blur-sm border-gray-300 hover:bg-white/90 transition-all duration-200">
+                <SelectTrigger className="w-[220px] bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 text-gray-900 dark:text-white transition-all">
                   <SelectValue placeholder="Todos os labs" />
                 </SelectTrigger>
-                <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20">
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                   <SelectItem value="all">Todos os laboratórios</SelectItem>
                   {laboratorios.map(lab => (
                     <SelectItem key={lab.id} value={lab.id}>
@@ -1011,63 +1032,45 @@ export default function KanbanBoard() {
                   const IconComponent = STATUS_ICONS[column.id]
                   return (
                     <div key={column.id} className="w-80 flex-shrink-0">
-                      <div className="bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-xl border border-white/20 shadow-xl rounded-2xl overflow-hidden">
-                        {/* Header da coluna */}
-                        <div
-                          className="p-4 bg-gradient-to-r from-white/50 to-transparent backdrop-blur-sm border-b border-white/20"
-                          style={{
-                            borderTopColor: column.color,
-                            borderTopWidth: '4px',
-                            borderTopStyle: 'solid'
-                          }}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="p-2 rounded-lg shadow-sm"
-                                style={{ backgroundColor: `${column.color}20`, color: column.color }}
-                              >
-                                <IconComponent className="w-4 h-4" />
-                              </div>
-                              <h3 className="font-bold text-gray-900 text-base">{column.title}</h3>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                variant="secondary"
-                                className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-700 border-blue-200 font-semibold"
-                              >
-                                {column.pedidos.length}
-                              </Badge>
-                              {!permissions.canEditColumn(column.id) && (
-                                <div className="p-1 bg-gray-300/50 rounded-lg" title="Apenas visualização">
-                                  <Lock className="w-4 h-4 text-gray-500" />
-                                </div>
+                      <div className="bg-white/95 backdrop-blur-xl border border-gray-200 shadow-xl rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
+                        {/* Header da coluna modernizado */}
+                        <KanbanColumnHeader
+                          title={column.title}
+                          count={column.pedidos.length}
+                          icon={IconComponent}
+                          gradient={STATUS_GRADIENTS[column.id]}
+                          color={column.color}
+                        />
+
+                        {/* Resumo financeiro (se tiver permissão) */}
+                        {column.pedidos.length > 0 && isHydrated && permissions.canViewFinancialData() && (
+                          <div className="px-4 py-2 bg-gray-50/50 border-b border-gray-100">
+                            <div className="flex gap-4 text-xs">
+                              <span className="text-gray-600">
+                                💰 R$ {column.pedidos
+                                  .filter(p => p.custo_lentes && !p.eh_garantia)
+                                  .reduce((sum, p) => sum + (p.custo_lentes || 0), 0)
+                                  .toLocaleString('pt-BR', { minimumFractionDigits: 0 })
+                                } <span className="text-orange-600">(custo)</span>
+                              </span>
+                              {column.pedidos.some(p => p.alertas_count > 0) && (
+                                <span className="text-red-600 font-medium">
+                                  🚨 {column.pedidos.reduce((sum, p) => sum + p.alertas_count, 0)} alertas
+                                </span>
                               )}
                             </div>
                           </div>
+                        )}
 
-                          {/* Resumo da coluna */}
-                          {column.pedidos.length > 0 && isHydrated && (
-                            <div className="mt-2 text-xs text-gray-600">
-                              {permissions.canViewFinancialData() && (
-                                <div className="flex gap-4">
-                                  <span>
-                                    💰 R$ {column.pedidos
-                                      .filter(p => p.custo_lentes && !p.eh_garantia)
-                                      .reduce((sum, p) => sum + (p.custo_lentes || 0), 0)
-                                      .toLocaleString('pt-BR', { minimumFractionDigits: 0 })
-                                    } <span className="text-orange-600">(custo)</span>
-                                  </span>
-                                  {column.pedidos.some(p => p.alertas_count > 0) && (
-                                    <span className="text-red-600 font-medium">
-                                      🚨 {column.pedidos.reduce((sum, p) => sum + p.alertas_count, 0)} alertas
-                                    </span>
-                                  )}
-                                </div>
-                              )}
+                        {/* Lock indicator se não pode editar */}
+                        {!permissions.canEditColumn(column.id) && (
+                          <div className="px-4 py-2 bg-gray-100/50 border-b border-gray-200">
+                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                              <Lock className="w-3 h-3" />
+                              <span>Apenas visualização</span>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
 
                         {/* Cards dos pedidos */}
                         <Droppable
@@ -1078,29 +1081,31 @@ export default function KanbanBoard() {
                             <div
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              className={`p-4 min-h-[500px] space-y-3 transition-all duration-300 ${
+                              className={cn(
+                                "p-4 min-h-[500px] space-y-3 transition-all duration-300 rounded-b-2xl border",
                                 snapshot.isDraggingOver
                                   ? permissions.canEditColumn(column.id)
-                                    ? 'bg-gradient-to-br from-blue-100/50 to-purple-100/50 backdrop-blur-sm'
-                                    : 'bg-gradient-to-br from-red-100/50 to-pink-100/50 backdrop-blur-sm'
-                                  : 'bg-transparent'
-                              }`}
-                            >
-                              {column.pedidos.map((pedido, index) =>
-                                renderPedidoCard(pedido, index)
+                                    ? 'bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-blue-200 dark:border-blue-800'
+                                    : 'bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-red-200 dark:border-red-800'
+                                  : 'bg-gradient-to-br from-gray-900/5 via-gray-800/10 to-blue-900/5 dark:from-gray-900/80 dark:via-gray-800/90 dark:to-blue-900/80 border-gray-200/50 dark:border-gray-700/50'
                               )}
+                            >
+                              {column.pedidos.map((pedido, index) => {
+                                const labGradient = LAB_GRADIENTS[pedido.laboratorio_nome || ''] || LAB_GRADIENTS['default']
+                                return renderPedidoCard(pedido, index, labGradient)
+                              })}
                               {provided.placeholder}
 
                               {column.pedidos.length === 0 && (
-                                <div className="text-center text-gray-500 text-sm mt-20 p-8">
-                                  <div className="bg-gradient-to-br from-gray-100/50 to-gray-200/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50">
-                                    <IconComponent className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                                    <p className="font-medium text-gray-600">Nenhum pedido</p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      {!permissions.canEditColumn(column.id) && "Sem permissão para editar"}
-                                    </p>
-                                  </div>
-                                </div>
+                                <EmptyState
+                                  icon={IconComponent}
+                                  title="Nenhum pedido"
+                                  description={
+                                    !permissions.canEditColumn(column.id)
+                                      ? "Sem permissão para editar"
+                                      : "Arraste pedidos para cá"
+                                  }
+                                />
                               )}
                             </div>
                           )}
@@ -1135,19 +1140,17 @@ export default function KanbanBoard() {
 
           {/* ========== LOADING OVERLAY ========== */}
           {loading && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-xl shadow-xl">
+            <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-3">
-                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-200 border-t-blue-600"></div>
-                  <span className="text-gray-700 font-medium">
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-200 dark:border-blue-800 border-t-blue-600 dark:border-t-blue-400"></div>
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">
                     {totalPedidos === 0 ? 'Carregando dados iniciais...' : 'Atualizando pedidos...'}
                   </span>
                 </div>
               </div>
             </div>
           )}
-        </div>
-      </main>
     </div>
   )
 }

@@ -52,14 +52,14 @@ export function AlertsSection({ filters }: AlertsSectionProps) {
   
   if (isLoading) {
     return (
-      <Card>
+      <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
         <CardHeader>
-          <CardTitle>Centro de Alertas</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">Centro de Alertas</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-32 bg-gray-100 animate-pulse rounded-lg" />
+              <div key={i} className="h-32 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg" />
             ))}
           </div>
         </CardContent>
@@ -69,12 +69,12 @@ export function AlertsSection({ filters }: AlertsSectionProps) {
   
   if (error) {
     return (
-      <Card>
+      <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
         <CardHeader>
-          <CardTitle>Centro de Alertas</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">Centro de Alertas</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-red-600">Erro ao carregar alertas</p>
+          <p className="text-red-600 dark:text-red-400">Erro ao carregar alertas</p>
         </CardContent>
       </Card>
     )
@@ -90,9 +90,9 @@ export function AlertsSection({ filters }: AlertsSectionProps) {
   const alertasCriticos = alertasPorPrioridade['CRITICA'].length + alertasPorPrioridade['ALTA'].length
   
   return (
-    <Card>
+    <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
           <span className="text-lg">{IconesAlertas.AlertTriangle}</span>
           Centro de Alertas Críticos
           {totalAlertas > 0 && (
@@ -104,30 +104,30 @@ export function AlertsSection({ filters }: AlertsSectionProps) {
         {totalAlertas === 0 ? (
           <div className="text-center py-8">
             <span className="text-5xl mb-4">{IconesAlertas.CheckCircle}</span>
-            <p className="text-muted-foreground">Nenhum alerta crítico no momento</p>
-            <p className="text-sm text-gray-500">Sistema operando normalmente</p>
+            <p className="text-gray-500 dark:text-gray-400">Nenhum alerta crítico no momento</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500">Sistema operando normalmente</p>
           </div>
         ) : (
           <>
             {/* Resumo dos Alertas */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="text-center p-3 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">
+              <div className="text-center p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                   {alertasPorPrioridade['CRITICA'].length}
                 </div>
-                <div className="text-sm text-red-600">Críticos</div>
+                <div className="text-sm text-red-600 dark:text-red-400">Críticos</div>
               </div>
-              <div className="text-center p-3 bg-orange-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">
+              <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-800">
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                   {alertasPorPrioridade['ALTA'].length}
                 </div>
-                <div className="text-sm text-orange-600">Alta</div>
+                <div className="text-sm text-orange-600 dark:text-orange-400">Alta</div>
               </div>
-              <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                <div className="text-2xl font-bold text-yellow-600">
+              <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                   {alertasPorPrioridade['MEDIA'].length}
                 </div>
-                <div className="text-sm text-yellow-600">Média</div>
+                <div className="text-sm text-yellow-600 dark:text-yellow-400">Média</div>
               </div>
             </div>
             
@@ -143,22 +143,22 @@ export function AlertsSection({ filters }: AlertsSectionProps) {
             
             {/* Ações em Lote */}
             {alertasCriticos > 0 && (
-              <div className="mt-6 p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
-                <h4 className="font-medium text-red-800 mb-2">
+              <div className="mt-6 p-4 bg-red-50 dark:bg-red-950/30 rounded-lg border-l-4 border-red-500 dark:border-red-700">
+                <h4 className="font-medium text-red-800 dark:text-red-300 mb-2">
                   Ação Recomendada
                 </h4>
-                <p className="text-sm text-red-700 mb-3">
+                <p className="text-sm text-red-700 dark:text-red-400 mb-3">
                   Você tem {alertasCriticos} alertas de alta prioridade que requerem atenção imediata.
                 </p>
                 <div className="flex gap-2">
                   <button 
-                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                    className="px-3 py-1 bg-red-600 dark:bg-red-700 text-white text-sm rounded hover:bg-red-700 dark:hover:bg-red-800"
                     onClick={() => toast.info('Enviando relatório para gestores...')}
                   >
                     Enviar Relatório Urgente
                   </button>
                   <button 
-                    className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200"
+                    className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded hover:bg-red-200 dark:hover:bg-red-900/50"
                     onClick={() => toast.info('Marcando como analisado...')}
                   >
                     Marcar como Analisado

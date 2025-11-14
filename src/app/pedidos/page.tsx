@@ -342,12 +342,12 @@ export default function PedidosPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <main className="container mx-auto py-8 px-4">
           <div className="space-y-8">
             
             {/* Header com glassmorphism */}
-            <div className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl rounded-lg p-6">
+            <div className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl rounded-lg p-6">
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div className="flex items-center space-x-4">
                   <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg">
@@ -357,7 +357,7 @@ export default function PedidosPage() {
                     <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                       Gestão de Pedidos
                     </h1>
-                    <p className="text-gray-600 text-lg">
+                    <p className="text-gray-600 dark:text-gray-400 text-lg">
                       {loading ? 'Carregando...' : (
                         <>
                           {estatisticas.total} pedidos
@@ -407,12 +407,12 @@ export default function PedidosPage() {
 
             {/* Cards de Estatísticas com glassmorphism */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-blue-600 font-medium">Total de Pedidos</p>
-                      <p className="text-2xl font-bold text-blue-900">{estatisticas.total}</p>
+                      <p className="text-sm text-slate-600 dark:text-gray-300 font-medium">Total de Pedidos</p>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white">{estatisticas.total}</p>
                     </div>
                     <Package className="w-8 h-8 text-blue-500" />
                   </div>
@@ -435,24 +435,24 @@ export default function PedidosPage() {
                 </Card>
               )}
 
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-orange-600 font-medium">Atrasados</p>
-                      <p className="text-2xl font-bold text-orange-900">{estatisticas.atrasados}</p>
+                      <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">Atrasados</p>
+                      <p className="text-2xl font-bold text-amber-900 dark:text-amber-300">{estatisticas.atrasados}</p>
                     </div>
                     <AlertTriangle className="w-8 h-8 text-orange-500" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-red-600 font-medium">Urgentes</p>
-                      <p className="text-2xl font-bold text-red-900">{estatisticas.urgentes}</p>
+                      <p className="text-sm text-red-600 dark:text-red-400 font-medium">Urgentes</p>
+                      <p className="text-2xl font-bold text-red-900 dark:text-red-300">{estatisticas.urgentes}</p>
                     </div>
                     <AlertTriangle className="w-8 h-8 text-red-500" />
                   </div>
@@ -474,12 +474,12 @@ export default function PedidosPage() {
             />
 
             {/* Tabela de Pedidos Melhorada */}
-            <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <Package className="w-5 h-5 mr-2 text-slate-700" />
-                    <span className="text-slate-800">Lista de Pedidos</span>
+                    <Package className="w-5 h-5 mr-2 text-slate-700 dark:text-gray-300" />
+                    <span className="text-slate-800 dark:text-white">Lista de Pedidos</span>
                   </div>
                   {!loading && (
                     <Badge variant="secondary" className="text-sm">
@@ -506,14 +506,14 @@ export default function PedidosPage() {
                   <div className="flex justify-center py-12">
                     <div className="text-center">
                       <LoadingSpinner />
-                      <p className="text-gray-600 mt-4">Carregando pedidos...</p>
+                      <p className="text-gray-600 dark:text-gray-400 mt-4">Carregando pedidos...</p>
                     </div>
                   </div>
                 ) : pedidos.length === 0 ? (
                   <div className="text-center py-12">
                     <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum pedido encontrado</h3>
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
                       {Object.values(filtros).some(v => v && v !== 'todos') 
                         ? 'Tente ajustar os filtros para encontrar pedidos'
                         : 'Comece criando seu primeiro pedido'
@@ -608,8 +608,8 @@ export default function PedidosPage() {
 
                     <div className="overflow-x-auto">
                     <Table>
-                      <TableHeader>
-                        <TableRow>
+                      <TableHeader className="dark:bg-gray-800">
+                        <TableRow className="dark:border-gray-700">
                           <TableHead className="w-16">Nº</TableHead>
                           <TableHead>Cliente</TableHead>
                           <TableHead>Loja</TableHead>
@@ -631,33 +631,33 @@ export default function PedidosPage() {
                           const prioridadeConfig = PRIORIDADE_CONFIG[pedido.prioridade]
                           
                           return (
-                            <TableRow key={pedido.id} className="hover:bg-white/50 transition-colors duration-200">
-                              <TableCell className="font-mono font-medium">
+                            <TableRow key={pedido.id} className="hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors duration-200 dark:border-gray-700">
+                              <TableCell className="font-mono font-medium dark:text-gray-300">
                                 #{pedido.numero_sequencial}
                               </TableCell>
                               <TableCell>
                                 <div>
-                                  <div className="font-medium">{pedido.cliente_nome}</div>
+                                  <div className="font-medium dark:text-white">{pedido.cliente_nome}</div>
                                   {pedido.cliente_telefone && (
-                                    <div className="text-xs text-gray-500 mt-1">
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                       {pedido.cliente_telefone}
                                     </div>
                                   )}
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <span className="text-sm">{pedido.loja_nome}</span>
+                                <span className="text-sm dark:text-gray-300">{pedido.loja_nome}</span>
                               </TableCell>
                               <TableCell>
-                                <span className="text-sm">{pedido.laboratorio_nome}</span>
+                                <span className="text-sm dark:text-gray-300">{pedido.laboratorio_nome}</span>
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center space-x-2">
                                   <div 
-                                    className="w-3 h-3 rounded-full border"
+                                    className="w-3 h-3 rounded-full border dark:border-gray-600"
                                     style={{ backgroundColor: pedido.classe_cor }}
                                   />
-                                  <span className="text-sm">{pedido.classe_nome}</span>
+                                  <span className="text-sm dark:text-gray-300">{pedido.classe_nome}</span>
                                 </div>
                               </TableCell>
                               <TableCell>
@@ -671,10 +671,10 @@ export default function PedidosPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <div className="text-sm">
+                                <div className="text-sm dark:text-gray-300">
                                   {format(new Date(pedido.data_pedido), 'dd/MM/yy', { locale: ptBR })}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
                                   {pedido.dias_desde_pedido}d atrás
                                 </div>
                               </TableCell>
@@ -728,8 +728,8 @@ export default function PedidosPage() {
                     </div>
 
                     {/* Controles de Paginação Inferiores */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-gray-50 rounded-lg border-t">
-                      <div className="text-sm text-gray-600">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border-t dark:border-gray-700">
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
                         Mostrando <span className="font-medium">{((paginaAtual - 1) * itensPorPagina) + 1}</span> a{' '}
                         <span className="font-medium">{Math.min(paginaAtual * itensPorPagina, pedidosFiltrados.length)}</span> de{' '}
                         <span className="font-medium">{pedidosFiltrados.length}</span> resultados

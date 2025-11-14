@@ -195,11 +195,11 @@ export default function UsuariosPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
             <Users className="w-6 h-6 mr-2" />
             Gerenciar Usuários
           </h2>
-          <p className="text-gray-600">Controle de acesso e permissões do sistema</p>
+          <p className="text-gray-600 dark:text-gray-400">Controle de acesso e permissões do sistema</p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -382,10 +382,10 @@ export default function UsuariosPage() {
       </Card>
 
       {/* Users Table */}
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Lista de Usuários ({filteredUsers.length})</CardTitle>
-          <CardDescription>
+          <CardTitle className="dark:text-white">Lista de Usuários ({filteredUsers.length})</CardTitle>
+          <CardDescription className="dark:text-gray-300">
             Gerencie usuários, permissões e status de acesso
           </CardDescription>
         </CardHeader>
@@ -425,7 +425,7 @@ export default function UsuariosPage() {
                   <TableCell>
                     <div>
                       <div className="font-medium">{user.name}</div>
-                      <div className="text-sm text-gray-500 flex items-center">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
                         <Mail className="w-3 h-3 mr-1" />
                         {user.email}
                       </div>

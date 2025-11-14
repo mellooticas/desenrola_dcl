@@ -154,13 +154,13 @@ export function PedidoHeader({
         return (
           <div className="flex items-center space-x-3">
             {onFilter && (
-              <Button variant="outline" onClick={onFilter} className="backdrop-blur-sm bg-white/50 border-white/30 shadow-lg hover:bg-white/70">
+              <Button variant="outline" onClick={onFilter} className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 shadow-lg hover:bg-white/70 dark:hover:bg-gray-600/70 dark:text-white">
                 <Filter className="w-4 h-4 mr-2" />
                 {filtrosVisiveis ? 'Ocultar Filtros' : 'Mostrar Filtros'}
               </Button>
             )}
             {onExport && (
-              <Button variant="outline" onClick={onExport} className="backdrop-blur-sm bg-white/50 border-white/30 shadow-lg hover:bg-white/70">
+              <Button variant="outline" onClick={onExport} className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 shadow-lg hover:bg-white/70 dark:hover:bg-gray-600/70 dark:text-white">
                 <Download className="w-4 h-4 mr-2" />
                 Exportar
               </Button>
@@ -180,16 +180,16 @@ export function PedidoHeader({
               <PrintOrderButton 
                 pedido={pedido}
                 variant="outline"
-                className="backdrop-blur-sm bg-white/50 border-white/30 shadow-lg hover:bg-white/70"
+                className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 shadow-lg hover:bg-white/70 dark:hover:bg-gray-600/70 dark:text-white"
               />
             )}
-            <Button variant="outline" asChild className="backdrop-blur-sm bg-white/50 border-white/30 shadow-lg hover:bg-white/70">
+            <Button variant="outline" asChild className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 shadow-lg hover:bg-white/70 dark:hover:bg-gray-600/70 dark:text-white">
               <Link href={`/pedidos/${pedidoId}/timeline`}>
                 <Clock className="w-4 h-4 mr-2" />
                 Timeline
               </Link>
             </Button>
-            <Button variant="outline" asChild className="backdrop-blur-sm bg-white/50 border-white/30 shadow-lg hover:bg-white/70">
+            <Button variant="outline" asChild className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 shadow-lg hover:bg-white/70 dark:hover:bg-gray-600/70 dark:text-white">
               <Link href={`/pedidos/${pedidoId}/editar`}>
                 <Edit className="w-4 h-4 mr-2" />
                 Editar
@@ -391,7 +391,7 @@ export function PedidoHeader({
                     {getStatusBadge()}
                     {getPriorityBadge()}
                   </h1>
-                  <p className="text-gray-600 text-lg mt-1">
+                  <p className="text-gray-600 dark:text-gray-400 text-lg mt-1">
                     {config.subtitle}
                   </p>
                 </div>

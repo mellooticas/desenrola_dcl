@@ -38,10 +38,10 @@ export function AlertCard({ alerta, onAction, showActions = true, compact = fals
   
   const getPriorityColor = (prioridade: string) => {
     switch (prioridade) {
-      case 'CRITICA': return 'bg-red-50 border-red-200'
-      case 'ALTA': return 'bg-orange-50 border-orange-200' 
-      case 'MEDIA': return 'bg-yellow-50 border-yellow-200'
-      default: return 'bg-gray-50 border-gray-200'
+      case 'CRITICA': return 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800'
+      case 'ALTA': return 'bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800' 
+      case 'MEDIA': return 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800'
+      default: return 'bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700'
     }
   }
 
@@ -156,37 +156,37 @@ export function AlertCard({ alerta, onAction, showActions = true, compact = fals
           
           {/* Informações Cruciais do Pedido */}
           {alerta.dados && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 bg-white p-3 rounded-lg border">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="space-y-1">
-                <div className="text-xs text-gray-500 font-medium">Cliente</div>
-                <div className="font-semibold text-sm truncate" title={alerta.dados.cliente_nome}>
+                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Cliente</div>
+                <div className="font-semibold text-sm truncate text-gray-900 dark:text-white" title={alerta.dados.cliente_nome}>
                   {alerta.dados.cliente_nome}
                 </div>
                 {alerta.dados.cliente_telefone && (
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
                     {IconesAlertCard.Phone} {alerta.dados.cliente_telefone}
                   </div>
                 )}
               </div>
               
               <div className="space-y-1">
-                <div className="text-xs text-gray-500 font-medium">Pedido</div>
-                <div className="font-bold text-sm text-blue-600">
+                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Pedido</div>
+                <div className="font-bold text-sm text-blue-600 dark:text-blue-400">
                   #{alerta.dados.numero_sequencial}
                 </div>
                 {alerta.dados.valor_pedido && (
-                  <div className="text-xs text-green-600 font-semibold">
+                  <div className="text-xs text-green-600 dark:text-green-400 font-semibold">
                     {IconesAlertCard.Money} {formatCurrency(alerta.dados.valor_pedido)}
                   </div>
                 )}
                 {/* OSs - NOVO */}
                 {alerta.dados.numero_os_fisica && (
-                  <div className="text-xs text-purple-600 font-medium" title="OS Loja">
+                  <div className="text-xs text-purple-600 dark:text-purple-400 font-medium" title="OS Loja">
                     📋 {alerta.dados.numero_os_fisica}
                   </div>
                 )}
                 {alerta.dados.numero_pedido_laboratorio && (
-                  <div className="text-xs text-indigo-600 font-medium" title="OS Laboratório">
+                  <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium" title="OS Laboratório">
                     🔬 {alerta.dados.numero_pedido_laboratorio}
                   </div>
                 )}
@@ -194,14 +194,14 @@ export function AlertCard({ alerta, onAction, showActions = true, compact = fals
               
               {alerta.dados.lojas && (
                 <div className="space-y-1">
-                  <div className="text-xs text-gray-500 font-medium">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                     {IconesAlertCard.Store} Loja
                   </div>
-                  <div className="font-semibold text-sm truncate" title={alerta.dados.lojas.nome}>
+                  <div className="font-semibold text-sm truncate text-gray-900 dark:text-white" title={alerta.dados.lojas.nome}>
                     {alerta.dados.lojas.nome}
                   </div>
                   {alerta.dados.lojas.telefone && (
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
                       {alerta.dados.lojas.telefone}
                     </div>
                   )}
@@ -210,14 +210,14 @@ export function AlertCard({ alerta, onAction, showActions = true, compact = fals
               
               {alerta.dados.laboratorios && (
                 <div className="space-y-1">
-                  <div className="text-xs text-gray-500 font-medium">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                     {IconesAlertCard.Factory} Laboratório
                   </div>
-                  <div className="font-semibold text-sm truncate" title={alerta.dados.laboratorios.nome}>
+                  <div className="font-semibold text-sm truncate text-gray-900 dark:text-white" title={alerta.dados.laboratorios.nome}>
                     {alerta.dados.laboratorios.nome}
                   </div>
                   {alerta.dados.laboratorios.telefone && (
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
                       {alerta.dados.laboratorios.telefone}
                     </div>
                   )}
@@ -228,12 +228,12 @@ export function AlertCard({ alerta, onAction, showActions = true, compact = fals
           
           {/* Mensagem do Alerta */}
           <div className={`p-3 rounded-lg ${
-            alerta.prioridade === 'CRITICA' ? 'bg-red-100 border border-red-200' :
-            alerta.prioridade === 'ALTA' ? 'bg-orange-100 border border-orange-200' :
-            'bg-yellow-100 border border-yellow-200'
+            alerta.prioridade === 'CRITICA' ? 'bg-red-100 dark:bg-red-950/30 border border-red-200 dark:border-red-800' :
+            alerta.prioridade === 'ALTA' ? 'bg-orange-100 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800' :
+            'bg-yellow-100 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800'
           }`}>
-            <div className="text-sm font-medium">{alerta.mensagem}</div>
-            <div className="text-xs text-gray-600 mt-1 flex items-center gap-1">
+            <div className="text-sm font-medium text-gray-900 dark:text-white">{alerta.mensagem}</div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
               {IconesAlertCard.Calendar} {new Date(alerta.created_at).toLocaleString('pt-BR')}
             </div>
           </div>

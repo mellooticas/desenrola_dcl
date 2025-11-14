@@ -328,84 +328,84 @@ export function DashboardFinanceiroCompleto({ filters }: DashboardFinanceiroComp
 
       {/* KPIs Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-100 border-green-200">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-green-800">
+              <CardTitle className="text-sm font-medium text-green-800 dark:text-green-300">
                 Receita Total
               </CardTitle>
               <span className="text-lg">{IconesDashboard.DollarSign}</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-900">
+            <div className="text-2xl font-bold text-green-900 dark:text-green-200">
               {formatCurrency(metricas.receita_total)}
             </div>
             <div className="flex items-center gap-1 mt-1">
-              <span className="text-sm text-green-700">
+              <span className="text-sm text-green-700 dark:text-green-400">
                 {formatCurrency(metricas.receita_por_dia)} por dia
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-950/30 border-blue-200 dark:border-blue-800">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-blue-800">
+              <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-300">
                 Margem Bruta
               </CardTitle>
               <span className="text-lg">{IconesDashboard.Percent}</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">
               {formatCurrency(metricas.margem_bruta)}
             </div>
             <div className="flex items-center gap-1 mt-1">
-              <span className="text-sm text-blue-700">
+              <span className="text-sm text-blue-700 dark:text-blue-400">
                 {formatPercent(metricas.percentual_margem)} de margem
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-950/30 border-purple-200 dark:border-purple-800">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-purple-800">
+              <CardTitle className="text-sm font-medium text-purple-800 dark:text-purple-300">
                 Ticket Médio
               </CardTitle>
               <span className="text-lg">{IconesDashboard.Target}</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-900">
+            <div className="text-2xl font-bold text-purple-900 dark:text-purple-200">
               {formatCurrency(metricas.ticket_medio)}
             </div>
             <div className="flex items-center gap-1 mt-1">
-              <span className="text-sm text-purple-700">
+              <span className="text-sm text-purple-700 dark:text-purple-400">
                 Por pedido
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-950/30 border-orange-200 dark:border-orange-800">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-orange-800">
+              <CardTitle className="text-sm font-medium text-orange-800 dark:text-orange-300">
                 Total Pedidos
               </CardTitle>
               <span className="text-lg">{IconesDashboard.Calendar}</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-900">
+            <div className="text-2xl font-bold text-orange-900 dark:text-orange-200">
               {metricas.quantidade_total}
             </div>
             <div className="flex items-center gap-1 mt-1">
-              <span className="text-sm text-orange-700">
+              <span className="text-sm text-orange-700 dark:text-orange-400">
                 {metricas.quantidade_pedidos} com valor
               </span>
             </div>

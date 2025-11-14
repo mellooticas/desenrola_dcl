@@ -216,8 +216,8 @@ export default function EditarPedidoPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-        <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl">
           <CardContent className="flex items-center justify-center p-8">
             <LoadingSpinner />
           </CardContent>
@@ -228,8 +228,8 @@ export default function EditarPedidoPage() {
 
   if (!pedido) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-        <div className="backdrop-blur-xl bg-white/30 border-b border-white/20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-b border-white/20 dark:border-gray-700/20">
           <PedidoHeader 
             mode="edit"
             pedidoId={pedidoId}
@@ -238,11 +238,11 @@ export default function EditarPedidoPage() {
         
         <main className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
-            <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl max-w-md w-full text-center">
+            <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl max-w-md w-full text-center">
               <CardContent className="pt-6">
-                <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold mb-4">Pedido não encontrado</h2>
-                <p className="text-muted-foreground mb-6">
+                <AlertTriangle className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold mb-4 dark:text-white">Pedido não encontrado</h2>
+                <p className="text-muted-foreground dark:text-gray-400 mb-6">
                   O pedido com ID &quot;{pedidoId}&quot; não foi encontrado ou você não tem permissão para editá-lo.
                 </p>
               </CardContent>
@@ -254,8 +254,8 @@ export default function EditarPedidoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="backdrop-blur-xl bg-white/30 border-b border-white/20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-b border-white/20 dark:border-gray-700/20">
         <PedidoHeader 
           mode="edit"
           pedidoId={pedidoId}
@@ -284,82 +284,82 @@ export default function EditarPedidoPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 dark:text-white">
                   <User className="w-5 h-5" />
                   <span>Informações do Cliente</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="dark:text-gray-400">
                   Dados básicos do cliente e contato
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="cliente_nome" className="text-sm font-medium required">Nome do Cliente *</Label>
+                  <Label htmlFor="cliente_nome" className="text-sm font-medium dark:text-gray-200">Nome do Cliente *</Label>
                   <Input
                     id="cliente_nome"
                     value={formData.cliente_nome}
                     onChange={(e) => handleInputChange('cliente_nome', e.target.value)}
                     placeholder="Nome completo do cliente"
-                    className="backdrop-blur-sm bg-white/50 border-white/30"
+                    className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white dark:placeholder:text-gray-400"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="cliente_telefone">Telefone</Label>
+                  <Label htmlFor="cliente_telefone" className="text-sm font-medium dark:text-gray-200">Telefone</Label>
                   <Input
                     id="cliente_telefone"
                     value={formData.cliente_telefone}
                     onChange={(e) => handleInputChange('cliente_telefone', e.target.value)}
                     placeholder="(11) 99999-9999"
-                    className="backdrop-blur-sm bg-white/50 border-white/30"
+                    className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="numero_os_fisica">Número da OS Física</Label>
+                  <Label htmlFor="numero_os_fisica" className="text-sm font-medium dark:text-gray-200">Número da OS Física</Label>
                   <Input
                     id="numero_os_fisica"
                     value={formData.numero_os_fisica}
                     onChange={(e) => handleInputChange('numero_os_fisica', e.target.value)}
                     placeholder="Número da ordem de serviço física"
-                    className="backdrop-blur-sm bg-white/50 border-white/30"
+                    className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="numero_pedido_laboratorio">Número do Pedido no Laboratório</Label>
+                  <Label htmlFor="numero_pedido_laboratorio" className="text-sm font-medium dark:text-gray-200">Número do Pedido no Laboratório</Label>
                   <Input
                     id="numero_pedido_laboratorio"
                     value={formData.numero_pedido_laboratorio}
                     onChange={(e) => handleInputChange('numero_pedido_laboratorio', e.target.value)}
                     placeholder="Número do pedido no laboratório"
-                    className="backdrop-blur-sm bg-white/50 border-white/30"
+                    className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 dark:text-white">
                   <Building className="w-5 h-5" />
                   <span>Status e Controle</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="dark:text-gray-400">
                   Controle de status e prioridade do pedido
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="status">Status do Pedido</Label>
+                  <Label htmlFor="status" className="dark:text-gray-200">Status do Pedido</Label>
                   <Select 
                     value={formData.status} 
                     onValueChange={(value) => handleInputChange('status', value)}
                   >
-                    <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
+                    <SelectTrigger className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -373,12 +373,12 @@ export default function EditarPedidoPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="prioridade">Prioridade</Label>
+                  <Label htmlFor="prioridade" className="text-sm font-medium dark:text-gray-200">Prioridade</Label>
                   <Select 
                     value={formData.prioridade} 
                     onValueChange={(value) => handleInputChange('prioridade', value)}
                   >
-                    <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
+                    <SelectTrigger className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -392,13 +392,13 @@ export default function EditarPedidoPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="data_prevista_pronto">Data Prevista Pronto</Label>
+                  <Label htmlFor="data_prevista_pronto" className="text-sm font-medium dark:text-gray-200">Data Prevista Pronto</Label>
                   <Input
                     id="data_prevista_pronto"
                     type="date"
                     value={formData.data_prevista_pronto}
                     onChange={(e) => handleInputChange('data_prevista_pronto', e.target.value)}
-                    className="backdrop-blur-sm bg-white/50 border-white/30"
+                    className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white dark:[color-scheme:dark]"
                   />
                 </div>
 
@@ -408,26 +408,26 @@ export default function EditarPedidoPage() {
                     checked={formData.eh_garantia}
                     onCheckedChange={(checked) => handleInputChange('eh_garantia', checked)}
                   />
-                  <Label htmlFor="eh_garantia" className="flex items-center gap-1">
+                  <Label htmlFor="eh_garantia" className="text-sm font-medium dark:text-gray-200 flex items-center gap-1">
                     É Garantia
                   </Label>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 dark:text-white">
                   <Calculator className="w-5 h-5" />
                   <span>Valores</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="dark:text-gray-400">
                   Informações financeiras do pedido
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="valor_pedido">Valor do Pedido</Label>
+                  <Label htmlFor="valor_pedido" className="text-sm font-medium dark:text-gray-200">Valor do Pedido</Label>
                   <Input
                     id="valor_pedido"
                     type="number"
@@ -435,12 +435,12 @@ export default function EditarPedidoPage() {
                     value={formData.valor_pedido}
                     onChange={(e) => handleInputChange('valor_pedido', e.target.value)}
                     placeholder="0,00"
-                    className="backdrop-blur-sm bg-white/50 border-white/30"
+                    className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="custo_lentes">Custo das Lentes</Label>
+                  <Label htmlFor="custo_lentes" className="text-sm font-medium dark:text-gray-200">Custo das Lentes</Label>
                   <Input
                     id="custo_lentes"
                     type="number"
@@ -448,17 +448,17 @@ export default function EditarPedidoPage() {
                     value={formData.custo_lentes}
                     onChange={(e) => handleInputChange('custo_lentes', e.target.value)}
                     placeholder="0,00"
-                    className="backdrop-blur-sm bg-white/50 border-white/30"
+                    className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
 
                 {/* Preview de Margem - Cálculo Dinâmico */}
                 {formData.valor_pedido && formData.custo_lentes && (
-                  <div className="bg-green-50/50 backdrop-blur-sm border border-green-200/50 rounded-lg p-3">
-                    <Label className="text-sm font-medium text-muted-foreground">Margem Calculada</Label>
-                    <div className="text-lg font-bold text-green-600">
+                  <div className="bg-green-50/50 dark:bg-green-950/30 backdrop-blur-sm border border-green-200/50 dark:border-green-800 rounded-lg p-3">
+                    <Label className="text-sm font-medium text-muted-foreground dark:text-gray-300">Margem Calculada</Label>
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">
                       R$ {(parseFloat(formData.valor_pedido) - parseFloat(formData.custo_lentes)).toFixed(2)}
-                      <span className="text-sm text-gray-500 ml-2">
+                      <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
                         ({(((parseFloat(formData.valor_pedido) - parseFloat(formData.custo_lentes)) / parseFloat(formData.valor_pedido)) * 100).toFixed(1)}%)
                       </span>
                     </div>
@@ -467,39 +467,39 @@ export default function EditarPedidoPage() {
               </CardContent>
             </Card>
 
-            <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 dark:text-white">
                   <Clock className="w-5 h-5" />
                   <span>Observações</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="dark:text-gray-400">
                   Anotações e observações sobre o pedido
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="observacoes">Observações Gerais</Label>
+                  <Label htmlFor="observacoes" className="text-sm font-medium dark:text-gray-200">Observações Gerais</Label>
                   <Textarea
                     id="observacoes"
                     value={formData.observacoes}
                     onChange={(e) => handleInputChange('observacoes', e.target.value)}
                     placeholder="Observações sobre o pedido..."
                     rows={3}
-                    className="backdrop-blur-sm bg-white/50 border-white/30"
+                    className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white dark:placeholder:text-gray-400"
                   />
                 </div>
 
                 {formData.eh_garantia && (
                   <div>
-                    <Label htmlFor="observacoes_garantia">Observações da Garantia</Label>
+                    <Label htmlFor="observacoes_garantia" className="text-sm font-medium dark:text-gray-200">Observações da Garantia</Label>
                     <Textarea
                       id="observacoes_garantia"
                       value={formData.observacoes_garantia}
                       onChange={(e) => handleInputChange('observacoes_garantia', e.target.value)}
                       placeholder="Detalhes sobre a garantia..."
                       rows={3}
-                      className="backdrop-blur-sm bg-white/50 border-white/30"
+                      className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 dark:text-white dark:placeholder:text-gray-400"
                     />
                   </div>
                 )}
@@ -508,17 +508,17 @@ export default function EditarPedidoPage() {
           </div>
 
           {/* Botão Salvar Fixo no Rodapé */}
-          <div className="flex justify-between items-center pt-6 border-t border-white/20 sticky bottom-0 bg-gradient-to-br from-slate-50/80 via-blue-50/80 to-indigo-100/80 backdrop-blur-xl py-4 px-4 -mx-4 rounded-t-lg shadow-lg">
+          <div className="flex justify-between items-center pt-6 border-t border-white/20 dark:border-gray-700/20 sticky bottom-0 bg-gradient-to-br from-slate-50/80 via-blue-50/80 to-indigo-100/80 dark:from-gray-900/80 dark:via-gray-800/80 dark:to-gray-900/80 backdrop-blur-xl py-4 px-4 -mx-4 rounded-t-lg shadow-lg">
             <Button 
               variant="outline" 
               onClick={() => router.back()}
-              className="backdrop-blur-sm bg-white/50 border-white/30 hover:bg-white/70"
+              className="backdrop-blur-sm bg-white/50 dark:bg-gray-700/50 border-white/30 dark:border-gray-600/30 hover:bg-white/70 dark:hover:bg-gray-600/50 dark:text-white"
             >
               Cancelar
             </Button>
             <div className="flex gap-2">
               {hasChanges && (
-                <span className="text-sm text-orange-600 flex items-center gap-1">
+                <span className="text-sm text-orange-600 dark:text-orange-400 flex items-center gap-1">
                   ⚠️ Alterações não salvas
                 </span>
               )}

@@ -261,11 +261,11 @@ export default function HorariosAcoesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Clock className="h-6 w-6" />
             Horários & Ações por Loja
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Configure horários de funcionamento e ações personalizadas para cada loja
           </p>
         </div>
@@ -358,7 +358,7 @@ export default function HorariosAcoesPage() {
                   </div>
                   
                   <div className="pt-3 border-t">
-                    <div className="text-sm text-gray-600 mb-2">Dias Ativos:</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Dias Ativos:</div>
                     <div className="flex flex-wrap gap-1">
                       {DIAS_SEMANA.map((dia) => (
                         <Badge 
@@ -616,7 +616,7 @@ export default function HorariosAcoesPage() {
                             )}
                           </div>
                           
-                          <p className="text-sm text-gray-600 mb-3">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                             {acao.template.descricao}
                           </p>
                           
@@ -654,10 +654,10 @@ export default function HorariosAcoesPage() {
                 <Card>
                   <CardContent className="py-12 text-center">
                     <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                       Nenhuma ação configurada
                     </h3>
-                    <p className="text-gray-600 mb-4">
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
                       Adicione ações personalizadas para esta loja usando os templates disponíveis.
                     </p>
                   </CardContent>

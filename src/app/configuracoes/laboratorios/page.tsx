@@ -318,13 +318,13 @@ export default function ConfigLaboratoriosPage() {
 
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
         {laboratorios.map((lab) => (
-          <Card key={lab.id} className={!lab.ativo ? 'opacity-50' : ''}>
+          <Card key={lab.id} className={!lab.ativo ? 'opacity-50 dark:bg-gray-800 dark:border-gray-700' : 'dark:bg-gray-800 dark:border-gray-700'}>
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg">{lab.nome}</CardTitle>
+                  <CardTitle className="text-lg dark:text-white">{lab.nome}</CardTitle>
                   {lab.codigo && (
-                    <CardDescription>Código: {lab.codigo}</CardDescription>
+                    <CardDescription className="dark:text-gray-300">Código: {lab.codigo}</CardDescription>
                   )}
                 </div>
                 <div className="flex items-center space-x-2">

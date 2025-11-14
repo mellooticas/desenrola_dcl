@@ -41,7 +41,7 @@ export default function PerfilPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
             <Shield className="w-6 h-6 mr-2" />
             Perfis de Acesso
           </h2>
@@ -54,20 +54,20 @@ export default function PerfilPage() {
         </Button>
       </div>
 
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Perfis Cadastrados</CardTitle>
+          <CardTitle className="dark:text-white">Perfis Cadastrados</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {perfis.map((perfil) => (
-              <div key={perfil.id} className="border rounded-lg p-4">
+              <div key={perfil.id} className="border dark:border-gray-700 dark:bg-gray-700/30 rounded-lg p-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium">{perfil.nome}</h3>
-                    <p className="text-sm text-gray-600">{perfil.descricao}</p>
+                    <h3 className="font-medium dark:text-white">{perfil.nome}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{perfil.descricao}</p>
                     <div className="mt-2">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         Permissões: {perfil.permissoes.join(', ')}
                       </span>
                     </div>

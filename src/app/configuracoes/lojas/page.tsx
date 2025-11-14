@@ -359,13 +359,13 @@ export default function ConfigLojasPage() {
       </div>
 
       {/* Lista de Lojas */}
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 dark:text-white">
             <Building2 className="w-5 h-5" />
             Lojas Cadastradas
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="dark:text-gray-300">
             {lojas.length} {lojas.length === 1 ? 'loja cadastrada' : 'lojas cadastradas'}
           </CardDescription>
         </CardHeader>
@@ -375,8 +375,8 @@ export default function ConfigLojasPage() {
               <LoadingSpinner />
             </div>
           ) : lojas.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Building2 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <Building2 className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
               <p>Nenhuma loja cadastrada</p>
               <p className="text-sm">Clique em &quot;Nova Loja&quot; para começar</p>
             </div>

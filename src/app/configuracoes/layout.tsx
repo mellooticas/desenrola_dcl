@@ -46,12 +46,6 @@ const menuItems = [
     ]
   },
   {
-    category: 'Gamificação',
-    items: [
-      { name: 'Horários & Ações', href: '/configuracoes/horarios-acoes', icon: Activity, description: 'Configurar horários e ações por loja' },
-    ]
-  },
-  {
     category: 'Sistema',
     items: [
       { name: 'Configurações Gerais', href: '/configuracoes/sistema', icon: Settings, description: 'Configurações do sistema' },
@@ -72,13 +66,13 @@ export default function ConfiguracoesLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <div className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl">
+      <div className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm" asChild className="backdrop-blur-sm bg-white/50 border-white/30 shadow-lg hover:bg-white/70">
+              <Button variant="outline" size="sm" asChild className="backdrop-blur-sm bg-white/50 dark:bg-gray-700 border-white/30 dark:border-gray-600 shadow-lg hover:bg-white/70 dark:hover:bg-gray-600 dark:text-white">
                 <Link href="/dashboard">
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   Voltar ao Dashboard
@@ -90,10 +84,10 @@ export default function ConfiguracoesLayout({
                   <Settings className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent dark:from-purple-400 dark:to-blue-400">
                     Configurações
                   </h1>
-                  <p className="text-sm text-gray-600">Centro de controle e administração</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Centro de controle e administração</p>
                 </div>
               </div>
             </div>
@@ -120,9 +114,9 @@ export default function ConfiguracoesLayout({
             sidebarOpen ? "block" : "hidden"
           )}>
             {menuItems.map((category) => (
-              <Card key={category.category} className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <Card key={category.category} className="backdrop-blur-xl bg-white/30 dark:bg-gray-800 border-white/20 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardContent className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-3">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
                     {category.category}
                   </h3>
                   <div className="space-y-1">
@@ -135,23 +129,23 @@ export default function ConfiguracoesLayout({
                           key={item.href}
                           href={item.href}
                           className={cn(
-                            "flex items-center p-3 rounded-lg transition-colors hover:bg-gray-100",
-                            isActive && "bg-blue-50 border-l-4 border-blue-500"
+                            "flex items-center p-3 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700",
+                            isActive && "bg-blue-50 dark:bg-blue-900/40 border-l-4 border-blue-500 dark:border-blue-400"
                           )}
                           onClick={() => setSidebarOpen(false)}
                         >
                           <Icon className={cn(
                             "w-5 h-5 mr-3",
-                            isActive ? "text-blue-600" : "text-gray-500"
+                            isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-300"
                           )} />
                           <div className="flex-1">
                             <div className={cn(
                               "font-medium",
-                              isActive ? "text-blue-900" : "text-gray-900"
+                              isActive ? "text-blue-900 dark:text-blue-200" : "text-gray-900 dark:text-white"
                             )}>
                               {item.name}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-500 dark:text-gray-300">
                               {item.description}
                             </div>
                           </div>

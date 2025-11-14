@@ -185,10 +185,10 @@ export function FilterBar({
   if (!isVisible) return null
 
   return (
-    <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl">
+    <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center text-slate-800">
+          <CardTitle className="flex items-center text-slate-800 dark:text-white">
             <Filter className="w-5 h-5 mr-2" />
             Filtros Avançados
             {filtrosAtivos.length > 0 && (
@@ -224,17 +224,17 @@ export function FilterBar({
         
         {/* Barra de Busca Rápida - Sempre visível */}
         <div className="space-y-2">
-          <Label className="text-sm font-semibold text-slate-700">🔍 Busca Rápida</Label>
+          <Label className="text-sm font-semibold text-slate-700 dark:text-gray-200">🔍 Busca Rápida</Label>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             
             {/* Busca Geral */}
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500 dark:text-gray-400" />
               <Input
                 placeholder="Cliente, Lab, Loja..."
                 value={filtros.busca_geral}
                 onChange={(e) => handleChange('busca_geral', e.target.value)}
-                className="pl-10 bg-white/50"
+                className="pl-10 bg-white/50 dark:bg-gray-700/50 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
               />
               {filtros.busca_geral && (
                 <button
@@ -248,17 +248,17 @@ export function FilterBar({
 
             {/* OS da Loja */}
             <div className="relative">
-              <FileText className="absolute left-3 top-3 h-4 w-4 text-blue-500" />
+              <FileText className="absolute left-3 top-3 h-4 w-4 text-blue-500 dark:text-blue-400" />
               <Input
                 placeholder="OS da Loja"
                 value={filtros.numero_os_loja}
                 onChange={(e) => handleChange('numero_os_loja', e.target.value)}
-                className="pl-10 bg-white/50"
+                className="pl-10 bg-white/50 dark:bg-gray-700/50 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
               />
               {filtros.numero_os_loja && (
                 <button
                   onClick={() => removerFiltro('numero_os_loja')}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -267,12 +267,12 @@ export function FilterBar({
 
             {/* Número do Pedido */}
             <div className="relative">
-              <Hash className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
+              <Hash className="absolute left-3 top-3 h-4 w-4 text-purple-500 dark:text-purple-400" />
               <Input
                 placeholder="Nº Pedido"
                 value={filtros.numero_pedido}
                 onChange={(e) => handleChange('numero_pedido', e.target.value)}
-                className="pl-10 bg-white/50"
+                className="pl-10 bg-white/50 dark:bg-gray-700/50 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                 type="number"
               />
               {filtros.numero_pedido && (

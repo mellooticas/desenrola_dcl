@@ -455,8 +455,8 @@ export default function PedidoDetalhesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-        <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl">
           <CardContent className="flex items-center justify-center p-8">
             <LoadingSpinner />
           </CardContent>
@@ -467,8 +467,8 @@ export default function PedidoDetalhesPage() {
 
   if (!pedido) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-        <div className="backdrop-blur-xl bg-white/30 border-b border-white/20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-b border-white/20 dark:border-gray-700/20">
           <PedidoHeader 
             mode="details"
             pedidoId={pedidoId}
@@ -477,11 +477,11 @@ export default function PedidoDetalhesPage() {
         
         <main className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
-            <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl max-w-md w-full text-center">
+            <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl max-w-md w-full text-center">
               <CardContent className="pt-6">
-                <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold mb-4">Pedido não encontrado</h2>
-                <p className="text-muted-foreground mb-6">
+                <AlertTriangle className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold mb-4 dark:text-white">Pedido não encontrado</h2>
+                <p className="text-muted-foreground dark:text-gray-400 mb-6">
                   O pedido com ID &quot;{pedidoId}&quot; não foi encontrado ou você não tem permissão para visualizá-lo.
                 </p>
               </CardContent>
@@ -493,8 +493,8 @@ export default function PedidoDetalhesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="backdrop-blur-xl bg-white/30 border-b border-white/20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-b border-white/20 dark:border-gray-700/20">
         <PedidoHeader 
           mode="details"
           pedidoId={pedidoId}
@@ -552,9 +552,9 @@ export default function PedidoDetalhesPage() {
             {/* Coluna 1: Informações do Cliente e Dados Ópticos */}
             <div className="space-y-6">
               {/* Informações do Cliente */}
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
+                  <CardTitle className="flex items-center justify-between dark:text-white">
                     <div className="flex items-center gap-2">
                       <User className="w-5 h-5" />
                       <span>Cliente</span>
@@ -577,16 +577,16 @@ export default function PedidoDetalhesPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Nome</p>
-                    <p className="text-lg font-semibold">{pedido.cliente_nome}</p>
+                    <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">Nome</p>
+                    <p className="text-lg font-semibold dark:text-white">{pedido.cliente_nome}</p>
                   </div>
                   
                   {pedido.cliente_telefone && (
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Telefone</p>
+                      <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">Telefone</p>
                       <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-gray-400" />
-                        <p>{pedido.cliente_telefone}</p>
+                        <Phone className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                        <p className="dark:text-gray-300">{pedido.cliente_telefone}</p>
                       </div>
                     </div>
                   )}
@@ -608,13 +608,13 @@ export default function PedidoDetalhesPage() {
                   </div>
 
                   {pedido.eh_garantia && (
-                    <div className="bg-blue-50/50 backdrop-blur-sm border border-blue-200/50 rounded-lg p-3">
-                      <p className="text-sm font-medium text-blue-800 flex items-center gap-2">
+                    <div className="bg-blue-50/50 dark:bg-blue-950/30 backdrop-blur-sm border border-blue-200/50 dark:border-blue-800 rounded-lg p-3">
+                      <p className="text-sm font-medium text-blue-800 dark:text-blue-300 flex items-center gap-2">
                         <Shield className="w-4 h-4" />
                         Pedido em Garantia
                       </p>
                       {pedido.observacoes_garantia && (
-                        <p className="text-sm text-blue-600 mt-1">{pedido.observacoes_garantia}</p>
+                        <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">{pedido.observacoes_garantia}</p>
                       )}
                     </div>
                   )}
@@ -622,19 +622,19 @@ export default function PedidoDetalhesPage() {
               </Card>
 
               {/* Dados Ópticos */}
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 dark:text-white">
                     <Eye className="w-5 h-5" />
                     <span>Dados Ópticos</span>
                   </CardTitle>
-                  <CardDescription>Receita do cliente</CardDescription>
+                  <CardDescription className="dark:text-gray-400">Receita do cliente</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Olho Direito */}
                   <div>
-                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Olho Direito (OD)</h4>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
+                    <h4 className="font-medium text-sm text-muted-foreground dark:text-gray-400 mb-2">Olho Direito (OD)</h4>
+                    <div className="grid grid-cols-2 gap-3 text-sm dark:text-gray-300">
                       <div>
                         <span className="text-muted-foreground">Esférico:</span>
                         <span className="ml-2 font-mono">{formatarGrau(pedido.esferico_od)}</span>
@@ -703,21 +703,21 @@ export default function PedidoDetalhesPage() {
 
               {/* Tratamentos */}
               {tratamentos && tratamentos.length > 0 && (
-                <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 dark:text-white">
                       <Settings className="w-5 h-5" />
                       <span>Tratamentos</span>
                     </CardTitle>
-                    <CardDescription>{tratamentos.length} tratamento(s) aplicado(s)</CardDescription>
+                    <CardDescription className="dark:text-gray-400">{tratamentos.length} tratamento(s) aplicado(s)</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
                       {tratamentos.map((item: any) => (
-                        <div key={item.id} className="flex justify-between items-center p-2 bg-gray-50/50 rounded">
-                          <span className="font-medium">{item.tratamento_nome || `Tratamento ID: ${item.tratamento_id}`}</span>
+                        <div key={item.id} className="flex justify-between items-center p-2 bg-gray-50/50 dark:bg-gray-700/50 rounded">
+                          <span className="font-medium dark:text-gray-200">{item.tratamento_nome || `Tratamento ID: ${item.tratamento_id}`}</span>
                           {item.custo_unitario && (
-                            <span className="text-sm text-green-600">
+                            <span className="text-sm text-green-600 dark:text-green-400">
                               +R$ {item.custo_unitario.toFixed(2)}
                             </span>
                           )}
@@ -732,60 +732,60 @@ export default function PedidoDetalhesPage() {
             {/* Coluna 2: Dados dos Estabelecimentos e Timeline */}
             <div className="space-y-6">
               {/* Estabelecimentos Expandidos */}
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 dark:text-white">
                     <Building className="w-5 h-5" />
                     <span>Estabelecimentos</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Loja Detalhada */}
-                  <div className="p-3 bg-blue-50/30 rounded-lg">
+                  <div className="p-3 bg-blue-50/30 dark:bg-blue-950/30 rounded-lg border dark:border-blue-800">
                     <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="w-4 h-4 text-blue-600" />
-                      <span className="font-medium text-blue-900">Loja</span>
+                      <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="font-medium text-blue-900 dark:text-blue-300">Loja</span>
                     </div>
-                    <p className="font-semibold">{pedido.loja_nome}</p>
+                    <p className="font-semibold dark:text-white">{pedido.loja_nome}</p>
                     {pedido.loja_codigo && (
-                      <p className="text-sm text-gray-600">Código: {pedido.loja_codigo}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Código: {pedido.loja_codigo}</p>
                     )}
                     {pedido.loja_endereco && (
-                      <p className="text-sm text-gray-600">{pedido.loja_endereco}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{pedido.loja_endereco}</p>
                     )}
                     <div className="flex gap-4 mt-2">
                       {pedido.loja_telefone && (
-                        <span className="text-sm text-gray-600">📞 {pedido.loja_telefone}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">📞 {pedido.loja_telefone}</span>
                       )}
                       {pedido.loja_whatsapp && (
-                        <span className="text-sm text-green-600">📱 {pedido.loja_whatsapp}</span>
+                        <span className="text-sm text-green-600 dark:text-green-400">📱 {pedido.loja_whatsapp}</span>
                       )}
                     </div>
                   </div>
 
                   {/* Laboratório Detalhado */}
-                  <div className="p-3 bg-purple-50/30 rounded-lg">
+                  <div className="p-3 bg-purple-50/30 dark:bg-purple-950/30 rounded-lg border dark:border-purple-800">
                     <div className="flex items-center gap-2 mb-2">
-                      <Stethoscope className="w-4 h-4 text-purple-600" />
-                      <span className="font-medium text-purple-900">Laboratório</span>
+                      <Stethoscope className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <span className="font-medium text-purple-900 dark:text-purple-300">Laboratório</span>
                     </div>
-                    <p className="font-semibold">{pedido.laboratorio_nome}</p>
+                    <p className="font-semibold dark:text-white">{pedido.laboratorio_nome}</p>
                     {pedido.laboratorio_codigo && (
-                      <p className="text-sm text-gray-600">Código: {pedido.laboratorio_codigo}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Código: {pedido.laboratorio_codigo}</p>
                     )}
                     <div className="flex gap-4 mt-2 text-sm">
                       {pedido.laboratorio_sla_padrao && (
-                        <span className="text-gray-600">
+                        <span className="text-gray-600 dark:text-gray-400">
                           SLA: {pedido.laboratorio_sla_padrao} dias
                         </span>
                       )}
                       {pedido.laboratorio_trabalha_sabado && (
-                        <span className="text-green-600">✓ Sábado</span>
+                        <span className="text-green-600 dark:text-green-400">✓ Sábado</span>
                       )}
                     </div>
                     {pedido.laboratorio_especialidades && pedido.laboratorio_especialidades.length > 0 && (
                       <div className="mt-2">
-                        <p className="text-xs text-muted-foreground">Especialidades:</p>
+                        <p className="text-xs text-muted-foreground dark:text-gray-400">Especialidades:</p>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {pedido.laboratorio_especialidades.map((esp, idx) => (
                             <Badge key={idx} variant="outline" className="text-xs">
@@ -798,35 +798,35 @@ export default function PedidoDetalhesPage() {
                   </div>
 
                   {/* Classe de Lente */}
-                  <div className="p-3 bg-green-50/30 rounded-lg">
+                  <div className="p-3 bg-green-50/30 dark:bg-green-950/30 rounded-lg border dark:border-green-800">
                     <div className="flex items-center gap-2 mb-2">
-                      <Package className="w-4 h-4 text-green-600" />
-                      <span className="font-medium text-green-900">Classe de Lente</span>
+                      <Package className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <span className="font-medium text-green-900 dark:text-green-300">Classe de Lente</span>
                     </div>
-                    <p className="font-semibold">{pedido.classe_nome}</p>
+                    <p className="font-semibold dark:text-white">{pedido.classe_nome}</p>
                     <div className="flex gap-4 mt-2 text-sm">
                       {pedido.classe_categoria && (
-                        <span className="text-gray-600">Categoria: {pedido.classe_categoria}</span>
+                        <span className="text-gray-600 dark:text-gray-400">Categoria: {pedido.classe_categoria}</span>
                       )}
                       {pedido.classe_sla_base && (
-                        <span className="text-gray-600">SLA: {pedido.classe_sla_base} dias</span>
+                        <span className="text-gray-600 dark:text-gray-400">SLA: {pedido.classe_sla_base} dias</span>
                       )}
                     </div>
                   </div>
 
                   {/* Tratamentos Aplicados */}
                   {tratamentos && tratamentos.length > 0 && (
-                    <div className="p-3 bg-amber-50/30 rounded-lg">
+                    <div className="p-3 bg-amber-50/30 dark:bg-amber-950/30 rounded-lg border dark:border-amber-800">
                       <div className="flex items-center gap-2 mb-2">
-                        <Settings className="w-4 h-4 text-amber-600" />
-                        <span className="font-medium text-amber-900">Tratamentos Aplicados</span>
+                        <Settings className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <span className="font-medium text-amber-900 dark:text-amber-300">Tratamentos Aplicados</span>
                       </div>
                       <div className="space-y-2">
                         {tratamentos.map((tratamento: any) => (
                           <div key={tratamento.id} className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{tratamento.nome || 'Tratamento'}</span>
+                            <span className="text-sm font-medium dark:text-gray-200">{tratamento.nome || 'Tratamento'}</span>
                             {tratamento.custo_unitario && (
-                              <span className="text-sm text-amber-700 font-mono">
+                              <span className="text-sm text-amber-700 dark:text-amber-400 font-mono">
                                 R$ {Number(tratamento.custo_unitario).toFixed(2)}
                               </span>
                             )}
@@ -842,9 +842,9 @@ export default function PedidoDetalhesPage() {
             {/* Coluna 3: Datas, Financeiro e Controle */}
             <div className="space-y-6">
               {/* Timeline de Datas */}
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 dark:text-white">
                     <Clock className="w-5 h-5" />
                     <span>Controle de Datas</span>
                   </CardTitle>
@@ -934,9 +934,9 @@ export default function PedidoDetalhesPage() {
               </Card>
 
               {/* Controle de Qualidade */}
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 dark:text-white">
                     <Target className="w-5 h-5" />
                     <span>Controle de Qualidade</span>
                   </CardTitle>
@@ -944,36 +944,36 @@ export default function PedidoDetalhesPage() {
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Pagamento em Atraso</span>
+                      <span className="text-sm dark:text-gray-300">Pagamento em Atraso</span>
                       {pedido.pagamento_atrasado ? (
-                        <AlertCircle className="w-4 h-4 text-red-500" />
+                        <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
                       ) : (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
                       )}
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Produção em Atraso</span>
+                      <span className="text-sm dark:text-gray-300">Produção em Atraso</span>
                       {pedido.producao_atrasada ? (
-                        <AlertCircle className="w-4 h-4 text-red-500" />
+                        <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
                       ) : (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
                       )}
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Requer Atenção</span>
+                      <span className="text-sm dark:text-gray-300">Requer Atenção</span>
                       {pedido.requer_atencao ? (
-                        <AlertCircle className="w-4 h-4 text-yellow-500" />
+                        <AlertCircle className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />
                       ) : (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
                       )}
                     </div>
 
                     {pedido.lead_time_producao_horas && (
-                      <div className="pt-2 border-t border-gray-200/50">
-                        <span className="text-sm text-muted-foreground">Lead Time Produção:</span>
-                        <p className="text-sm font-medium">
+                      <div className="pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
+                        <span className="text-sm text-muted-foreground dark:text-gray-400">Lead Time Produção:</span>
+                        <p className="text-sm font-medium dark:text-gray-200">
                           {Math.round(pedido.lead_time_producao_horas / 24)} dias 
                           ({pedido.lead_time_producao_horas}h)
                         </p>
@@ -982,8 +982,8 @@ export default function PedidoDetalhesPage() {
 
                     {pedido.lead_time_total_horas && (
                       <div>
-                        <span className="text-sm text-muted-foreground">Lead Time Total:</span>
-                        <p className="text-sm font-medium">
+                        <span className="text-sm text-muted-foreground dark:text-gray-400">Lead Time Total:</span>
+                        <p className="text-sm font-medium dark:text-gray-200">
                           {Math.round(pedido.lead_time_total_horas / 24)} dias 
                           ({pedido.lead_time_total_horas}h)
                         </p>
@@ -994,9 +994,9 @@ export default function PedidoDetalhesPage() {
               </Card>
 
               {/* SLA e Métricas */}
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 dark:text-white">
                     <TrendingUp className="w-5 h-5" />
                     <span>SLA e Métricas</span>
                   </CardTitle>

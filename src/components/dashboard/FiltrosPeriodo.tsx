@@ -107,7 +107,7 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
       {/* Filtros de período */}
       <div className="flex flex-wrap gap-4 items-center">
         <div className="flex gap-2">
@@ -121,8 +121,8 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
                 onClick={() => setPresetPeriod(preset.days)}
                 className={
                   isActive 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                    : 'hover:bg-blue-50 hover:border-blue-300'
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300'
                 }
               >
                 {preset.label}
@@ -132,19 +132,19 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
         </div>
         <div className="flex gap-4 items-center">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-500" />
+            <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             <input
               type="date"
               value={filters.dataInicio}
               onChange={(e) => handleFilterChange('dataInicio', e.target.value)}
-              className="px-3 py-1 border rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-1.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white transition-colors"
             />
-            <span className="text-gray-500">até</span>
+            <span className="text-gray-500 dark:text-gray-400 font-medium">até</span>
             <input
               type="date"
               value={filters.dataFim}
               onChange={(e) => handleFilterChange('dataFim', e.target.value)}
-              className="px-3 py-1 border rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-1.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white transition-colors"
             />
           </div>
         </div>
@@ -153,11 +153,11 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
       <div className="flex flex-wrap gap-4 items-center">
         {/* Laboratório */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Laboratório:</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Laboratório:</label>
           <select
             value={filters.laboratorio}
             onChange={(e) => handleFilterChange('laboratorio', e.target.value)}
-            className="px-3 py-1 border rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[120px]"
+            className="px-3 py-1.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[140px] bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white transition-colors"
             disabled={loading}
           >
             <option value="">Todos</option>
@@ -170,11 +170,11 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
         </div>
         {/* Classe */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Classe:</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Classe:</label>
           <select
             value={filters.classe}
             onChange={(e) => handleFilterChange('classe', e.target.value)}
-            className="px-3 py-1 border rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[120px]"
+            className="px-3 py-1.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[140px] bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white transition-colors"
             disabled={loading}
           >
             <option value="">Todas</option>
@@ -187,11 +187,11 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
         </div>
         {/* Loja */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Loja:</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Loja:</label>
           <select
             value={filters.loja}
             onChange={(e) => handleFilterChange('loja', e.target.value)}
-            className="px-3 py-1 border rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[120px]"
+            className="px-3 py-1.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[140px] bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white transition-colors"
             disabled={loading}
           >
             <option value="">Todas</option>
@@ -212,7 +212,7 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
             classe: '',
             loja: ''
           })}
-          className="text-gray-500 hover:text-gray-700"
+          className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           Limpar Filtros
         </Button>
@@ -220,9 +220,9 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
       {/* Indicador de filtros ativos */}
       {(filters.laboratorio || filters.classe || filters.loja) && (
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-gray-500">Filtros ativos:</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Filtros ativos:</span>
           {filters.laboratorio && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
               Lab: {filters.laboratorio}
               <button
                 onClick={() => handleFilterChange('laboratorio', '')}
@@ -233,7 +233,7 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
             </span>
           )}
           {filters.classe && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800">
               Classe: {filters.classe}
               <button
                 onClick={() => handleFilterChange('classe', '')}
@@ -244,7 +244,7 @@ export function FiltrosPeriodo({ filters, onFiltersChange }: FiltrosPeriodoProps
             </span>
           )}
           {filters.loja && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
               Loja: {filters.loja}
               <button
                 onClick={() => handleFilterChange('loja', '')}

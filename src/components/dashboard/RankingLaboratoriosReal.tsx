@@ -64,10 +64,10 @@ export function RankingLaboratoriosReal({ filters, performanceLabs }: RankingLab
   }
 
   return (
-    <Card>
+    <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Award className="w-5 h-5 text-amber-600" />
+        <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+          <Award className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           Ranking Laboratórios
         </CardTitle>
       </CardHeader>
@@ -75,18 +75,18 @@ export function RankingLaboratoriosReal({ filters, performanceLabs }: RankingLab
         {ranking.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-4xl mb-4">🏆</div>
-            <p className="text-slate-500">Nenhum laboratório com dados disponíveis</p>
+            <p className="text-gray-500 dark:text-gray-400">Nenhum laboratório com dados disponíveis</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
             {ranking.map((lab) => (
               <div 
                 key={lab.nome} 
                 className={`p-4 rounded-lg border transition-all hover:shadow-md ${
-                  lab.posicao === 1 ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200' :
-                  lab.posicao === 2 ? 'bg-gradient-to-r from-slate-50 to-gray-50 border-slate-200' :
-                  lab.posicao === 3 ? 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200' :
-                  'bg-slate-50 border-slate-200'
+                  lab.posicao === 1 ? 'bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200 dark:border-amber-800' :
+                  lab.posicao === 2 ? 'bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/30 dark:to-gray-900/30 border-slate-200 dark:border-slate-700' :
+                  lab.posicao === 3 ? 'bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-orange-200 dark:border-orange-800' :
+                  'bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-700'
                 }`}
               >
                 <div className="flex items-start justify-between">
@@ -96,8 +96,8 @@ export function RankingLaboratoriosReal({ filters, performanceLabs }: RankingLab
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-slate-800">{lab.nome}</h3>
-                        <Badge variant="outline" className="text-xs">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{lab.nome}</h3>
+                        <Badge variant="outline" className="text-xs dark:border-gray-600 dark:text-gray-300">
                           #{lab.posicao}
                         </Badge>
                       </div>

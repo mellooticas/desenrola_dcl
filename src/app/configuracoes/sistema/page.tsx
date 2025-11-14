@@ -87,7 +87,7 @@ export default function ConfiguracoesSistemaPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
             <Settings className="w-6 h-6 mr-2" />
             Configurações do Sistema
           </h2>
@@ -102,45 +102,45 @@ export default function ConfiguracoesSistemaPage() {
 
       {/* Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Status do Sistema</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">Status do Sistema</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">Online</div>
-            <p className="text-sm text-gray-500">Todos os serviços funcionando</p>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">Online</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Todos os serviços funcionando</p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Última Atualização</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">Última Atualização</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">Hoje</div>
-            <p className="text-sm text-gray-500">Configurações sincronizadas</p>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">Hoje</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Configurações sincronizadas</p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Backups</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">Backups</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">Ativo</div>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">Ativo</div>
             <p className="text-sm text-gray-500">Backup automático diário</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Formulário de Configurações */}
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center dark:text-white">
             <Save className="w-5 h-5 mr-2" />
             Configurações Gerais
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="dark:text-gray-300">
             Modifique as configurações do sistema conforme necessário. 
             As alterações serão aplicadas imediatamente após salvar.
           </CardDescription>
@@ -149,8 +149,8 @@ export default function ConfiguracoesSistemaPage() {
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="text-center">
-                <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-                <p className="text-gray-600">Carregando configurações...</p>
+                <RefreshCw className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-300">Carregando configurações...</p>
               </div>
             </div>
           ) : (

@@ -300,13 +300,13 @@ export default function ConfigClassesPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {classes.map((classe) => (
-          <Card key={classe.id} className={!classe.ativa ? 'opacity-50' : ''}>
+          <Card key={classe.id} className={!classe.ativa ? 'opacity-50 dark:bg-gray-800 dark:border-gray-700' : 'dark:bg-gray-800 dark:border-gray-700'}>
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg">{classe.nome}</CardTitle>
+                  <CardTitle className="text-lg dark:text-white">{classe.nome}</CardTitle>
                   {classe.codigo && (
-                    <CardDescription>{classe.codigo}</CardDescription>
+                    <CardDescription className="dark:text-gray-300">{classe.codigo}</CardDescription>
                   )}
                 </div>
                 <div className="flex space-x-1">
@@ -355,9 +355,9 @@ export default function ConfigClassesPage() {
       </div>
 
       {classes.length === 0 && (
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground dark:text-gray-400 mb-4">
               Nenhuma classe de lente cadastrada
             </p>
             <Button onClick={() => setDialogOpen(true)}>

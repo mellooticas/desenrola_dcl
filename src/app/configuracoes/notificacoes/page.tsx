@@ -148,8 +148,8 @@ export default function ConfigNotificacoesPage() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Configurações de Notificação</h1>
-          <p className="text-gray-600">Gerencie alertas e avisos automáticos do sistema</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Configurações de Notificação</h1>
+          <p className="text-gray-600 dark:text-gray-400">Gerencie alertas e avisos automáticos do sistema</p>
         </div>
         
         {configuracoes.length === 0 && (
@@ -161,13 +161,13 @@ export default function ConfigNotificacoesPage() {
       </div>
 
       {/* Configurações Gerais */}
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 dark:text-white">
             <Bell className="w-5 h-5" />
             Configurações Gerais
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="dark:text-gray-300">
             Configurações globais para o sistema de notificações
           </CardDescription>
         </CardHeader>
@@ -237,9 +237,9 @@ export default function ConfigNotificacoesPage() {
           <LoadingSpinner />
         </div>
       ) : configuracoes.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-8 text-gray-500">
-            <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <CardContent className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
             <p>Nenhuma configuração de notificação encontrada</p>
             <p className="text-sm">Clique em &quot;Criar Configurações Padrão&quot; para começar</p>
           </CardContent>
@@ -251,13 +251,13 @@ export default function ConfigNotificacoesPage() {
             const configsEvento = configuracoes.filter(c => c.evento === evento.value)
             
             return (
-              <Card key={evento.value}>
+              <Card key={evento.value} className="dark:bg-gray-800 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg dark:text-white">
                     <EventoIcon className="w-5 h-5" />
                     {evento.label}
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="dark:text-gray-300">
                     Configurações de notificação para este tipo de evento
                   </CardDescription>
                 </CardHeader>
@@ -268,7 +268,7 @@ export default function ConfigNotificacoesPage() {
                       const config = configsEvento.find(c => c.tipo === tipo.value)
                       
                       return (
-                        <div key={tipo.value} className="border rounded-lg p-4">
+                        <div key={tipo.value} className="border dark:border-gray-700 rounded-lg p-4 dark:bg-gray-700/50">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <TipoIcon className="w-4 h-4" />

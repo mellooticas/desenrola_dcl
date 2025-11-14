@@ -184,11 +184,11 @@ export default function ConfigDatabasePage() {
         <>
           {/* Status Geral */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Status Conexão</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Status Conexão</p>
                     <Badge className={getStatusColor(status?.conexao || 'offline')}>
                       {getStatusIcon(status?.conexao || 'offline')}
                       <span className="ml-1">
@@ -197,58 +197,58 @@ export default function ConfigDatabasePage() {
                       </span>
                     </Badge>
                   </div>
-                  <Database className="w-8 h-8 text-gray-400" />
+                  <Database className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Tamanho Base</p>
-                    <p className="text-lg font-semibold">{status?.tamanhoBase}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Tamanho Base</p>
+                    <p className="text-lg font-semibold dark:text-white">{status?.tamanhoBase}</p>
                   </div>
-                  <HardDrive className="w-8 h-8 text-gray-400" />
+                  <HardDrive className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Tabelas</p>
-                    <p className="text-lg font-semibold">{status?.numeroTabelas}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Tabelas</p>
+                    <p className="text-lg font-semibold dark:text-white">{status?.numeroTabelas}</p>
                   </div>
-                  <BarChart3 className="w-8 h-8 text-gray-400" />
+                  <BarChart3 className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Registros</p>
-                    <p className="text-lg font-semibold">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Registros</p>
+                    <p className="text-lg font-semibold dark:text-white">
                       {status?.registrosTotais.toLocaleString('pt-BR')}
                     </p>
                   </div>
-                  <Activity className="w-8 h-8 text-gray-400" />
+                  <Activity className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                 </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Performance */}
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 dark:text-white">
                 <Activity className="w-5 h-5" />
                 Performance
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="dark:text-gray-300">
                 Monitoramento do desempenho do banco de dados
               </CardDescription>
             </CardHeader>
@@ -256,29 +256,29 @@ export default function ConfigDatabasePage() {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Performance Geral</span>
-                    <span className="text-sm text-gray-600">{status?.performanceMedia}%</span>
+                    <span className="text-sm font-medium dark:text-gray-200">Performance Geral</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">{status?.performanceMedia}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all" 
+                      className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all" 
                       style={{ width: `${status?.performanceMedia}%` }}
                     />
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                  <div className="text-center p-4 border rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">98.5%</p>
-                    <p className="text-sm text-gray-600">Uptime</p>
+                  <div className="text-center p-4 border dark:border-gray-700 dark:bg-gray-700/30 rounded-lg">
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">98.5%</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Uptime</p>
                   </div>
-                  <div className="text-center p-4 border rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">45ms</p>
-                    <p className="text-sm text-gray-600">Latência Média</p>
+                  <div className="text-center p-4 border dark:border-gray-700 dark:bg-gray-700/30 rounded-lg">
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">45ms</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Latência Média</p>
                   </div>
-                  <div className="text-center p-4 border rounded-lg">
-                    <p className="text-2xl font-bold text-purple-600">1.2k</p>
-                    <p className="text-sm text-gray-600">Queries/min</p>
+                  <div className="text-center p-4 border dark:border-gray-700 dark:bg-gray-700/30 rounded-lg">
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">1.2k</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Queries/min</p>
                   </div>
                 </div>
               </div>
@@ -286,22 +286,22 @@ export default function ConfigDatabasePage() {
           </Card>
 
           {/* Backup */}
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 dark:text-white">
                 <Download className="w-5 h-5" />
                 Backup e Restauração
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="dark:text-gray-300">
                 Gerencie backups automáticos e manuais do sistema
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center justify-between p-4 border dark:border-gray-700 dark:bg-gray-700/30 rounded-lg">
                   <div>
-                    <p className="font-medium">Último Backup</p>
-                    <p className="text-sm text-gray-600">{status?.ultimoBackup}</p>
+                    <p className="font-medium dark:text-white">Último Backup</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{status?.ultimoBackup}</p>
                   </div>
                   <Badge variant="outline">Automático</Badge>
                 </div>

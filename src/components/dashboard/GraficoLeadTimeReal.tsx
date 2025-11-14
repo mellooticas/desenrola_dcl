@@ -47,9 +47,9 @@ export function GraficoLeadTimeReal({ filters, performanceLabs }: GraficoLeadTim
   }
 
   return (
-    <Card>
+    <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
           <span>⏱️</span> Lead Time por Laboratório
         </CardTitle>
       </CardHeader>
@@ -57,23 +57,23 @@ export function GraficoLeadTimeReal({ filters, performanceLabs }: GraficoLeadTim
         {dadosLeadTime.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-4xl mb-4">📊</div>
-            <p className="text-slate-500">Nenhum dado de performance disponível</p>
+            <p className="text-gray-500 dark:text-gray-400">Nenhum dado de performance disponível</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
             {dadosLeadTime.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg border border-slate-200 hover:shadow-md transition-shadow">
+              <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <p className="font-semibold text-slate-800">{item.laboratorio}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{item.laboratorio}</p>
                     <Badge 
                       variant="outline"
-                      className="text-xs"
+                      className="text-xs dark:border-gray-600 dark:text-gray-300"
                     >
                       #{index + 1}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-slate-600">
+                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                     <span>📊 {item.pedidos} pedidos</span>
                     <span>💰 {formatCurrency(item.valor_total)}</span>
                     <span>📈 SLA {item.slaCompliance.toFixed(1)}%</span>
