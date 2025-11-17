@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
         laboratorio_id,
         loja_id
       `)
+      .neq('status', 'CANCELADO')
       .gte('created_at', dataFinalInicio.toISOString())
       .lte('created_at', dataFinalFim.toISOString())
       .order('created_at', { ascending: true })

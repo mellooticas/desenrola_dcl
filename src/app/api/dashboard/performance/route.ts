@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
         valor_pedido,
         laboratorios!inner(nome, ativo)
       `)
+      .neq('status', 'CANCELADO')
       .gte('created_at', dataLimite.toISOString())
       .not('laboratorio_id', 'is', null)
     
@@ -122,6 +123,7 @@ export async function GET(request: NextRequest) {
         eh_garantia,
         lojas!inner(nome, ativo)
       `)
+      .neq('status', 'CANCELADO')
       .gte('created_at', dataLimite.toISOString())
       .not('loja_id', 'is', null)
     

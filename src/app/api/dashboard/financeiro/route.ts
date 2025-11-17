@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
         eh_garantia, loja_id, laboratorio_id,
         created_at
       `)
+      .neq('status', 'CANCELADO')
       .gte('created_at', dataLimiteInicio.toISOString())
       .lte('created_at', dataLimiteFim.toISOString())
     

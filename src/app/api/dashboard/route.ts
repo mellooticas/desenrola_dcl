@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
         data_pedido,
         data_prevista_pronto
       `)
+      .neq('status', 'CANCELADO')
     
     if (dataInicio && dataFim) {
       query = query

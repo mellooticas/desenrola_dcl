@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
         data_prevista_pronto,
         lead_time_total_horas
       `)
+      .neq('status', 'CANCELADO')
     
     if (dataInicio && dataFim) {
       query = query
