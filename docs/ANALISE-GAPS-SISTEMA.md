@@ -1,7 +1,38 @@
-# 🔍 Análise de GAPs - Desenrola DCL vs Mercado
+# 🔍 Análise de GAPs - Desenrola DCL (Sistema Intermediário)
 
 **Data:** 17 de novembro de 2025  
-**Objetivo:** Identificar funcionalidades faltantes comparando com sistemas líderes do mercado de ópticas
+**Objetivo:** Identificar funcionalidades essenciais para sistema intermediário DCL ↔ Laboratórios  
+**Arquitetura:** Microserviços - Sistema especializado em logística/produção
+
+---
+
+## 🏗️ **ARQUITETURA DO ECOSSISTEMA**
+
+```
+┌─────────────────┐
+│  SIS VENDAS     │  ← Sistema principal: Clientes, Vendas, Estoque, Armações
+│  (PDV Óptica)   │     Dados: CPF, Prescrição, Armações, Financeiro Completo
+└────────┬────────┘
+         │ API/Sync
+         ↓
+┌─────────────────┐
+│ DESENROLA DCL   │  ← Sistema intermediário: Logística & Produção
+│ (Este sistema)  │     Foco: Laboratórios, SLA, Entregas, Alertas
+└────────┬────────┘
+         │ API/Integração
+         ↓
+┌─────────────────┐
+│  LABORATÓRIOS   │  ← Essilor, Zeiss, Hoya, etc
+│  (Produção)     │     Status de produção, rastreamento
+└─────────────────┘
+```
+
+### ✅ **Vantagens desta Arquitetura:**
+- 🎯 **Especialização:** Cada sistema faz uma coisa muito bem
+- 🚀 **Performance:** Sistemas menores = mais rápidos
+- 🔧 **Manutenção:** Mudanças isoladas, sem quebrar tudo
+- 📈 **Escalabilidade:** Cada sistema escala independente
+- 🔄 **Integração:** APIs REST simples entre sistemas
 
 ---
 
@@ -10,6 +41,7 @@
 ### ✅ **Funcionalidades Implementadas (FORTES)**
 
 #### 1. **Gestão de Pedidos**
+
 - ✅ CRUD completo de pedidos
 - ✅ Status workflow (9 estados)
 - ✅ Timeline de eventos
@@ -18,6 +50,7 @@
 - ✅ Garantias
 
 #### 2. **Kanban Visual**
+
 - ✅ Drag & drop entre colunas
 - ✅ Filtros por loja/laboratório
 - ✅ Botões de navegação rápida
@@ -25,6 +58,7 @@
 - ✅ Updates em tempo real
 
 #### 3. **Dashboard & BI**
+
 - ✅ KPIs financeiros (receita, margem, ticket médio)
 - ✅ Gráficos de evolução temporal
 - ✅ Ranking de laboratórios
@@ -32,6 +66,7 @@
 - ✅ Alertas críticos automáticos
 
 #### 4. **Sistema de Alertas**
+
 - ✅ Pedidos atrasados
 - ✅ SLA próximo ao vencimento
 - ✅ Pagamentos pendentes
@@ -39,12 +74,14 @@
 - ✅ Página dedicada para DCL
 
 #### 5. **Gamificação (Mission Control)**
+
 - ✅ Missões diárias
 - ✅ Sistema de pontos
 - ✅ Badges de conquistas
 - ✅ Renovação automática
 
 #### 6. **Controle de Acesso**
+
 - ✅ Roles (gestor, DCL, financeiro, loja, demo)
 - ✅ Middleware de autenticação
 - ✅ RLS (Row Level Security)
@@ -54,13 +91,164 @@
 
 ## ❌ **GAPS CRÍTICOS IDENTIFICADOS**
 
-### 🔴 **GAP 1: Dados Oftalmológicos (CRÍTICO)**
+> **⚠️ ATUALIZAÇÃO ARQUITETURAL:**  
+> Sistema opera em **arquitetura de microserviços**:
+> - **SIS VENDAS** = Clientes, Prescrições, Armações, Vendas, Estoque, NF-e
+> - **DESENROLA DCL** = Logística, Laboratórios, SLA, Produção, Entregas
+> - **INTEGRAÇÃO** = API REST sincroniza dados essenciais entre sistemas
 
-**Problema:** Sistema não captura prescrição médica completa
+### 🔴 **GAP 1: Dados Mínimos do Pedido para Produção**
 
-#### Faltam Campos Essenciais:
+**Status:** ✅ **RESOLVIDO VIA INTEGRAÇÃO COM SIS VENDAS**
+
+**Solução:**
 ```typescript
-// DADOS OFTALMOLÓGICOS AUSENTES:
+// DESENROLA DCL recebe do SIS VENDAS via API:
+interface PedidoSincronizado {
+  // IDs de referência
+  pedido_sis_vendas_id: string      // ID no sistema de origem
+  cliente_id: string                // Referência ao cliente
+  
+  // Dados mínimos para rastreamento
+  cliente_nome: string
+  cliente_telefone: string
+  cliente_cpf?: string              // Para comunicação formal
+  
+  // Dados essenciais da prescrição (resumo)
+  tipo_lente: string                // "Progressiva", "Visão Simples"
+  grau_resumo: string               // "-2.50 / -1.75" (exibição)
+  tratamentos: string[]             // ["Antirreflexo", "Blue Light"]
+  
+  // Dados da armação (referência)
+  armacao_codigo?: string
+  armacao_descricao?: string
+  
+  // Dados financeiros (necessários para DCL)
+  valor_total: number
+  custo_lentes: number
+  valor_montagem: number
+  status_pagamento: 'PAGO' | 'PENDENTE' | 'PARCIAL'
+  
+  // Dados operacionais DCL
+  loja_id: string
+  laboratorio_id: string
+  classe_lente_id: string
+  prioridade: string
+  observacoes_producao?: string
+}
+```
+
+**Campos que FICAM no SIS VENDAS:**
+- ❌ CPF completo, endereço, histórico
+- ❌ Prescrição oftalmológica completa (graus detalhados)
+- ❌ Estoque de armações, preços de custo
+- ❌ Comissões de vendedores
+- ❌ NF-e, parcelas, financeiro detalhado
+
+**Campos necessários no DESENROLA DCL:**
+- ✅ Nome + telefone (para alertas/comunicação)
+- ✅ Valor total (para dashboard financeiro)
+- ✅ Status pagamento (impacta envio ao lab)
+- ✅ Dados de produção (laboratório, classe, SLA)
+
+**Prioridade:** 🟢 **BAIXA** - Resolver via integração API
+
+---
+
+### 🟠 **GAP 2: Integração API com SIS VENDAS** ⭐
+
+**Problema:** Sistemas isolados, dados digitados manualmente
+
+#### Implementar:
+```typescript
+// API de Sincronização Bidirecional
+interface IntegracaoSisVendas {
+  // Endpoints necessários
+  endpoints: {
+    '/api/sync/pedido-novo': 'POST',           // SIS → DCL
+    '/api/sync/status-update': 'PUT',          // DCL → SIS
+    '/api/sync/pedido-entregue': 'POST',       // DCL → SIS
+    '/api/sync/cliente-minimal': 'GET',        // DCL ← SIS
+  }
+  
+  // Webhook (tempo real)
+  webhooks: {
+    onPedidoCriado: (pedido) => enviarParaDCL()
+    onStatusMudou: (pedido) => atualizarSisVendas()
+    onPedidoPronto: (pedido) => notificarLoja()
+  }
+  
+  // Sincronização
+  sync_interval: '5 minutos'  // Fallback se webhook falhar
+  retry_attempts: 3
+  timeout: 30000  // 30 segundos
+}
+```
+
+**Fluxo Ideal:**
+1. Cliente compra no PDV (SIS VENDAS)
+2. Webhook envia pedido → DESENROLA DCL
+3. DCL rastreia produção + SLA
+4. Status atualiza via webhook → SIS VENDAS
+5. Cliente vê status no app/site
+
+**Prioridade:** 🟠 **ALTA** - Elimina digitação dupla
+
+---
+
+### 🟡 **GAP 3: Dados de Rastreamento Laboratórios**
+
+**Problema:** Sistema não captura dados de rastreamento dos labs
+
+#### Faltam:
+```typescript
+interface RastreamentoLaboratorio {
+  pedido_id: string
+  laboratorio_id: string
+  
+  // Dados do laboratório
+  numero_pedido_lab: string          // Número do lab (já existe)
+  codigo_rastreamento?: string       // Código de rastreio Correios/transportadora
+  transportadora?: string            // "Correios", "Jadlog", etc
+  
+  // Status detalhado do laboratório
+  status_lab: 'RECEBIDO' | 'EM_CORTE' | 'EM_MONTAGEM' | 'SURFACAGEM' | 
+              'CONTROLE_QUALIDADE' | 'EXPEDIDO' | 'TRANSITO'
+  
+  // Datas de rastreamento
+  data_recebido_lab?: Date
+  data_inicio_producao?: Date
+  data_fim_producao?: Date
+  data_expedicao?: Date
+  data_previsao_entrega?: Date
+  
+  // Histórico de atualizações (tracking)
+  historico: Array<{
+    data: Date
+    status: string
+    localizacao?: string
+    observacao?: string
+  }>
+  
+  // Problemas
+  tem_problema: boolean
+  tipo_problema?: 'RECEITA_INVALIDA' | 'FALTA_MATERIAL' | 
+                   'ERRO_PRODUCAO' | 'ATRASO_FORNECEDOR'
+  descricao_problema?: string
+}
+```
+
+**Benefícios:**
+- ✅ Rastreamento em tempo real
+- ✅ Alertas proativos de atrasos
+- ✅ Melhor comunicação com cliente
+- ✅ Identificar gargalos por laboratório
+
+**Prioridade:** 🟡 **MÉDIA** - Melhora experiência
+
+---
+
+### 🟢 **GAP 4: Comunicação Automatizada (WhatsApp Business)**
 
 // 👁️ Olho Direito (OD)
 - grau_esferico_od: number       // Ex: -2.50
@@ -89,161 +277,286 @@
 - medico_responsavel: string     // CRM do oftalmologista
 ```
 
-**Impacto:** 
-- ❌ Impossível validar pedidos
-- ❌ Erros de produção por falta de dados
-- ❌ Não atende legislação (receita médica obrigatória)
-- ❌ Retrabalho e garantias desnecessárias
+**Problema:** DCL precisa notificar clientes sobre status dos pedidos
 
-**Prioridade:** 🔴 **URGENTE**
-
----
-
-### 🟠 **GAP 2: Gestão de Clientes**
-
-**Problema:** Apenas nome e telefone do cliente no pedido
-
-#### Faltam:
+#### Implementar:
 ```typescript
-// TABELA CLIENTES (não existe!)
-interface Cliente {
-  id: string
-  cpf: string                    // Obrigatório para nota fiscal
-  nome_completo: string
-  data_nascimento: Date
-  telefone_principal: string
-  telefone_secundario?: string
-  email?: string
-  endereco_completo: string
-  cep: string
-  cidade: string
-  estado: string
-  observacoes?: string
+interface NotificacaoAutomatica {
+  // Templates de WhatsApp
+  templates: {
+    PEDIDO_RECEBIDO: "Olá {cliente}! Seu pedido #{numero} foi enviado ao laboratório {lab}. Previsão: {data}",
+    EM_PRODUCAO: "🔧 Seu pedido #{numero} está sendo produzido no {lab}!",
+    PRONTO_DCL: "✅ Suas lentes chegaram ao DCL! Em breve serão montadas.",
+    PRONTO_RETIRADA: "🎉 Seu óculos está pronto! Retire na {loja} até {data_limite}",
+    LEMBRETE_3_DIAS: "⏰ Seu pedido #{numero} aguarda retirada há 3 dias",
+    ATRASO_LAB: "😔 Pedido #{numero} teve um pequeno atraso. Nova previsão: {nova_data}"
+  }
   
-  // Histórico
-  total_pedidos: number
-  ultima_compra: Date
-  ticket_medio: number
-  cliente_desde: Date
+  // Gatilhos automáticos
+  triggers: {
+    onStatusChange: (pedido, status_novo) => enviarNotificacao()
+    onSLAProximoVencimento: (pedido, dias) => alertarCliente()
+    onPedidoPronto: (pedido) => notificarRetirada()
+  }
   
-  // Marketing
-  aceita_whatsapp: boolean
-  aceita_email: boolean
-  data_aniversario?: Date        // Para campanhas
-  
-  // Relacionamento
-  loja_preferencial_id: string
-  vendedor_preferencial_id?: string
+  // Configuração
+  whatsapp_business_api: true
+  opt_in_required: true  // LGPD
+  horario_envio: '08:00-20:00'  // Respeitar horários
 }
 ```
 
-**Impacto:**
-- ❌ Impossível fazer CRM
-- ❌ Sem histórico de compras
-- ❌ Nota fiscal incompleta
-- ❌ Marketing ineficiente
-- ❌ Duplicação de cadastros
-
-**Prioridade:** 🟠 **ALTA**
+**Prioridade:** 🟢 **BAIXA** - Nice to have
 
 ---
 
-### 🟠 **GAP 3: Gestão de Armações**
+### 🟢 **GAP 5: Dashboard Avançado para Laboratórios**
 
-**Problema:** Sistema não rastreia armações/óculos
+**Problema:** Labs não têm visão dos próprios pedidos
 
-#### Faltam:
+#### Implementar:
 ```typescript
-interface Armacao {
-  id: string
-  codigo_barras: string
-  marca: string
-  modelo: string
-  cor: string
-  tamanho: string               // Ex: "52-18-140"
-  material: string              // Acetato, Metal, Titanio
-  tipo: string                  // Solar, Grau, Clip-on
+// Portal específico para laboratórios
+interface DashboardLaboratorio {
+  // Acesso restrito por laboratório
+  role: 'laboratorio'
+  laboratorio_id: string
   
-  // Estoque
-  preco_custo: number
-  preco_venda: number
-  estoque_atual: number
-  estoque_minimo: number
-  loja_id: string
+  // Visualizações
+  views: {
+    pedidos_pendentes: PedidoCompleto[]      // Aguardando produção
+    em_producao: PedidoCompleto[]            // Status atual
+    expedidos_hoje: PedidoCompleto[]         // Enviados
+    atrasados: PedidoCompleto[]              // SLA vencido
+  }
   
-  // Fornecedor
-  fornecedor: string
-  data_entrada: Date
-  nfe_numero?: string
-}
-
-interface PedidoArmacao {
-  pedido_id: string
-  armacao_id: string
-  quantidade: number
-  preco_unitario: number
-  desconto: number
-  origem: 'ESTOQUE' | 'CLIENTE' | 'FORNECEDOR'
+  // Ações permitidas
+  actions: {
+    atualizarStatus: (pedido_id, novo_status) => void
+    informarProblema: (pedido_id, descricao) => void
+    atualizarPrevisao: (pedido_id, nova_data) => void
+    confirmarExpedicao: (pedido_id, codigo_rastreio) => void
+  }
+  
+  // Métricas próprias
+  metrics: {
+    total_pedidos_mes: number
+    sla_compliance: number
+    tempo_medio_producao: number
+    pedidos_com_problema: number
+  }
 }
 ```
 
-**Impacto:**
-- ❌ Sem controle de estoque
-- ❌ Impossível calcular margem real
-- ❌ Perda de vendas por falta de integração
-- ❌ Dificuldade em precificação
+**Benefício:** Labs atualizam status diretamente, reduz ligações
 
-**Prioridade:** 🟠 **ALTA**
+**Prioridade:** 🟢 **BAIXA** - Futuro
 
 ---
 
-### 🟡 **GAP 4: Gestão Financeira Completa**
+## 📋 **FUNCIONALIDADES JÁ COBERTAS (VIA SIS VENDAS)**
 
-**Problema:** Apenas valor total e custo de lentes
+### ✅ Gerenciadas pelo sistema de vendas:
+- ✅ Cadastro completo de clientes (CPF, endereço, histórico)
+- ✅ Prescrição oftalmológica detalhada
+- ✅ Gestão de armações e estoque
+- ✅ Financeiro completo (parcelas, comissões, NF-e)
+- ✅ CRM e marketing
+- ✅ Vendedores e metas
+- ✅ PDV e caixa
 
-#### Faltam:
-```typescript
-interface PedidoFinanceiro {
+### ✅ Foco do DESENROLA DCL:
+- ✅ Logística DCL ↔ Laboratórios
+- ✅ Rastreamento de produção
+- ✅ SLA e alertas de atraso
+- ✅ Dashboard operacional
+- ✅ Gamificação da equipe DCL
+- ✅ Coordenação de entregas
+
+---
+
+## 🎯 **PRIORIZAÇÃO REVISTA**
+
+### 🟠 **SPRINT 1: Integração API (2-3 semanas)**
+**Impacto:** ⚡⚡⚡⚡⚡ **CRÍTICO**  
+**Esforço:** 🔨🔨🔨🔨 **ALTO**
+
+**Tarefas:**
+1. Especificar endpoints REST (SIS ↔ DCL)
+2. Implementar webhooks bidirecionais
+3. Sincronização de pedidos novos
+4. Update de status em tempo real
+5. Tratamento de erros e retry
+6. Documentação de API
+
+**Resultado:** 
+- ✅ Fim da digitação dupla
+- ✅ Dados sempre sincronizados
+- ✅ Base para todas outras features
+
+---
+
+### 🟡 **SPRINT 2: Rastreamento Labs (1-2 semanas)**
+**Impacto:** ⚡⚡⚡ **MÉDIO**  
+**Esforço:** 🔨🔨🔨 **MÉDIO**
+
+**Tarefas:**
+1. Campos de rastreamento no pedido
+2. Histórico de tracking
+3. Interface para atualizar status lab
+4. Integração com Correios API (rastreio)
+5. Alertas de atraso automáticos
+
+**Resultado:**
+- ✅ Visibilidade completa do pedido
+- ✅ Alertas proativos
+- ✅ Melhor comunicação
+
+---
+
+### 🟢 **SPRINT 3: WhatsApp Automático (1-2 semanas)**
+**Impacto:** ⚡⚡⚡ **MÉDIO**  
+**Esforço:** 🔨🔨🔨 **MÉDIO**
+
+**Tarefas:**
+1. Integração WhatsApp Business API
+2. Templates de mensagens
+3. Gatilhos automáticos
+4. Opt-in LGPD
+5. Histórico de mensagens
+6. Dashboard de comunicação
+
+**Resultado:**
+- ✅ Cliente sempre informado
+- ✅ Redução de ligações
+- ✅ Melhor experiência
+
+---
+
+### 🟢 **SPRINT 4: Portal Labs (2 semanas)**
+**Impacto:** ⚡⚡ **BAIXO**  
+**Esforço:** 🔨🔨🔨 **MÉDIO**
+
+**Tarefas:**
+1. Dashboard específico para labs
+2. Autenticação por laboratório
+3. Ações de atualização de status
+4. Métricas de performance
+5. Notificações para labs
+
+**Resultado:**
+- ✅ Labs autônomos
+- ✅ Menos trabalho manual DCL
+- ✅ Dados mais precisos
+
+---
+
+## 📊 **COMPARATIVO REVISADO**
+
+### Escopo Correto do DESENROLA DCL:
+
+| Funcionalidade | Status | Responsável | Prioridade |
+|---|---|---|---|
+| **Kanban Produção** | ✅ Pronto | DCL | - |
+| **Dashboard SLA** | ✅ Pronto | DCL | - |
+| **Gamificação** | ✅ **ÚNICO** | DCL | - |
+| **Alertas Críticos** | ✅ Pronto | DCL | - |
+| **Integração API** | ❌ Falta | **DCL** | 🟠 **ALTA** |
+| **Rastreamento Labs** | ⚠️ Básico | **DCL** | 🟡 **MÉDIA** |
+| **WhatsApp Auto** | ❌ Falta | **DCL** | 🟢 **BAIXA** |
+| **Portal Labs** | ❌ Falta | **DCL** | 🟢 **BAIXA** |
+| | | | |
+| **Clientes (CPF, etc)** | ✅ | **SIS VENDAS** | - |
+| **Prescrição Completa** | ✅ | **SIS VENDAS** | - |
+| **Armações/Estoque** | ✅ | **SIS VENDAS** | - |
+| **Financeiro/NF-e** | ✅ | **SIS VENDAS** | - |
+| **PDV/Vendas** | ✅ | **SIS VENDAS** | - |
+
+**Score Revisado:**
+- **DESENROLA DCL (core):** 85/100 ✅
+- **DESENROLA DCL (c/ integrações):** 95/100 🎯
+- **Ecossistema Completo:** 100/100 🚀
+
+---
+
+## 💡 **CONCLUSÃO REVISTA**
+
+### ✅ **Arquitetura CORRETA:**
+Sistema especializado em **logística e produção**, não precisa duplicar funcionalidades do SIS VENDAS.
+
+### 🎯 **Foco Principal:**
+1. **Integração API** - Conectar os sistemas
+2. **Rastreamento** - Visibilidade total do pedido
+3. **Alertas** - Comunicação proativa
+4. **Gamificação** - Diferencial único ✨
+
+### 🚀 **Próximos Passos:**
+
+**Prioridade MÁXIMA:**
+Implementar **API de Integração com SIS VENDAS**.
+
+**Por quê?**
+- ✅ Elimina digitação dupla
+- ✅ Dados sempre atualizados
+- ✅ Base para todas outras features
+- ✅ ROI imediato
+
+**Tempo estimado:** 2-3 semanas  
+**Resultado:** Sistema 100% funcional em produção
+
+---
+
+**Arquitetura:** ⭐⭐⭐⭐⭐ **EXCELENTE**  
+**Especialização:** ✅ **CORRETA**  
+**Integração:** 🔄 **NECESSÁRIA**  
+**Próximo Sprint:** 🟠 **API REST Bidirecional**
   // Detalhamento de Custos
-  valor_lentes: number
-  valor_armacao: number
-  valor_montagem: number
-  valor_tratamentos: number[]    // Array de tratamentos
-  valor_acessorios: number       // Estojo, pano, etc
-  
+  valor_lentes: number;
+  valor_armacao: number;
+  valor_montagem: number;
+  valor_tratamentos: number[]; // Array de tratamentos
+  valor_acessorios: number; // Estojo, pano, etc
+
   // Descontos
-  desconto_percentual: number
-  desconto_valor: number
-  motivo_desconto?: string
-  aprovado_por?: string
-  
+  desconto_percentual: number;
+  desconto_valor: number;
+  motivo_desconto?: string;
+  aprovado_por?: string;
+
   // Formas de Pagamento
-  forma_pagamento: 'DINHEIRO' | 'PIX' | 'CREDITO' | 'DEBITO' | 'BOLETO' | 'CREDIARIO'
-  parcelas: number
-  valor_entrada?: number
-  valor_parcela?: number
-  taxa_juros?: number
-  
+  forma_pagamento:
+    | "DINHEIRO"
+    | "PIX"
+    | "CREDITO"
+    | "DEBITO"
+    | "BOLETO"
+    | "CREDIARIO";
+  parcelas: number;
+  valor_entrada?: number;
+  valor_parcela?: number;
+  taxa_juros?: number;
+
   // Controle de Recebimento
-  status_pagamento: 'PENDENTE' | 'PARCIAL' | 'COMPLETO' | 'ATRASADO'
-  data_vencimento: Date[]        // Array para parcelas
-  data_recebimento: Date[]       // Quando foi pago
-  
+  status_pagamento: "PENDENTE" | "PARCIAL" | "COMPLETO" | "ATRASADO";
+  data_vencimento: Date[]; // Array para parcelas
+  data_recebimento: Date[]; // Quando foi pago
+
   // Comissões
-  vendedor_id: string
-  comissao_percentual: number
-  comissao_valor: number
-  comissao_paga: boolean
-  
+  vendedor_id: string;
+  comissao_percentual: number;
+  comissao_valor: number;
+  comissao_paga: boolean;
+
   // Nota Fiscal
-  nfe_numero?: string
-  nfe_chave?: string
-  nfe_emitida: boolean
-  nfe_data_emissao?: Date
+  nfe_numero?: string;
+  nfe_chave?: string;
+  nfe_emitida: boolean;
+  nfe_data_emissao?: Date;
 }
 ```
 
 **Impacto:**
+
 - ❌ Relatórios financeiros incompletos
 - ❌ Sem controle de comissões
 - ❌ Gestão de caixa deficiente
@@ -258,40 +571,49 @@ interface PedidoFinanceiro {
 **Problema:** Alertas para equipe, mas sem notificação ao cliente
 
 #### Faltam:
+
 ```typescript
 interface NotificacaoCliente {
-  id: string
-  pedido_id: string
-  cliente_id: string
-  tipo: 'SMS' | 'WHATSAPP' | 'EMAIL' | 'PUSH'
-  template_id: string
-  
+  id: string;
+  pedido_id: string;
+  cliente_id: string;
+  tipo: "SMS" | "WHATSAPP" | "EMAIL" | "PUSH";
+  template_id: string;
+
   // Conteúdo
-  titulo: string
-  mensagem: string
-  variaveis: Record<string, any>  // Personalização
-  
+  titulo: string;
+  mensagem: string;
+  variaveis: Record<string, any>; // Personalização
+
   // Controle de Envio
-  status: 'PENDENTE' | 'ENVIADO' | 'ENTREGUE' | 'LIDO' | 'ERRO'
-  data_envio?: Date
-  data_leitura?: Date
-  tentativas: number
-  erro?: string
-  
+  status: "PENDENTE" | "ENVIADO" | "ENTREGUE" | "LIDO" | "ERRO";
+  data_envio?: Date;
+  data_leitura?: Date;
+  tentativas: number;
+  erro?: string;
+
   // Gatilhos Automáticos
-  gatilho: 'PEDIDO_REGISTRADO' | 'PAGAMENTO_CONFIRMADO' | 
-           'EM_PRODUCAO' | 'PRONTO_RETIRADA' | 'LEMBRETE_RETIRADA'
+  gatilho:
+    | "PEDIDO_REGISTRADO"
+    | "PAGAMENTO_CONFIRMADO"
+    | "EM_PRODUCAO"
+    | "PRONTO_RETIRADA"
+    | "LEMBRETE_RETIRADA";
 }
 
 // Templates de Mensagem
 const TEMPLATES = {
-  PEDIDO_REGISTRADO: "Olá {cliente}! Seu pedido #{numero} foi registrado. Previsão: {data_prevista}",
-  PRONTO_RETIRADA: "🎉 Seu óculos está pronto! Retire na loja {loja} até {data_limite}",
-  LEMBRETE_RETIRADA: "⏰ Lembrete: Seu pedido #{numero} aguarda retirada há {dias} dias"
-}
+  PEDIDO_REGISTRADO:
+    "Olá {cliente}! Seu pedido #{numero} foi registrado. Previsão: {data_prevista}",
+  PRONTO_RETIRADA:
+    "🎉 Seu óculos está pronto! Retire na loja {loja} até {data_limite}",
+  LEMBRETE_RETIRADA:
+    "⏰ Lembrete: Seu pedido #{numero} aguarda retirada há {dias} dias",
+};
 ```
 
 **Impacto:**
+
 - ❌ Cliente sem informações do pedido
 - ❌ Muitos atendimentos telefônicos
 - ❌ Pedidos esquecidos na loja
@@ -306,90 +628,59 @@ const TEMPLATES = {
 **Problema:** Sistema isolado, sem integrações
 
 #### Faltam:
+
 ```typescript
 // Integração com Laboratórios
 interface IntegracaoLaboratorio {
-  laboratorio_id: string
-  tipo: 'API' | 'EMAIL' | 'MANUAL'
-  
+  laboratorio_id: string;
+  tipo: "API" | "EMAIL" | "MANUAL";
+
   // API (Essilor, Zeiss, Hoya)
-  api_url?: string
-  api_key?: string
-  auto_sync: boolean
-  
+  api_url?: string;
+  api_key?: string;
+  auto_sync: boolean;
+
   // Sincronização
-  enviar_pedido_automatico: boolean
-  receber_status_automatico: boolean
-  receber_rastreamento: boolean
-  
+  enviar_pedido_automatico: boolean;
+  receber_status_automatico: boolean;
+  receber_rastreamento: boolean;
+
   // Mapeamento de Status
-  status_mapping: Record<string, StatusPedido>
+  status_mapping: Record<string, StatusPedido>;
 }
 
 // Integração Nota Fiscal
 interface IntegracaoNFe {
-  ambiente: 'PRODUCAO' | 'HOMOLOGACAO'
-  certificado_digital: string
-  senha_certificado: string
-  serie_nfe: string
-  numero_ultimo: number
-  
+  ambiente: "PRODUCAO" | "HOMOLOGACAO";
+  certificado_digital: string;
+  senha_certificado: string;
+  serie_nfe: string;
+  numero_ultimo: number;
+
   // Contingência
-  contingencia_ativa: boolean
-  tipo_contingencia?: string
+  contingencia_ativa: boolean;
+  tipo_contingencia?: string;
 }
 
 // Integração WhatsApp Business
 interface IntegracaoWhatsApp {
-  numero_telefone: string
-  api_key: string
-  webhook_url: string
-  mensagens_automaticas: boolean
+  numero_telefone: string;
+  api_key: string;
+  webhook_url: string;
+  mensagens_automaticas: boolean;
 }
 ```
 
 **Impacto:**
+
 - ❌ Trabalho manual excessivo
 - ❌ Erros de digitação
 - ❌ Atrasos na comunicação
 - ❌ Sem rastreamento em tempo real
 
-**Prioridade:** 🟢 **BAIXA** (mas importante)
+**Prioridade:** 🟢 **BAIXA** - Futuro
 
 ---
-
-## 📋 **FUNCIONALIDADES SECUNDÁRIAS**
-
-### Outras melhorias identificadas:
-
-1. **Fotos do Pedido**
-   - Upload de receita médica
-   - Foto da armação escolhida
-   - Foto do resultado final
-   - Armazenamento no Supabase Storage
-
-2. **Controle de Vendedores**
-   - Cadastro de vendedores por loja
-   - Metas individuais
-   - Comissões calculadas
-   - Ranking de performance
-
-3. **Relatórios Avançados**
-   - Relatório de garantias (motivos, custos)
-   - Relatório de atrasos (labs vs DCL)
-   - Curva ABC de clientes
-   - Análise de lucratividade por produto
-
-4. **Gestão de Estoque**
-   - Armações em estoque
-   - Lentes em estoque (se aplicável)
-   - Controle de entrada/saída
-   - Ponto de reposição automático
-
-5. **Sistema de Orçamentos**
-   - Criar orçamento antes do pedido
-   - Validade do orçamento
-   - Conversão orçamento → pedido
    - Histórico de orçamentos perdidos
 
 ---
@@ -397,10 +688,12 @@ interface IntegracaoWhatsApp {
 ## 🎯 **PRIORIZAÇÃO RECOMENDADA**
 
 ### 🔴 **SPRINT 1 - Dados Oftalmológicos (1-2 semanas)**
+
 **Impacto:** ⚡⚡⚡⚡⚡ **CRÍTICO**  
 **Esforço:** 🔨🔨🔨 **MÉDIO**
 
 **Tarefas:**
+
 1. Criar migration com campos oftalmológicos
 2. Atualizar formulário de pedido
 3. Validações de prescrição
@@ -412,10 +705,12 @@ interface IntegracaoWhatsApp {
 ---
 
 ### 🟠 **SPRINT 2 - Gestão de Clientes (2-3 semanas)**
+
 **Impacto:** ⚡⚡⚡⚡ **ALTO**  
 **Esforço:** 🔨🔨🔨🔨 **ALTO**
 
 **Tarefas:**
+
 1. Criar tabela `clientes`
 2. CRUD completo de clientes
 3. Migrar dados existentes
@@ -428,10 +723,12 @@ interface IntegracaoWhatsApp {
 ---
 
 ### 🟠 **SPRINT 3 - Armações & Estoque (2-3 semanas)**
+
 **Impacto:** ⚡⚡⚡⚡ **ALTO**  
 **Esforço:** 🔨🔨🔨🔨 **ALTO**
 
 **Tarefas:**
+
 1. Criar tabela `armacoes`
 2. Controle de estoque
 3. Relacionamento pedido → armação
@@ -443,10 +740,12 @@ interface IntegracaoWhatsApp {
 ---
 
 ### 🟡 **SPRINT 4 - Financeiro Completo (1-2 semanas)**
+
 **Impacto:** ⚡⚡⚡ **MÉDIO**  
 **Esforço:** 🔨🔨🔨 **MÉDIO**
 
 **Tarefas:**
+
 1. Expandir modelo financeiro
 2. Parcelamento e formas de pagamento
 3. Controle de comissões
@@ -458,10 +757,12 @@ interface IntegracaoWhatsApp {
 ---
 
 ### 🟡 **SPRINT 5 - Comunicação Cliente (2 semanas)**
+
 **Impacto:** ⚡⚡⚡ **MÉDIO**  
 **Esforço:** 🔨🔨🔨 **MÉDIO**
 
 **Tarefas:**
+
 1. Sistema de templates
 2. Integração WhatsApp Business API
 3. Gatilhos automáticos
@@ -475,6 +776,7 @@ interface IntegracaoWhatsApp {
 ## 📊 **COMPARATIVO COM MERCADO**
 
 ### Sistemas Concorrentes Analisados:
+
 - **Óptica Fácil** (líder nacional)
 - **Vision System** (segundo lugar)
 - **Óptica 10** (software completo)
@@ -482,20 +784,21 @@ interface IntegracaoWhatsApp {
 
 ### Funcionalidades vs Concorrentes:
 
-| Funcionalidade | Desenrola DCL | Mercado | Gap |
-|---|---|---|---|
-| Kanban Visual | ✅ Excelente | ⭐⭐⭐ | 0% |
-| Dashboard BI | ✅ Muito Bom | ⭐⭐⭐⭐ | -10% |
-| Gamificação | ✅ **ÚNICO** | ❌ | **+100%** |
-| Dados Oftalmológicos | ❌ | ✅ | **-100%** |
-| Gestão Clientes | ❌ | ✅ | **-100%** |
-| Gestão Armações | ❌ | ✅ | **-100%** |
-| Financeiro Completo | ⚠️ Básico | ✅ | -60% |
-| Nota Fiscal | ❌ | ✅ | -100% |
-| WhatsApp Automático | ❌ | ⚠️ | -50% |
-| Integrações Labs | ❌ | ⚠️ | -50% |
+| Funcionalidade       | Desenrola DCL | Mercado  | Gap       |
+| -------------------- | ------------- | -------- | --------- |
+| Kanban Visual        | ✅ Excelente  | ⭐⭐⭐   | 0%        |
+| Dashboard BI         | ✅ Muito Bom  | ⭐⭐⭐⭐ | -10%      |
+| Gamificação          | ✅ **ÚNICO**  | ❌       | **+100%** |
+| Dados Oftalmológicos | ❌            | ✅       | **-100%** |
+| Gestão Clientes      | ❌            | ✅       | **-100%** |
+| Gestão Armações      | ❌            | ✅       | **-100%** |
+| Financeiro Completo  | ⚠️ Básico     | ✅       | -60%      |
+| Nota Fiscal          | ❌            | ✅       | -100%     |
+| WhatsApp Automático  | ❌            | ⚠️       | -50%      |
+| Integrações Labs     | ❌            | ⚠️       | -50%      |
 
 **Score Geral:**
+
 - **Desenrola DCL:** 55/100
 - **Média Mercado:** 85/100
 - **Gap:** -30 pontos
@@ -505,21 +808,25 @@ interface IntegracaoWhatsApp {
 ## 🚀 **ROADMAP SUGERIDO (6 MESES)**
 
 ### **Mês 1-2: Fundação Profissional**
+
 - ✅ Dados oftalmológicos completos
 - ✅ Gestão de clientes estruturada
 - ✅ Sistema utilizável em óptica real
 
 ### **Mês 3-4: Gestão Comercial**
+
 - ✅ Armações e estoque
 - ✅ Financeiro completo
 - ✅ Comissões de vendedores
 
 ### **Mês 5-6: Automação & Integrações**
+
 - ✅ WhatsApp automático
 - ✅ Integração laboratórios
 - ✅ Nota fiscal eletrônica
 
 ### **Pós-MVP: Diferenciais**
+
 - 🎮 Gamificação aprimorada (já é único!)
 - 📸 Fotos de receitas/armações
 - 📊 BI avançado com IA
@@ -530,6 +837,7 @@ interface IntegracaoWhatsApp {
 ## 💡 **CONCLUSÃO**
 
 ### ✅ **Pontos Fortes Atuais:**
+
 1. **Gamificação (Mission Control)** - DIFERENCIAL ÚNICO no mercado
 2. **Kanban Visual** - Melhor que concorrentes
 3. **Dashboard BI** - Muito completo
@@ -537,6 +845,7 @@ interface IntegracaoWhatsApp {
 5. **Alertas Inteligentes** - Sistema proativo
 
 ### ❌ **GAPs Críticos que IMPEDEM uso profissional:**
+
 1. **Sem dados oftalmológicos** - Receita médica é OBRIGATÓRIA
 2. **Sem gestão de clientes** - CPF obrigatório para NF
 3. **Sem controle de armações** - Impossível calcular margem
@@ -544,9 +853,9 @@ interface IntegracaoWhatsApp {
 ### 🎯 **Recomendação Final:**
 
 **Prioridade MÁXIMA:**
-Implementar **GAP 1 (Dados Oftalmológicos)** imediatamente. 
+Implementar **GAP 1 (Dados Oftalmológicos)** imediatamente.
 
-**Motivo:** 
+**Motivo:**
 Sem prescrição médica, o sistema não atende legislação nem operação básica de uma óptica. Este é o **bloqueador crítico** para adoção real.
 
 **Tempo estimado:** 1-2 semanas  
