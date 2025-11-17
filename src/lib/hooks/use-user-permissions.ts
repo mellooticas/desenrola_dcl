@@ -14,6 +14,7 @@ import {
   canChangeStatus,
   canViewFinancial,
   canEditFinancial,
+  canRevertStatus,
   hasPermission,
   canAccessRoute,
   getRoleLabel,
@@ -37,6 +38,7 @@ export interface PermissionHook {
   canChangeStatus: boolean;
   canViewFinancial: boolean;
   canEditFinancial: boolean;
+  canRevertStatus: boolean;
   
   // Funções auxiliares
   hasPermission: (permission: string) => boolean;
@@ -95,6 +97,7 @@ export function usePermissions(): PermissionHook {
       canChangeStatus: canChangeStatus(user),
       canViewFinancial: canViewFinancial(user),
       canEditFinancial: canEditFinancial(user),
+      canRevertStatus: canRevertStatus(user),
       
       // Funções auxiliares
       hasPermission: (permission: string) => hasPermission(user, permission),

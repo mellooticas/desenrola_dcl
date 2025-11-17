@@ -67,6 +67,7 @@ interface UserPermissions {
   getNextStatus: (currentStatus: StatusPedido) => StatusPedido | null
   getPrevStatus: (currentStatus: StatusPedido) => StatusPedido | null
   getAllowedMoves: (currentStatus: StatusPedido) => StatusPedido[]
+  canRevertStatus: boolean // ADMIN: Permissão para reverter status
 }
 
 // ========== CONSTANTES ==========
@@ -230,6 +231,7 @@ const ROLE_PERMISSIONS: Record<string, {
 // ========== HOOK DE PERMISSÕES ==========
 const useUserPermissions = (userRole: string): UserPermissions => {
   const permissions = ROLE_PERMISSIONS[userRole] || ROLE_PERMISSIONS['operador']
+  const globalPermissions = usePermissions() // Hook global para canRevertStatus
 
   const getVisibleColumns = (): StatusPedido[] => {
     return permissions.visibleColumns
@@ -321,8 +323,9 @@ const useUserPermissions = (userRole: string): UserPermissions => {
     getVisibleColumns,
     getNextStatus,
     getPrevStatus,
-    getAllowedMoves
-  }), [permissions]) // Memorizar baseado nas permissões estáticas
+    getAllowedMoves,
+    canRevertStatus: globalPermissions.canRevertStatus // Adiciona permissão de reverter
+  }), [permissions, globalPermissions.canRevertStatus]) // Memorizar baseado nas permissões estáticas
 }
 
 // ========== COMPONENTE PRINCIPAL ==========
@@ -569,6 +572,99 @@ export default function KanbanBoard() {
   }, [])
 
   // ========== FUNÇÕES DE AÇÃO ==========
+  
+  // 🔄 Função para mover pedido para próximo status via botão
+  const handleMoveToNextStatus = async (pedido: PedidoCompleto) => {
+    if (demoPermissions.isDemo) {
+      alert('👁️ Modo Visualização: Você não pode mover cards.');
+      return;
+    }
+    
+    if (!supabase) return;
+    
+    const allowedMoves = permissions.getAllowedMoves(pedido.status);
+    const nextStatus = allowedMoves[0]; // Pega o primeiro status permitido
+    
+    if (!nextStatus) {
+      alert('Não há próximo status disponível para este pedido.');
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .rpc('alterar_status_pedido', {
+          pedido_uuid: pedido.id,
+          novo_status: nextStatus,
+          observacao: `Avançado de ${STATUS_LABELS[pedido.status]} para ${STATUS_LABELS[nextStatus]} via botão`,
+          usuario: userProfile?.nome || user?.email || 'Sistema'
+        });
+      
+      if (error) throw error;
+      
+      // Recarregar dados
+      await loadPedidos();
+    } catch (error) {
+      console.error('Erro ao mover pedido:', error);
+      alert(`Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    }
+  };
+
+  const handleRevertStatus = async (pedido: any) => {
+    // 🔒 PROTEÇÃO DEMO
+    if (demoPermissions.isDemo) {
+      alert('👁️ Modo Visualização: Você não pode reverter status.');
+      return;
+    }
+
+    if (!supabase) return;
+
+    // Mapeamento reverso de status (baseado no fluxo real do sistema)
+    const reverseFlow: Record<StatusPedido, StatusPedido | null> = {
+      'REGISTRADO': null, // Início do fluxo, não pode reverter
+      'AG_PAGAMENTO': 'REGISTRADO',
+      'PAGO': 'AG_PAGAMENTO',
+      'PRODUCAO': 'PAGO',
+      'PRONTO': 'PRODUCAO',
+      'ENVIADO': 'PRONTO',
+      'CHEGOU': 'ENVIADO',
+      'ENTREGUE': 'CHEGOU',
+      'CANCELADO': null // Status final, não pode reverter
+    };
+
+    const previousStatus = reverseFlow[pedido.status as StatusPedido];
+
+    if (!previousStatus) {
+      alert('Este status não pode ser revertido.');
+      return;
+    }
+
+    // Confirmação
+    const currentStatus = pedido.status as StatusPedido;
+    const confirmMessage = `⚠️ ADMIN: Reverter pedido de ${STATUS_LABELS[currentStatus]} para ${STATUS_LABELS[previousStatus]}?\n\nEsta ação deve ser usada apenas em casos especiais.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .rpc('alterar_status_pedido', {
+          pedido_uuid: pedido.id,
+          novo_status: previousStatus,
+          observacao: `🔄 Revertido por ADMIN (${userProfile?.nome || user?.email}) de ${STATUS_LABELS[currentStatus]} para ${STATUS_LABELS[previousStatus]}`,
+          usuario: userProfile?.nome || user?.email || 'Admin'
+        });
+      
+      if (error) throw error;
+      
+      // Recarregar dados
+      await loadPedidos();
+    } catch (error) {
+      console.error('Erro ao reverter status:', error);
+      alert(`Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    }
+  };
+  
   const handleDragEnd = async (result: DropResult) => {
     // 🔒 PROTEÇÃO DEMO: Bloquear drag & drop
     if (demoPermissions.isDemo) {
@@ -840,11 +936,16 @@ export default function KanbanBoard() {
   const totalAlertas = columns.reduce((acc, col) => acc + col.pedidos.reduce((sum, p) => sum + p.alertas_count, 0), 0)
 
   // ========== RENDER CARD DO PEDIDO ==========
-  const renderPedidoCard = (pedido: PedidoCompleto, index: number, laboratorioGradient?: string) => {
+  const renderPedidoCard = (pedido: PedidoCompleto, index: number, columnId: StatusPedido, laboratorioGradient?: string) => {
     const canEdit = permissions.canEditColumn(pedido.status)
     const canMoveNext = permissions.canMoveToNext(pedido.status)
     const canMovePrev = permissions.canMoveToPrev(pedido.status)
     const canDrag = permissions.canDragCard(pedido.status)
+    
+    // Status que permitem reverter (não incluir REGISTRADO inicial e CANCELADO final)
+    const canRevert = permissions.canRevertStatus && 
+                      pedido.status !== 'REGISTRADO' && 
+                      pedido.status !== 'CANCELADO'
 
     return (
       <Draggable
@@ -865,6 +966,11 @@ export default function KanbanBoard() {
               laboratorioGradient={laboratorioGradient || LAB_GRADIENTS['default']}
               isDragging={snapshot.isDragging}
               onClick={() => setSelectedPedido(pedido)}
+              columnStatus={columnId}
+              onMoveToNextStatus={() => handleMoveToNextStatus(pedido)}
+              onRevertStatus={() => handleRevertStatus(pedido)}
+              canMoveNext={permissions.getAllowedMoves(pedido.status).length > 0}
+              canRevert={canRevert}
             />
           </div>
         )}
@@ -1092,7 +1198,7 @@ export default function KanbanBoard() {
                             >
                               {column.pedidos.map((pedido, index) => {
                                 const labGradient = LAB_GRADIENTS[pedido.laboratorio_nome || ''] || LAB_GRADIENTS['default']
-                                return renderPedidoCard(pedido, index, labGradient)
+                                return renderPedidoCard(pedido, index, column.id, labGradient)
                               })}
                               {provided.placeholder}
 

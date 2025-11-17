@@ -3,20 +3,30 @@
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { Clock, MapPin, User, Beaker, DollarSign, Sparkles, Eye } from 'lucide-react'
+import { Clock, MapPin, User, Beaker, DollarSign, Sparkles, Eye, ChevronRight, Check, RotateCcw } from 'lucide-react'
 
 interface KanbanCardModernProps {
   pedido: any
   laboratorioGradient: string
   isDragging?: boolean
   onClick?: () => void
+  columnStatus?: string
+  onMoveToNextStatus?: () => void
+  onRevertStatus?: () => void
+  canMoveNext?: boolean
+  canRevert?: boolean
 }
 
 export function KanbanCardModern({ 
   pedido, 
   laboratorioGradient,
   isDragging = false,
-  onClick 
+  onClick,
+  columnStatus,
+  onMoveToNextStatus,
+  onRevertStatus,
+  canMoveNext = false,
+  canRevert = false
 }: KanbanCardModernProps) {
   
   // Calcular status SLA
@@ -271,6 +281,59 @@ export function KanbanCardModern({
               </div>
             </div>
           )}
+          
+          {/* Botão de Ação - Minimalista */}
+          <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 dark:border-gray-800">
+            <div className="flex items-center gap-2">
+              {/* Botão Avançar/Finalizar */}
+              {canMoveNext && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onMoveToNextStatus?.()
+                  }}
+                  className={cn(
+                    "w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                    columnStatus === 'ENTREGUE' && pedido.status === 'ENTREGUE'
+                      ? "bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700 shadow-sm hover:shadow-md"
+                      : "bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/70"
+                  )}
+                  title={columnStatus === 'ENTREGUE' && pedido.status === 'ENTREGUE' ? "Finalizar pedido" : "Avançar status"}
+                >
+                  {columnStatus === 'ENTREGUE' && pedido.status === 'ENTREGUE' ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </button>
+              )}
+              
+              {/* Botão Reverter - Admin Only */}
+              {canRevert && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRevertStatus?.()
+                  }}
+                  className="w-7 h-7 rounded-full flex items-center justify-center bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/70 transition-all"
+                  title="Admin: Reverter status"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            
+            {/* Botão Ver - Mantém na direita */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onClick?.()
+              }}
+              className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1 transition-colors"
+            >
+              <Eye className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>

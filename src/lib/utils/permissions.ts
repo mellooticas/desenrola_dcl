@@ -127,6 +127,18 @@ export function canEditFinancial(user: User | null | undefined): boolean {
 }
 
 /**
+ * Verifica se tem permissão de ADMIN para reverter status (voltar no Kanban)
+ * Função especial que permite desfazer mudanças de status
+ */
+export function canRevertStatus(user: User | null | undefined): boolean {
+  if (!user || isDemo(user)) return false;
+  
+  // Apenas gestor e DCL (roles administrativas) podem reverter
+  const adminRoles = ['admin', 'gestor', 'dcl'];
+  return adminRoles.includes(user.role);
+}
+
+/**
  * Verifica permissão específica
  */
 export function hasPermission(
