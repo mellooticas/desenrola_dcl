@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -331,6 +332,7 @@ const useUserPermissions = (userRole: string): UserPermissions => {
 // ========== COMPONENTE PRINCIPAL ==========
 export default function KanbanBoard() {
   const router = useRouter()
+  const queryClient = useQueryClient() // Para invalidar queries de alertas
   // CORREÇÃO: Usar cliente Supabase centralizado do AuthProvider
   const { user, userProfile, loading: authLoading, supabase } = useAuth()
   
@@ -601,6 +603,9 @@ export default function KanbanBoard() {
       
       if (error) throw error;
       
+      // Invalidar queries de alertas para forçar atualização imediata
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'alertas_criticos'] })
+      
       // Recarregar dados
       await loadPedidos();
     } catch (error) {
@@ -656,6 +661,9 @@ export default function KanbanBoard() {
         });
       
       if (error) throw error;
+      
+      // Invalidar queries de alertas para forçar atualização imediata
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'alertas_criticos'] })
       
       // Recarregar dados
       await loadPedidos();
@@ -714,6 +722,9 @@ export default function KanbanBoard() {
         console.error('Erro Supabase ao alterar status:', error)
         throw error
       }
+
+      // Invalidar queries de alertas para forçar atualização imediata
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'alertas_criticos'] })
 
       // Atualizar estado local otimisticamente
       const newColumns = columns.map(column => {

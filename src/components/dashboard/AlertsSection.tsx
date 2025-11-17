@@ -43,8 +43,8 @@ export function AlertsSection({ filters }: AlertsSectionProps) {
       }
       return response.json()
     },
-    staleTime: 5 * 60 * 1000,
-    refetchInterval: 5 * 60 * 1000
+    staleTime: 30 * 1000, // 30 segundos - alertas precisam atualizar rápido
+    refetchInterval: 30 * 1000
   })
 
   // Extrair alertas da resposta da API
