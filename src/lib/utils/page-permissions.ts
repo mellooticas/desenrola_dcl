@@ -3,7 +3,8 @@
 // lib/utils/page-permissions.ts
 export const PAGE_PERMISSIONS = {
   dashboard: ['gestor', 'financeiro'],
-  kanban: ['gestor', 'dcl', 'financeiro', 'loja'], 
+  kanban: ['gestor', 'dcl', 'financeiro', 'loja'],
+  alertas: ['gestor', 'dcl'],
   pedidos: ['gestor', 'dcl', 'financeiro', 'loja'],
   configuracoes: ['gestor']
 } as const

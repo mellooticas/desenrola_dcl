@@ -14,7 +14,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Store
+  Store,
+  Bell
 } from 'lucide-react'
 import {
   Tooltip,
@@ -42,6 +43,13 @@ const NAVIGATION_ITEMS = [
     icon: Package,
     gradient: 'from-purple-500 to-pink-500',
     permission: 'kanban'
+  },
+  {
+    href: '/alertas',
+    label: 'Alertas',
+    icon: Bell,
+    gradient: 'from-red-500 to-orange-500',
+    permission: 'alertas'
   },
   {
     href: '/pedidos',

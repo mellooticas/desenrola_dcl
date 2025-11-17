@@ -8,6 +8,7 @@ import type { NextRequest } from 'next/server'
 const ROUTE_PERMISSIONS = {
   '/dashboard': ['gestor', 'financeiro', 'demo_viewer'],
   '/kanban': ['gestor', 'dcl', 'financeiro', 'loja', 'demo_viewer'],
+  '/alertas': ['gestor', 'dcl', 'demo_viewer'],
   '/pedidos': ['gestor', 'dcl', 'financeiro', 'loja', 'demo_viewer'], 
   '/configuracoes': ['gestor'] // Demo NÃO pode acessar configurações
 }
@@ -17,6 +18,7 @@ const protectedRoutes = [
   '/dashboard',
   '/pedidos', 
   '/kanban',
+  '/alertas',
   '/configuracoes',
 ]
 
