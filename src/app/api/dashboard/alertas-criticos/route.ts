@@ -131,6 +131,14 @@ export async function GET(request: NextRequest) {
     
     const { data: alertasSistema } = await queryAlertas
     
+    // LOG: Mostrar quantos alertas foram encontrados em cada categoria
+    console.log('📊 Alertas por categoria:', {
+      atrasados: pedidosAtrasados?.length || 0,
+      vencimento: pedidosVencimento?.length || 0,
+      pagamentos: pagamentosPendentes?.length || 0,
+      sistema: alertasSistema?.length || 0
+    })
+    
     // 5. COMPILAR TODOS OS ALERTAS
     type AlertaItem = {
       id: string
@@ -235,7 +243,8 @@ export async function GET(request: NextRequest) {
     console.log(`✅ Alertas processados: ${alertas.length} encontrados`)
     
     // Converter prioridade para severidade para compatibilidade com o frontend
-    const alertasFormatados = alertas.slice(0, 20).map(alerta => ({
+    // REMOVIDO .slice(0, 20) - agora retorna todos os alertas encontrados pelos limits individuais
+    const alertasFormatados = alertas.map(alerta => ({
       ...alerta,
       severidade: alerta.prioridade.toLowerCase(),
       descricao: alerta.mensagem
