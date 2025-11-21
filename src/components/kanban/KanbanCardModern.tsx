@@ -3,7 +3,8 @@
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { Clock, MapPin, User, Beaker, DollarSign, Sparkles, Eye, ChevronRight, Check, RotateCcw } from 'lucide-react'
+import { Clock, MapPin, User, Beaker, DollarSign, Sparkles, Eye, ChevronRight, Check, RotateCcw, Calendar } from 'lucide-react'
+import { BadgeUrgencia } from './TermometroUrgencia'
 
 interface KanbanCardModernProps {
   pedido: any
@@ -120,6 +121,45 @@ export function KanbanCardModern({
             </div>
             <Eye className="w-4 h-4 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
+
+          {/* 🚀 TERMÔMETRO DE URGÊNCIA - AG_PAGAMENTO */}
+          {columnStatus === 'AG_PAGAMENTO' && pedido.data_prometida && (
+            <div className="mb-3 space-y-2">
+              <BadgeUrgencia 
+                dataSlaLab={pedido.data_prometida}
+                dataPedido={pedido.data_pedido}
+                showDias={true}
+                className="w-full justify-center py-2 text-sm"
+              />
+              
+              {/* Datas Visíveis: Cliente + SLA Lab */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* Data Prometida ao Cliente */}
+                <div className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg p-2 text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Calendar className="w-3 h-3 text-green-600 dark:text-green-400" />
+                    <span className="text-xs font-medium text-green-600 dark:text-green-400">Cliente</span>
+                  </div>
+                  <div className="text-xs font-bold text-green-700 dark:text-green-300">
+                    {new Date(pedido.data_prometida).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                  </div>
+                </div>
+                
+                {/* SLA do Laboratório */}
+                {pedido.data_sla_laboratorio && (
+                  <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg p-2 text-center">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <Clock className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400">SLA Lab</span>
+                    </div>
+                    <div className="text-xs font-bold text-blue-700 dark:text-blue-300">
+                      {new Date(pedido.data_sla_laboratorio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           
           {/* OS Loja e Lab */}
           <div className="grid grid-cols-2 gap-2 mb-3">

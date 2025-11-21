@@ -15,6 +15,7 @@ import {
   DollarSign
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { TermometroUrgencia, BadgeUrgencia } from './TermometroUrgencia'
 
 interface KanbanCardProps {
   pedido: PedidoCompleto
@@ -100,6 +101,18 @@ export function KanbanCard({
   const slaStatus = getSlaStatus(pedido)
   const cardStyles = getCardStyles(pedido, slaStatus)
 
+  // DEBUG: Log para verificar dados do pedido AG_PAGAMENTO
+  if (pedido.status === 'AG_PAGAMENTO') {
+    console.log('🔍 DEBUG Card AG_PAGAMENTO:', {
+      id: pedido.id,
+      numero: pedido.numero_sequencial,
+      data_prometida: pedido.data_prometida,
+      data_sla_laboratorio: pedido.data_sla_laboratorio,
+      data_pedido: pedido.data_pedido,
+      tem_data_prometida: !!pedido.data_prometida
+    })
+  }
+
   return (
     <Card
       className={cn(
@@ -125,6 +138,45 @@ export function KanbanCard({
       )}
       
       <CardContent className="p-3">
+        
+        {/* 🚀 TERMÔMETRO COMPACTO (Badge no topo - AG_PAGAMENTO) */}
+        {pedido.status === 'AG_PAGAMENTO' && pedido.data_prometida && (
+          <div className="mb-3 space-y-2">
+            <BadgeUrgencia 
+              dataSlaLab={pedido.data_prometida}
+              dataPedido={pedido.data_pedido}
+              showDias={true}
+              className="w-full justify-center py-2 text-sm"
+            />
+            
+            {/* Datas Visíveis: Prometido + SLA Lab */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* Data Prometida ao Cliente */}
+              <div className="bg-green-100 border border-green-300 rounded-lg p-2 text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Calendar className="w-3 h-3 text-green-600" />
+                  <span className="text-xs font-medium text-green-600">Cliente</span>
+                </div>
+                <div className="text-xs font-bold text-green-700">
+                  {new Date(pedido.data_prometida).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                </div>
+              </div>
+              
+              {/* SLA do Laboratório */}
+              {pedido.data_sla_laboratorio && (
+                <div className="bg-blue-100 border border-blue-300 rounded-lg p-2 text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Clock className="w-3 h-3 text-blue-600" />
+                    <span className="text-xs font-medium text-blue-600">SLA Lab</span>
+                  </div>
+                  <div className="text-xs font-bold text-blue-700">
+                    {new Date(pedido.data_sla_laboratorio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         
         {/* Header com OS Principal */}
         <div className="flex items-center justify-between mb-3">
@@ -262,90 +314,104 @@ export function KanbanCard({
           </div>
         </div>
 
-        {/* 🚀 SEÇÃO PREMIUM: DATAS SLA vs PROMESSA */}
-        <div className="mb-3">
-          {/* Barra de Progresso Visual SLA */}
-          {slaStatus.diasParaSla !== null && (
-            <div className="mb-2">
-              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className={cn(
-                    "h-full transition-all duration-500",
-                    slaStatus.slaAtrasado 
-                      ? "bg-gradient-to-r from-red-500 to-red-600" 
-                      : slaStatus.slaAlerta 
-                        ? "bg-gradient-to-r from-yellow-500 to-orange-500"
-                        : "bg-gradient-to-r from-blue-500 to-green-500"
-                  )}
-                  style={{
-                    width: `${Math.min(100, Math.max(0, (10 - Math.abs(slaStatus.diasParaSla)) * 10))}%`
-                  }}
-                />
-              </div>
-            </div>
-          )}
-          
-          <div className="grid grid-cols-2 gap-2">
-            {/* SLA Lab - Controle Interno */}
-            {slaStatus.dataSlaLab && (
-              <div className={cn(
-                "rounded-lg p-2 border text-center",
-                slaStatus.slaAtrasado 
-                  ? "bg-red-100 border-red-300" 
-                  : slaStatus.slaAlerta 
-                    ? "bg-yellow-100 border-yellow-300"
-                    : "bg-blue-100 border-blue-300"
-              )}>
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  {slaStatus.slaAtrasado ? (
-                    <AlertTriangle className="w-3 h-3 text-red-600" />
-                  ) : slaStatus.slaAlerta ? (
-                    <Clock className="w-3 h-3 text-yellow-600" />
-                  ) : (
-                    <CheckCircle2 className="w-3 h-3 text-blue-600" />
-                  )}
-                  <span className={cn(
-                    "text-xs font-medium",
-                    slaStatus.slaAtrasado ? "text-red-600" : slaStatus.slaAlerta ? "text-yellow-600" : "text-blue-600"
-                  )}>
-                    SLA Lab
-                  </span>
-                </div>
-                <div className={cn(
-                  "text-xs font-bold",
-                  slaStatus.slaAtrasado ? "text-red-700" : slaStatus.slaAlerta ? "text-yellow-700" : "text-blue-700"
-                )}>
-                  {slaStatus.diasParaSla !== null ? (
-                    slaStatus.diasParaSla < 0 ? 
-                      `${Math.abs(slaStatus.diasParaSla)}d atraso` :
-                      slaStatus.dataSlaLab?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-                  ) : (
-                    slaStatus.dataSlaLab?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Promessa Cliente */}
-            {slaStatus.dataPromessaCliente && (
-              <div className="bg-green-100 border border-green-300 rounded-lg p-2 text-center">
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <Calendar className="w-3 h-3 text-green-600" />
-                  <span className="text-xs font-medium text-green-600">Cliente</span>
-                </div>
-                <div className="text-xs font-bold text-green-700">
-                  {slaStatus.diasParaPromessa !== null ? (
-                    slaStatus.diasParaPromessa < 0 ? 
-                      `${Math.abs(slaStatus.diasParaPromessa)}d atraso` :
-                      slaStatus.dataPromessaCliente?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-                  ) : (
-                    slaStatus.dataPromessaCliente?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-                  )}
-                </div>
-              </div>
-            )}
+        {/* 🚀 SEÇÃO ESPECIAL: TERMÔMETRO DE URGÊNCIA DETALHADO (somente AG_PAGAMENTO - expandido) */}
+        {pedido.status === 'AG_PAGAMENTO' && pedido.data_prometida && (
+          <div className="mb-3">
+            <TermometroUrgencia
+              dataSlaLab={pedido.data_prometida}
+              dataPedido={pedido.data_pedido}
+              dataPrometida={pedido.data_sla_laboratorio}
+              valorPedido={pedido.custo_lentes}
+            />
           </div>
-        </div>
+        )}
+
+        {/* 🚀 SEÇÃO PREMIUM: DATAS SLA vs PROMESSA (para outros status) */}
+        {pedido.status !== 'AG_PAGAMENTO' && (
+          <div className="mb-3">
+            {/* Barra de Progresso Visual SLA */}
+            {slaStatus.diasParaSla !== null && (
+              <div className="mb-2">
+                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-full transition-all duration-500",
+                      slaStatus.slaAtrasado 
+                        ? "bg-gradient-to-r from-red-500 to-red-600" 
+                        : slaStatus.slaAlerta 
+                          ? "bg-gradient-to-r from-yellow-500 to-orange-500"
+                          : "bg-gradient-to-r from-blue-500 to-green-500"
+                    )}
+                    style={{
+                      width: `${Math.min(100, Math.max(0, (10 - Math.abs(slaStatus.diasParaSla)) * 10))}%`
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-2">
+              {/* SLA Lab - Controle Interno */}
+              {slaStatus.dataSlaLab && (
+                <div className={cn(
+                  "rounded-lg p-2 border text-center",
+                  slaStatus.slaAtrasado 
+                    ? "bg-red-100 border-red-300" 
+                    : slaStatus.slaAlerta 
+                      ? "bg-yellow-100 border-yellow-300"
+                      : "bg-blue-100 border-blue-300"
+                )}>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    {slaStatus.slaAtrasado ? (
+                      <AlertTriangle className="w-3 h-3 text-red-600" />
+                    ) : slaStatus.slaAlerta ? (
+                      <Clock className="w-3 h-3 text-yellow-600" />
+                    ) : (
+                      <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                    )}
+                    <span className={cn(
+                      "text-xs font-medium",
+                      slaStatus.slaAtrasado ? "text-red-600" : slaStatus.slaAlerta ? "text-yellow-600" : "text-blue-600"
+                    )}>
+                      SLA Lab
+                    </span>
+                  </div>
+                  <div className={cn(
+                    "text-xs font-bold",
+                    slaStatus.slaAtrasado ? "text-red-700" : slaStatus.slaAlerta ? "text-yellow-700" : "text-blue-700"
+                  )}>
+                    {slaStatus.diasParaSla !== null ? (
+                      slaStatus.diasParaSla < 0 ? 
+                        `${Math.abs(slaStatus.diasParaSla)}d atraso` :
+                        slaStatus.dataSlaLab?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                    ) : (
+                      slaStatus.dataSlaLab?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Promessa Cliente */}
+              {slaStatus.dataPromessaCliente && (
+                <div className="bg-green-100 border border-green-300 rounded-lg p-2 text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Calendar className="w-3 h-3 text-green-600" />
+                    <span className="text-xs font-medium text-green-600">Cliente</span>
+                  </div>
+                  <div className="text-xs font-bold text-green-700">
+                    {slaStatus.diasParaPromessa !== null ? (
+                      slaStatus.diasParaPromessa < 0 ? 
+                        `${Math.abs(slaStatus.diasParaPromessa)}d atraso` :
+                        slaStatus.dataPromessaCliente?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                    ) : (
+                      slaStatus.dataPromessaCliente?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Botões de Ação - Layout melhorado */}
         <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">

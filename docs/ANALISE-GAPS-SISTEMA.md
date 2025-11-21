@@ -9,26 +9,26 @@
 ## 🏗️ **ECOSSISTEMA COMPLETO (MAPEADO)**
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    BANCO DE DADOS CENTRAL                    │
-│                  (PostgreSQL - Compartilhado)                │
-└──────────┬────────────────┬────────────────┬────────────────┘
-           │                │                │
-           ↓                ↓                ↓
-┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
-│   SIS VENDAS     │ │  DESENROLA DCL   │ │  SIS MARKETING   │
-│   (PDV Óptica)   │ │  (Logística)     │ │  (Comunicação)   │
-└──────────────────┘ └──────────────────┘ └──────────────────┘
-│                      │                      │
-│ • Clientes          │ • Kanban Visual      │ • WhatsApp Auto
-│ • Vendas/PDV        │ • SLA Tracking       │ • E-mail Marketing
-│ • Prescrições       │ • Dashboard BI       │ • SMS
-│ • Armações          │ • Alertas            │ • Campanhas
-│ • Estoque           │ • Gamificação ⭐     │ • Templates
-│ • Financeiro        │ • Timeline           │ • Opt-in/LGPD
-│ • NF-e              │ • Coordenação DCL    │ • Histórico
-│ • Comissões         │                      │
-└─────────────────────┴──────────────────────┴──────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    BANCO DE DADOS CENTRAL                        │
+│                  (PostgreSQL - Compartilhado)                    │
+└───────┬──────────────┬──────────────┬──────────────┬────────────┘
+        │              │              │              │
+        ↓              ↓              ↓              ↓
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│ SIS VENDAS   │ │DESENROLA DCL │ │SIS MARKETING │ │ SIS FINANCE  │
+│ (PDV Óptica) │ │ (Logística)  │ │(Comunicação) │ │ (Financeiro) │
+└──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
+│                  │                  │                  │
+│ • Clientes      │ • Kanban         │ • WhatsApp      │ • Contas
+│ • Vendas/PDV    │ • SLA Track      │ • E-mail        │ • Fluxo Caixa
+│ • Prescrições   │ • Dashboard BI   │ • SMS           │ • Contas Pagar
+│ • Armações      │ • Alertas        │ • Campanhas     │ • Contas Receber
+│ • Estoque       │ • Gamificação⭐  │ • Templates     │ • Conciliação
+│ • Pedidos       │ • Timeline       │ • Opt-in/LGPD   │ • DRE/Balanço
+│ • NF-e          │ • Coord. DCL     │ • Histórico     │ • Relatórios
+│ • Comissões     │                  │                  │ • Impostos
+└─────────────────┴──────────────────┴──────────────────┴──────────┘
                               │
                               ↓ API/Integração
                     ┌──────────────────┐
@@ -42,12 +42,60 @@
 
 ### ✅ **STATUS ATUAL POR SISTEMA:**
 
-| Sistema            | Status          | Responsabilidade          | Pronto?          |
-| ------------------ | --------------- | ------------------------- | ---------------- |
-| **SIS VENDAS**     | ✅ Operacional  | Vendas, Clientes, Estoque | ✅ SIM           |
-| **SIS MARKETING**  | ✅ Operacional  | Comunicação automatizada  | ✅ SIM           |
-| **DESENROLA DCL**  | ✅ Operacional  | Logística, Rastreamento   | ✅ SIM           |
-| **Integração API** | ❌ **FALTANDO** | Conectar todos sistemas   | ❌ **GAP ÚNICO** |
+| Sistema            | Status                | Responsabilidade               | Pronto?    |
+| ------------------ | --------------------- | ------------------------------ | ---------- |
+| **SIS VENDAS**     | ✅ Operacional        | Vendas, Clientes, Estoque, PDV | ✅ SIM     |
+| **SIS MARKETING**  | ✅ Operacional        | Comunicação automatizada       | ✅ SIM     |
+| **SIS FINANCE**    | 🔜 Em Desenvolvimento | Gestão Financeira Completa     | 🔜 FUTURO  |
+| **DESENROLA DCL**  | ✅ Operacional        | Logística, Rastreamento        | ✅ SIM     |
+| **Integração API** | ❌ **FALTANDO**       | Conectar todos sistemas        | ❌ **GAP** |
+
+### 📊 **Divisão de Responsabilidades:**
+
+#### **SIS VENDAS** (Sistema Principal - Operacional)
+
+- Cadastro de clientes (CPF, endereço, histórico)
+- Prescrições oftalmológicas detalhadas
+- Gestão de armações e estoque
+- PDV e fechamento de vendas
+- NF-e (Nota Fiscal Eletrônica)
+- Registro de pedidos iniciais
+- Comissões de vendedores
+
+#### **SIS FINANCE** (Sistema Financeiro - Futuro)
+
+- Contas a pagar e receber
+- Fluxo de caixa projetado
+- Conciliação bancária
+- DRE (Demonstrativo de Resultado)
+- Balanço patrimonial
+- Controle de impostos
+- Relatórios gerenciais financeiros
+- Análise de lucratividade
+- Gestão de fornecedores
+- Budget e projeções
+
+#### **SIS MARKETING** (Sistema Comunicação - Operacional)
+
+- WhatsApp Business automático
+- E-mail marketing e campanhas
+- SMS em massa
+- Templates personalizados
+- Gatilhos por evento
+- Opt-in/Opt-out (LGPD)
+- Histórico de comunicações
+- Segmentação de clientes
+
+#### **DESENROLA DCL** (Sistema Logística - Operacional - ESTE!)
+
+- Kanban visual avançado
+- Rastreamento de produção
+- SLA tracking inteligente
+- Dashboard BI operacional
+- Gamificação equipe DCL (ÚNICO!)
+- Timeline de eventos
+- Alertas críticos automáticos
+- Coordenação entregas/montagens
 
 ### ✅ **Vantagens desta Arquitetura:**
 
@@ -432,7 +480,7 @@ interface DashboardLaboratorio {
 
 ### 🔴 **ÚNICO SPRINT NECESSÁRIO: Integração/Sincronização (2-3 semanas)**
 
-**Impacto:** ⚡⚡⚡⚡⚡ **CRÍTICO**  
+**Impacto:** ⚡⚡⚡⚡⚡ **CRÍTICO**
 **Esforço:** 🔨🔨🔨🔨 **ALTO**
 
 #### **O que implementar:**
@@ -442,30 +490,30 @@ interface DashboardLaboratorio {
 interface IntegracaoEcossistema {
   // Banco compartilhado (já existe)
   database: 'PostgreSQL compartilhado entre todos sistemas'
-  
+
   // Eventos de sincronização
   events: {
     // SIS VENDAS → DESENROLA DCL
     onPedidoCriado: (pedido) => sincronizarParaDCL(),
     onClienteAtualizado: (cliente) => atualizarCacheDCL(),
-    
+
     // DESENROLA DCL → SIS MARKETING
     onStatusMudou: (pedido, status) => triggerNotificacao(),
     onSLAProximoVencer: (pedido) => alertarMarketing(),
     onPedidoPronto: (pedido) => notificarCliente(),
-    
+
     // DESENROLA DCL → SIS VENDAS
     onPedidoEntregue: (pedido) => finalizarVenda(),
     onProblemaProducao: (pedido) => alertarVendedor(),
   }
-  
+
   // Triggers do banco (Database Events)
   database_triggers: {
     pedidos_INSERT: 'Notifica todos sistemas',
     pedidos_UPDATE: 'Propaga mudanças de status',
     clientes_UPDATE: 'Atualiza cache',
   }
-  
+
   // API REST (opcional - para ações manuais)
   rest_endpoints: {
     '/api/sync/pedido': 'POST - Criar/atualizar pedido',
@@ -484,7 +532,7 @@ interface IntegracaoEcossistema {
    - Testar propagação de eventos
 
 2. **Stored Procedures de Sincronização**
-   - `sincronizar_pedido_dcl(pedido_id)` 
+   - `sincronizar_pedido_dcl(pedido_id)`
    - `notificar_marketing(pedido_id, tipo_evento)`
    - `atualizar_cache_sistemas()`
 
@@ -549,15 +597,15 @@ interface IntegracaoEcossistema {
 ### 🚀 **Próximo Passo:**
 Implementar camada de integração (triggers + stored procedures + API REST)
 
-**Tempo estimado:** 2-3 semanas  
+**Tempo estimado:** 2-3 semanas
 **Resultado:** Ecossistema 100% automatizado e sincronizado
 
 ---
 
-**Avaliação Final:** ⭐⭐⭐⭐⭐ (5/5)  
-**Arquitetura:** ✅ **EXCELENTE** (microserviços especializados)  
-**Implementação:** ✅ **90% PRONTO** (falta apenas integração)  
-**Diferencial:** 🎮 **GAMIFICAÇÃO ÚNICA**  
+**Avaliação Final:** ⭐⭐⭐⭐⭐ (5/5)
+**Arquitetura:** ✅ **EXCELENTE** (microserviços especializados)
+**Implementação:** ✅ **90% PRONTO** (falta apenas integração)
+**Diferencial:** 🎮 **GAMIFICAÇÃO ÚNICA**
 **Próxima Ação:** 🔄 **SPRINT: Integração API**- ✅ Visibilidade completa do pedido
 - ✅ Alertas proativos
 - ✅ Melhor comunicação

@@ -27,6 +27,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { PedidoDetailDrawer } from '@/components/kanban/PedidoDetailDrawer'
 import { usePermissions } from '@/lib/hooks/use-user-permissions'
 import { DemoModeAlert } from '@/components/permissions/DemoModeAlert'
+import { calcularUrgenciaPagamento, getPrioridadeOrdenacao, type NivelUrgencia } from '@/lib/utils/urgencia-pagamento'
 
 // ========== TYPES E INTERFACES ==========
 type KanbanColumn = {
@@ -350,6 +351,7 @@ export default function KanbanBoard() {
   const [lojas, setLojas] = useState<Loja[]>([])
   const [selectedPedido, setSelectedPedido] = useState<PedidoCompleto | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
+  const [filtroUrgencia, setFiltroUrgencia] = useState<NivelUrgencia | null>(null) // NOVO: Filtro de urgência
 
   // ========== PERMISSÕES ==========
   const userRole = userProfile?.role || 'operador'
@@ -406,10 +408,33 @@ export default function KanbanBoard() {
       const pedidosFiltrados = (pedidosData || []).filter((p: any) => visibleStatuses.includes(p.status))
 
       // Organizar pedidos por coluna
-      const newColumns = visibleColumns.map(column => ({
-        ...column,
-        pedidos: pedidosFiltrados.filter((p: any) => p.status === column.id)
-      }))
+      const newColumns = visibleColumns.map(column => {
+        let pedidosColuna = pedidosFiltrados.filter((p: any) => p.status === column.id)
+        
+        // ORDENAÇÃO INTELIGENTE PARA AG_PAGAMENTO (por urgência baseada em data prometida)
+        if (column.id === 'AG_PAGAMENTO') {
+          pedidosColuna = pedidosColuna.sort((a, b) => {
+            const urgenciaA = calcularUrgenciaPagamento(a.data_prometida, a.data_pedido)
+            const urgenciaB = calcularUrgenciaPagamento(b.data_prometida, b.data_pedido)
+            
+            // Ordenar por prioridade (CRITICO → URGENTE → ATENCAO → FOLGA)
+            const prioA = getPrioridadeOrdenacao(urgenciaA.nivel)
+            const prioB = getPrioridadeOrdenacao(urgenciaB.nivel)
+            
+            if (prioA !== prioB) {
+              return prioA - prioB // Menor prioridade = mais urgente
+            }
+            
+            // Se mesma urgência, ordenar por dias restantes (menor primeiro)
+            return urgenciaA.diasRestantes - urgenciaB.diasRestantes
+          })
+        }
+        
+        return {
+          ...column,
+          pedidos: pedidosColuna
+        }
+      })
 
       setColumns(newColumns)
       console.log('✅ Kanban: Carregados', pedidosFiltrados.length, 'pedidos operacionais (sem ENTREGUE/CANCELADO)')
@@ -930,9 +955,8 @@ export default function KanbanBoard() {
   }
 
   // ========== FILTROS ==========
-  const filteredColumns = columns.map(column => ({
-    ...column,
-    pedidos: column.pedidos.filter(pedido =>
+  const filteredColumns = columns.map(column => {
+    let pedidosFiltrados = column.pedidos.filter(pedido =>
       searchTerm === '' ||
       pedido.numero_sequencial.toString().includes(searchTerm) ||
       pedido.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -941,7 +965,21 @@ export default function KanbanBoard() {
       (pedido.numero_os_fisica && pedido.numero_os_fisica.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (pedido.numero_pedido_laboratorio && pedido.numero_pedido_laboratorio.toLowerCase().includes(searchTerm.toLowerCase()))
     )
-  }))
+
+    // FILTRO DE URGÊNCIA (somente AG_PAGAMENTO - baseado em data prometida)
+    if (column.id === 'AG_PAGAMENTO' && filtroUrgencia) {
+      pedidosFiltrados = pedidosFiltrados.filter(pedido => {
+        if (!pedido.data_prometida) return false
+        const urgencia = calcularUrgenciaPagamento(pedido.data_prometida, pedido.data_pedido)
+        return urgencia.nivel === filtroUrgencia
+      })
+    }
+
+    return {
+      ...column,
+      pedidos: pedidosFiltrados
+    }
+  })
 
   const totalPedidos = columns.reduce((acc, col) => acc + col.pedidos.length, 0)
   const totalAlertas = columns.reduce((acc, col) => acc + col.pedidos.reduce((sum, p) => sum + p.alertas_count, 0), 0)
@@ -1010,6 +1048,27 @@ export default function KanbanBoard() {
     <div className="space-y-6">
           {/* 🔒 ALERTA MODO DEMO */}
           <DemoModeAlert message="Você pode visualizar o Kanban, mas não pode mover cards ou criar pedidos." />
+          
+          {/* Alerta de Filtro de Urgência Ativo */}
+          {filtroUrgencia && (
+            <Alert className="bg-blue-50/80 backdrop-blur-sm border-blue-300">
+              <Bell className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="flex items-center justify-between">
+                <span className="text-blue-800 font-medium">
+                  🔍 Filtrando por urgência: <strong>{filtroUrgencia}</strong> na coluna AGUARDANDO PAGAMENTO
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFiltroUrgencia(null)}
+                  className="hover:bg-blue-100 text-blue-700"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Limpar Filtro
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
           
           {/* Error Alert */}
           {error && (
@@ -1157,6 +1216,11 @@ export default function KanbanBoard() {
                           icon={IconComponent}
                           gradient={STATUS_GRADIENTS[column.id]}
                           color={column.color}
+                          // NOVO: Alertas de urgência para AG_PAGAMENTO
+                          pedidos={column.pedidos}
+                          showUrgenciaAlerts={column.id === 'AG_PAGAMENTO'}
+                          onFilterUrgencia={column.id === 'AG_PAGAMENTO' ? setFiltroUrgencia : undefined}
+                          filtroAtivo={column.id === 'AG_PAGAMENTO' ? filtroUrgencia : null}
                         />
 
                         {/* Resumo financeiro (se tiver permissão) */}
