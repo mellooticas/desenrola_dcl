@@ -2,6 +2,7 @@
 // Utilitários para cálculo de urgência de pagamento baseado em prazo de entrega ao cliente
 
 export type NivelUrgencia = 'FOLGA' | 'ATENCAO' | 'URGENTE' | 'CRITICO'
+export type FiltroPrazo = 'vencido' | 'hoje' | 'amanha' | 'proximos-3-dias' | 'esta-semana' | null
 
 export interface UrgenciaInfo {
   diasRestantes: number
@@ -207,5 +208,52 @@ export function getPrioridadeOrdenacao(nivel: NivelUrgencia): number {
     case 'ATENCAO': return 3
     case 'FOLGA': return 4
     default: return 5
+  }
+}
+
+/**
+ * Verifica se um pedido está dentro do filtro de prazo selecionado
+ */
+export function verificarFiltroPrazo(
+  urgenciaInfo: UrgenciaInfo,
+  filtro: FiltroPrazo
+): boolean {
+  if (!filtro) return true // Sem filtro, mostra tudo
+
+  const diasRestantes = urgenciaInfo.diasRestantes
+
+  switch (filtro) {
+    case 'vencido':
+      return diasRestantes < 0
+    case 'hoje':
+      return diasRestantes === 0
+    case 'amanha':
+      return diasRestantes === 1
+    case 'proximos-3-dias':
+      return diasRestantes >= 0 && diasRestantes <= 3
+    case 'esta-semana':
+      return diasRestantes >= 0 && diasRestantes <= 7
+    default:
+      return true
+  }
+}
+
+/**
+ * Retorna label amigável para o filtro de prazo
+ */
+export function getLabelFiltroPrazo(filtro: FiltroPrazo): string {
+  switch (filtro) {
+    case 'vencido':
+      return 'Vencidos'
+    case 'hoje':
+      return 'Vence Hoje'
+    case 'amanha':
+      return 'Vence Amanhã'
+    case 'proximos-3-dias':
+      return 'Próximos 3 dias'
+    case 'esta-semana':
+      return 'Esta Semana'
+    default:
+      return 'Todos'
   }
 }

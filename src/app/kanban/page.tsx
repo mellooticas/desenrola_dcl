@@ -27,7 +27,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { PedidoDetailDrawer } from '@/components/kanban/PedidoDetailDrawer'
 import { usePermissions } from '@/lib/hooks/use-user-permissions'
 import { DemoModeAlert } from '@/components/permissions/DemoModeAlert'
-import { calcularUrgenciaPagamento, getPrioridadeOrdenacao, type NivelUrgencia } from '@/lib/utils/urgencia-pagamento'
+import { calcularUrgenciaPagamento, getPrioridadeOrdenacao, verificarFiltroPrazo, type NivelUrgencia, type FiltroPrazo } from '@/lib/utils/urgencia-pagamento'
 
 // ========== TYPES E INTERFACES ==========
 type KanbanColumn = {
@@ -352,6 +352,7 @@ export default function KanbanBoard() {
   const [selectedPedido, setSelectedPedido] = useState<PedidoCompleto | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
   const [filtroUrgencia, setFiltroUrgencia] = useState<NivelUrgencia | null>(null) // NOVO: Filtro de urgência
+  const [filtroPrazo, setFiltroPrazo] = useState<FiltroPrazo>(null) // NOVO: Filtro de prazo
 
   // ========== PERMISSÕES ==========
   const userRole = userProfile?.role || 'operador'
@@ -411,8 +412,25 @@ export default function KanbanBoard() {
       const newColumns = visibleColumns.map(column => {
         let pedidosColuna = pedidosFiltrados.filter((p: any) => p.status === column.id)
         
-        // ORDENAÇÃO INTELIGENTE PARA AG_PAGAMENTO (por urgência baseada em data prometida)
+        // FILTRAGEM E ORDENAÇÃO INTELIGENTE PARA AG_PAGAMENTO
         if (column.id === 'AG_PAGAMENTO') {
+          // FILTRO DE URGÊNCIA
+          if (filtroUrgencia) {
+            pedidosColuna = pedidosColuna.filter(p => {
+              const urgencia = calcularUrgenciaPagamento(p.data_prometida, p.data_pedido)
+              return urgencia.nivel === filtroUrgencia
+            })
+          }
+          
+          // FILTRO DE PRAZO
+          if (filtroPrazo) {
+            pedidosColuna = pedidosColuna.filter(p => {
+              const urgencia = calcularUrgenciaPagamento(p.data_prometida, p.data_pedido)
+              return verificarFiltroPrazo(urgencia, filtroPrazo)
+            })
+          }
+          
+          // ORDENAÇÃO POR URGÊNCIA (após filtros)
           pedidosColuna = pedidosColuna.sort((a, b) => {
             const urgenciaA = calcularUrgenciaPagamento(a.data_prometida, a.data_pedido)
             const urgenciaB = calcularUrgenciaPagamento(b.data_prometida, b.data_pedido)
@@ -451,7 +469,7 @@ export default function KanbanBoard() {
     } finally {
       setLoading(false)
     }
-  }, [supabase, permissions, selectedLoja, selectedLab, visibleColumns])
+  }, [supabase, permissions, selectedLoja, selectedLab, visibleColumns, filtroUrgencia, filtroPrazo])
 
   const loadInitialData = useCallback(async () => {
     if (!supabase) return
@@ -1050,21 +1068,28 @@ export default function KanbanBoard() {
           <DemoModeAlert message="Você pode visualizar o Kanban, mas não pode mover cards ou criar pedidos." />
           
           {/* Alerta de Filtro de Urgência Ativo */}
-          {filtroUrgencia && (
+          {(filtroUrgencia || filtroPrazo) && (
             <Alert className="bg-blue-50/80 backdrop-blur-sm border-blue-300">
               <Bell className="h-4 w-4 text-blue-600" />
               <AlertDescription className="flex items-center justify-between">
                 <span className="text-blue-800 font-medium">
-                  🔍 Filtrando por urgência: <strong>{filtroUrgencia}</strong> na coluna AGUARDANDO PAGAMENTO
+                  🔍 Filtrando {filtroUrgencia && filtroPrazo ? 'por urgência e prazo' : filtroUrgencia ? 'por urgência' : 'por prazo'}:
+                  {filtroUrgencia && <strong className="ml-1">{filtroUrgencia}</strong>}
+                  {filtroUrgencia && filtroPrazo && <span className="mx-1">+</span>}
+                  {filtroPrazo && <strong className="ml-1">{filtroPrazo === 'vencido' ? 'Vencidos' : filtroPrazo === 'hoje' ? 'Vence Hoje' : filtroPrazo === 'amanha' ? 'Vence Amanhã' : filtroPrazo === 'proximos-3-dias' ? 'Próximos 3 dias' : 'Esta Semana'}</strong>}
+                  <span className="ml-1">na coluna AGUARDANDO PAGAMENTO</span>
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setFiltroUrgencia(null)}
+                  onClick={() => {
+                    setFiltroUrgencia(null)
+                    setFiltroPrazo(null)
+                  }}
                   className="hover:bg-blue-100 text-blue-700"
                 >
                   <X className="h-4 w-4 mr-1" />
-                  Limpar Filtro
+                  Limpar Filtros
                 </Button>
               </AlertDescription>
             </Alert>
@@ -1221,6 +1246,8 @@ export default function KanbanBoard() {
                           showUrgenciaAlerts={column.id === 'AG_PAGAMENTO'}
                           onFilterUrgencia={column.id === 'AG_PAGAMENTO' ? setFiltroUrgencia : undefined}
                           filtroAtivo={column.id === 'AG_PAGAMENTO' ? filtroUrgencia : null}
+                          onFilterPrazo={column.id === 'AG_PAGAMENTO' ? setFiltroPrazo : undefined}
+                          filtroPrazoAtivo={column.id === 'AG_PAGAMENTO' ? filtroPrazo : null}
                         />
 
                         {/* Resumo financeiro (se tiver permissão) */}

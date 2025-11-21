@@ -4,8 +4,9 @@ import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { LucideIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PedidoCompleto } from '@/lib/types/database'
-import { calcularUrgenciaPagamento, type NivelUrgencia } from '@/lib/utils/urgencia-pagamento'
+import { calcularUrgenciaPagamento, type NivelUrgencia, type FiltroPrazo, getLabelFiltroPrazo } from '@/lib/utils/urgencia-pagamento'
 
 interface UrgenciaStats {
   criticos: number
@@ -23,8 +24,10 @@ interface KanbanColumnHeaderProps {
   // Novo: props para alertas de urgência (AG_PAGAMENTO)
   pedidos?: PedidoCompleto[]
   showUrgenciaAlerts?: boolean
-  onFilterUrgencia?: (nivel: NivelUrgencia | null) => void // Callback para filtrar
-  filtroAtivo?: NivelUrgencia | null // Filtro ativo atualmente
+  onFilterUrgencia?: (nivel: NivelUrgencia | null) => void // Callback para filtrar por urgência
+  filtroAtivo?: NivelUrgencia | null // Filtro de urgência ativo
+  onFilterPrazo?: (prazo: FiltroPrazo) => void // Callback para filtrar por prazo
+  filtroPrazoAtivo?: FiltroPrazo // Filtro de prazo ativo
 }
 
 function calcularUrgenciaStats(pedidos: PedidoCompleto[]): UrgenciaStats {
@@ -67,7 +70,9 @@ export function KanbanColumnHeader({
   pedidos = [],
   showUrgenciaAlerts = false,
   onFilterUrgencia,
-  filtroAtivo = null
+  filtroAtivo = null,
+  onFilterPrazo,
+  filtroPrazoAtivo = null
 }: KanbanColumnHeaderProps) {
   
   const urgenciaStats = showUrgenciaAlerts && pedidos.length > 0 
@@ -75,6 +80,7 @@ export function KanbanColumnHeader({
     : null
 
   const temAlertas = urgenciaStats && (urgenciaStats.criticos > 0 || urgenciaStats.urgentes > 0)
+  const temFiltroAtivo = filtroAtivo || filtroPrazoAtivo
 
   return (
     <motion.div
@@ -119,12 +125,33 @@ export function KanbanColumnHeader({
         </div>
 
         {/* Alertas de Urgência (somente AG_PAGAMENTO) */}
-        {showUrgenciaAlerts && urgenciaStats && (temAlertas || filtroAtivo) && (
+        {showUrgenciaAlerts && urgenciaStats && (temAlertas || temFiltroAtivo) && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             className="mt-3 pt-3 border-t border-white/20"
           >
+            {/* Filtro de Prazo - Dropdown */}
+            <div className="mb-3">
+              <Select
+                value={filtroPrazoAtivo || 'todos'}
+                onValueChange={(value) => onFilterPrazo?.(value === 'todos' ? null : value as FiltroPrazo)}
+              >
+                <SelectTrigger className="w-full bg-white/90 border-white/40 text-gray-800 font-semibold h-9 text-sm">
+                  <SelectValue placeholder="Filtrar por prazo" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="todos" className="font-semibold">📋 Todos os Prazos</SelectItem>
+                  <SelectItem value="vencido" className="text-red-700 font-semibold">🔴 Vencidos</SelectItem>
+                  <SelectItem value="hoje" className="text-orange-700 font-semibold">⚠️ Vence Hoje</SelectItem>
+                  <SelectItem value="amanha" className="text-yellow-700 font-semibold">⏰ Vence Amanhã</SelectItem>
+                  <SelectItem value="proximos-3-dias" className="text-blue-700 font-semibold">📅 Próximos 3 dias</SelectItem>
+                  <SelectItem value="esta-semana" className="text-green-700 font-semibold">📆 Esta Semana</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Badges de Urgência */}
             <div className="flex items-center gap-2 flex-wrap">
               {urgenciaStats.criticos > 0 && (
                 <Badge 
@@ -173,22 +200,26 @@ export function KanbanColumnHeader({
               )}
               
               {/* Botão Limpar Filtro - SEMPRE VISÍVEL quando há filtro */}
-              {filtroAtivo && (
+              {temFiltroAtivo && (
                 <Badge 
                   variant="outline"
-                  onClick={() => onFilterUrgencia?.(null)}
+                  onClick={() => {
+                    onFilterUrgencia?.(null)
+                    onFilterPrazo?.(null)
+                  }}
                   className="cursor-pointer bg-white/90 text-gray-700 border-gray-300 hover:bg-white hover:scale-110 hover:shadow-lg transition-all duration-200 font-bold text-sm"
                 >
-                  ✕ Limpar Filtro
+                  ✕ Limpar Filtros
                 </Badge>
               )}
             </div>
             
             {/* Indicador de filtro ativo */}
-            {filtroAtivo && (
-              <div className="mt-2 text-xs text-white/90 flex items-center gap-1">
+            {temFiltroAtivo && (
+              <div className="mt-2 text-xs text-white/90 flex items-center gap-2 flex-wrap">
                 <span>🔍 Filtrando:</span>
-                <span className="font-semibold">{filtroAtivo}</span>
+                {filtroAtivo && <span className="font-semibold bg-white/20 px-2 py-0.5 rounded">{filtroAtivo}</span>}
+                {filtroPrazoAtivo && <span className="font-semibold bg-white/20 px-2 py-0.5 rounded">{getLabelFiltroPrazo(filtroPrazoAtivo)}</span>}
               </div>
             )}
           </motion.div>
