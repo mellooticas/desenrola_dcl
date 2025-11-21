@@ -11,23 +11,23 @@ import {
 } from '@/lib/utils/urgencia-pagamento'
 
 interface TermometroUrgenciaProps {
-  dataSlaLab: string | Date | null
-  dataPedido?: string | Date
-  dataPrometida?: string | Date | null
+  dataPrometida: string | Date | null // Data prometida ao cliente
+  dataPedido?: string | Date // Data do pedido (para cálculo do SLA)
+  margemSeguranca?: number // Margem de segurança (padrão 3 dias)
   valorPedido?: number | null
   compact?: boolean // Versão compacta para cards pequenos
   className?: string
 }
 
 export function TermometroUrgencia({
-  dataSlaLab,
-  dataPedido,
   dataPrometida,
+  dataPedido,
+  margemSeguranca = 3,
   valorPedido,
   compact = false,
   className
 }: TermometroUrgenciaProps) {
-  const urgencia = calcularUrgenciaPagamento(dataSlaLab, dataPedido)
+  const urgencia = calcularUrgenciaPagamento(dataPrometida, dataPedido, margemSeguranca)
 
   // Formato compacto (apenas badge)
   if (compact) {
@@ -90,15 +90,26 @@ export function TermometroUrgencia({
       </div>
 
       {/* Informações Adicionais */}
-      {(dataPrometida || valorPedido) && (
-        <div className="flex items-center justify-between text-xs border-t pt-2 mt-2">
-          {dataPrometida && (
+      {!compact && (
+        <div className="flex items-center justify-between text-xs text-gray-600">
+          {urgencia.dataPrometida && (
             <div className="flex items-center gap-1">
-              <span className="text-gray-500">SLA Lab:</span>
-              <span className="font-medium">
-                {typeof dataPrometida === 'string' 
-                  ? new Date(dataPrometida).toLocaleDateString('pt-BR')
-                  : dataPrometida.toLocaleDateString('pt-BR')
+              <span className="text-gray-500">📅 Cliente:</span>
+              <span className="font-semibold">
+                {typeof urgencia.dataPrometida === 'string'
+                  ? new Date(urgencia.dataPrometida).toLocaleDateString('pt-BR')
+                  : urgencia.dataPrometida.toLocaleDateString('pt-BR')
+                }
+              </span>
+            </div>
+          )}
+          {urgencia.dataLimite && (
+            <div className="flex items-center gap-1">
+              <span className="text-gray-500">⏰ Pagar até:</span>
+              <span className="font-semibold">
+                {typeof urgencia.dataLimite === 'string'
+                  ? new Date(urgencia.dataLimite).toLocaleDateString('pt-BR')
+                  : urgencia.dataLimite.toLocaleDateString('pt-BR')
                 }
               </span>
             </div>
@@ -120,13 +131,13 @@ export function TermometroUrgencia({
       {/* Alerta Crítico */}
       {urgencia.nivel === 'CRITICO' && urgencia.diasRestantes <= 0 && (
         <div className="bg-red-100 border border-red-400 rounded px-2 py-1 text-xs font-bold text-red-800 text-center animate-pulse">
-          🚨 PRAZO DO LABORATÓRIO VENCIDO! PAGAR URGENTE!
+          🚨 PRAZO PARA PAGAMENTO VENCIDO! PAGAR URGENTE!
         </div>
       )}
 
       {urgencia.nivel === 'CRITICO' && urgencia.diasRestantes > 0 && urgencia.diasRestantes <= 1 && (
         <div className="bg-red-50 border border-red-300 rounded px-2 py-1 text-xs font-semibold text-red-700 text-center">
-          ⚠️ Pagar com urgência para não perder prazo do lab!
+          ⚠️ Pagar com urgência para não comprometer entrega ao cliente!
         </div>
       )}
     </div>
@@ -135,17 +146,19 @@ export function TermometroUrgencia({
 
 // Componente de Badge Simples (para usar em outras views)
 export function BadgeUrgencia({
-  dataSlaLab,
+  dataPrometida,
   dataPedido,
+  margemSeguranca = 3,
   showDias = true,
   className
 }: {
-  dataSlaLab: string | Date | null
+  dataPrometida: string | Date | null
   dataPedido?: string | Date
+  margemSeguranca?: number
   showDias?: boolean
   className?: string
 }) {
-  const urgencia = calcularUrgenciaPagamento(dataSlaLab, dataPedido)
+  const urgencia = calcularUrgenciaPagamento(dataPrometida, dataPedido, margemSeguranca)
 
   return (
     <Badge

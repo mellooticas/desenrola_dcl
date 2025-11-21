@@ -1,5 +1,5 @@
 // lib/utils/urgencia-pagamento.ts
-// Utilitários para cálculo de urgência de pagamento baseado em SLA do laboratório
+// Utilitários para cálculo de urgência de pagamento baseado em prazo de entrega ao cliente
 
 export type NivelUrgencia = 'FOLGA' | 'ATENCAO' | 'URGENTE' | 'CRITICO'
 
@@ -14,20 +14,32 @@ export interface UrgenciaInfo {
   icon: string
   pulsante: boolean // Se deve pulsar (urgente/crítico)
   dataLimite: Date | null
+  dataPrometida: Date | null
+  slaLaboratorio: number
 }
 
 /**
- * Calcula urgência de pagamento baseado em data_sla_laboratorio
- * @param dataSlaLab - Data limite do laboratório (string ISO ou Date)
- * @param dataPedido - Data do pedido (para calcular SLA total)
+ * Calcula urgência de pagamento baseado em:
+ * Data Limite Pagamento = Data Prometida ao Cliente - SLA Laboratório - Margem de Segurança (3 dias)
+ * 
+ * Exemplo:
+ * - Cliente deve receber: 20/11
+ * - SLA Lab: 7 dias
+ * - Margem: 3 dias
+ * - Prazo para pagar: 20/11 - 7 - 3 = 10/11
+ * 
+ * @param dataPrometida - Data prometida ao cliente (string ISO ou Date)
+ * @param slaLaboratorio - SLA do laboratório em dias (extraído da data_sla_laboratorio)
+ * @param margemSeguranca - Margem de segurança para montagem (padrão 3 dias)
  * @returns Objeto com informações de urgência
  */
 export function calcularUrgenciaPagamento(
-  dataSlaLab: string | Date | null,
-  dataPedido?: string | Date
+  dataPrometida: string | Date | null,
+  dataPedido?: string | Date,
+  margemSeguranca: number = 3
 ): UrgenciaInfo {
-  // Caso não tenha data SLA, retorna estado neutro
-  if (!dataSlaLab) {
+  // Caso não tenha data prometida, retorna estado neutro
+  if (!dataPrometida) {
     return {
       diasRestantes: 999,
       percentualUrgencia: 0,
@@ -35,34 +47,52 @@ export function calcularUrgenciaPagamento(
       cor: 'text-gray-500',
       corBg: 'bg-gray-100',
       corBarra: 'from-gray-400 to-gray-500',
-      label: 'SLA não definido',
+      label: 'Data não definida',
       icon: '❓',
       pulsante: false,
-      dataLimite: null
+      dataLimite: null,
+      dataPrometida: null,
+      slaLaboratorio: 0
     }
   }
 
   const hoje = new Date()
   hoje.setHours(0, 0, 0, 0) // Zera horário para comparação precisa
 
-  const dataLimite = typeof dataSlaLab === 'string' ? new Date(dataSlaLab) : dataSlaLab
-  dataLimite.setHours(0, 0, 0, 0)
+  const dataPrometidaCliente = typeof dataPrometida === 'string' ? new Date(dataPrometida) : dataPrometida
+  dataPrometidaCliente.setHours(0, 0, 0, 0)
 
-  // Calcula dias restantes
-  const diffTime = dataLimite.getTime() - hoje.getTime()
-  const diasRestantes = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  // Calcula SLA total (do pedido até limite)
-  let slaTotal = 7 // Padrão 7 dias
+  // Calcula SLA do laboratório (diferença entre data_prometida e data_pedido - margem)
+  let slaLaboratorio = 7 // Padrão 7 dias
   if (dataPedido) {
     const dataPed = typeof dataPedido === 'string' ? new Date(dataPedido) : dataPedido
     dataPed.setHours(0, 0, 0, 0)
-    const diffTotal = dataLimite.getTime() - dataPed.getTime()
-    slaTotal = Math.ceil(diffTotal / (1000 * 60 * 60 * 24))
+    const diffTotal = dataPrometidaCliente.getTime() - dataPed.getTime()
+    const diasTotais = Math.ceil(diffTotal / (1000 * 60 * 60 * 24))
+    // SLA Lab = Total de dias - margem de segurança
+    slaLaboratorio = Math.max(1, diasTotais - margemSeguranca)
+  }
+
+  // CÁLCULO DO PRAZO LIMITE PARA PAGAMENTO
+  // Data Limite = Data Prometida - SLA Lab - Margem Segurança
+  const dataLimitePagamento = new Date(dataPrometidaCliente)
+  dataLimitePagamento.setDate(dataLimitePagamento.getDate() - slaLaboratorio - margemSeguranca)
+
+  // Calcula dias restantes até o prazo limite de pagamento
+  const diffTime = dataLimitePagamento.getTime() - hoje.getTime()
+  const diasRestantes = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  // Calcula prazo total desde o pedido até o limite de pagamento
+  let prazoTotal = slaLaboratorio + margemSeguranca
+  if (dataPedido) {
+    const dataPed = typeof dataPedido === 'string' ? new Date(dataPedido) : dataPedido
+    dataPed.setHours(0, 0, 0, 0)
+    const diffTotal = dataLimitePagamento.getTime() - dataPed.getTime()
+    prazoTotal = Math.ceil(diffTotal / (1000 * 60 * 60 * 24))
   }
 
   // Percentual de urgência (0 = início do prazo, 100 = prazo esgotado)
-  const percentualUrgencia = Math.max(0, Math.min(100, ((slaTotal - diasRestantes) / slaTotal) * 100))
+  const percentualUrgencia = Math.max(0, Math.min(100, ((prazoTotal - diasRestantes) / prazoTotal) * 100))
 
   // Determina nível de urgência
   let nivel: NivelUrgencia
@@ -148,7 +178,9 @@ export function calcularUrgenciaPagamento(
     label,
     icon,
     pulsante,
-    dataLimite
+    dataLimite: dataLimitePagamento,
+    dataPrometida: dataPrometidaCliente,
+    slaLaboratorio
   }
 }
 

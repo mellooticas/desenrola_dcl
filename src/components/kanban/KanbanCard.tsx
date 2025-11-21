@@ -143,7 +143,7 @@ export function KanbanCard({
         {pedido.status === 'AG_PAGAMENTO' && pedido.data_prometida && (
           <div className="mb-3 space-y-2">
             <BadgeUrgencia 
-              dataSlaLab={pedido.data_prometida}
+              dataPrometida={pedido.data_prometida}
               dataPedido={pedido.data_pedido}
               showDias={true}
               className="w-full justify-center py-2 text-sm"
@@ -318,9 +318,8 @@ export function KanbanCard({
         {pedido.status === 'AG_PAGAMENTO' && pedido.data_prometida && (
           <div className="mb-3">
             <TermometroUrgencia
-              dataSlaLab={pedido.data_prometida}
+              dataPrometida={pedido.data_prometida}
               dataPedido={pedido.data_pedido}
-              dataPrometida={pedido.data_sla_laboratorio}
               valorPedido={pedido.custo_lentes}
             />
           </div>

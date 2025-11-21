@@ -126,7 +126,7 @@ export function KanbanCardModern({
           {columnStatus === 'AG_PAGAMENTO' && pedido.data_prometida && (
             <div className="mb-3 space-y-2">
               <BadgeUrgencia 
-                dataSlaLab={pedido.data_prometida}
+                dataPrometida={pedido.data_prometida}
                 dataPedido={pedido.data_pedido}
                 showDias={true}
                 className="w-full justify-center py-2 text-sm"
