@@ -37,7 +37,7 @@ export function Logo({
       // Fallback para SVG se PNG não carregar
       onError={(e) => {
         const target = e.target as HTMLImageElement
-        target.src = "/logo_desenrola.svg"
+        target.src = "/logo_desenrola.png"
       }}
     />
   )

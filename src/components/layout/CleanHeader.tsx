@@ -111,7 +111,7 @@ export function CleanHeader({ isCollapsed, onToggleSidebar, className }: CleanHe
             className="flex items-center group transition-all duration-300 hover:opacity-80 flex-shrink-0"
           >
             <Image
-              src="/logo_desenrola.svg"
+              src="/logo_desenrola.png"
               alt="Desenrola DCL"
               width={109}
               height={36}
@@ -124,7 +124,7 @@ export function CleanHeader({ isCollapsed, onToggleSidebar, className }: CleanHe
               }}
             />
             <Image
-              src="/logo_desenrola.svg"
+              src="/logo_desenrola.png"
               alt="DCL"
               width={88}
               height={30}

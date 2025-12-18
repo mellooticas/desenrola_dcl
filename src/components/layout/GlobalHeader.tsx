@@ -43,7 +43,7 @@ const Logo = () => (
   >
     {/* Logo desktop - completo */}
     <Image
-  src="/logo_desenrola.svg"
+  src="/logo_desenrola.png"
   alt="Desenrola DCL"
   width={180}  // Era 140, agora 210 (50% maior)
   height={60}  // Era 47, agora 70 (50% maior)
@@ -57,7 +57,7 @@ const Logo = () => (
 
 {/* Logo mobile - versão compacta */}
 <Image
-  src="/logo_desenrola.svg"
+  src="/logo_desenrola.png"
   alt="DCL"
   width={130}  // Era 100, agora 150 (50% maior)
   height={44}  // Era 34, agora 51 (50% maior)
