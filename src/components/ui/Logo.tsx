@@ -24,7 +24,7 @@ export function Logo({
   
   return (
     <Image
-      src="/logo_desenrola.svg"  // Prioriza SVG para qualidade
+      src="/logo_desenrola.png"  // PNG sem fundo para melhor compatibilidade
       alt="Desenrola DCL"
       width={width}
       height={height}
@@ -34,10 +34,10 @@ export function Logo({
         "transition-opacity hover:opacity-80", // Sutil hover effect
         className
       )}
-      // Fallback para PNG se SVG não carregar
+      // Fallback para SVG se PNG não carregar
       onError={(e) => {
         const target = e.target as HTMLImageElement
-        target.src = "/logo_desenrola.png"
+        target.src = "/logo_desenrola.svg"
       }}
     />
   )
