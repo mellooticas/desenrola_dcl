@@ -22,8 +22,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { useOSControl } from '@/hooks/useOSControl'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { TIPOS_JUSTIFICATIVA_LABELS, TipoJustificativaOS } from '@/lib/types/os-control'
-import { Loader2, ChevronLeft, ChevronRight, SkipForward } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight, SkipForward, CheckCircle2, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 interface OSNaoLancadaModalProps {
     open: boolean
@@ -195,50 +196,106 @@ export function OSNaoLancadaModal({ open, onClose, autoShowNext = false, initial
                     </div>
                 )}
 
-                <DialogFooter>
-                    <div className="flex w-full justify-between items-center">
-                        {/* Navegação Esquerda */}
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handlePrevious}
-                                disabled={currentIndex === 0 || isJustificando}
-                            >
-                                <ChevronLeft className="h-4 w-4 mr-1" />
-                                Anterior
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleSkip}
-                                disabled={currentIndex >= osPendentes.length - 1 || isJustificando}
-                            >
-                                <SkipForward className="h-4 w-4 mr-1" />
-                                Pular
-                            </Button>
-                        </div>
-
-                        {/* Ações Principais */}
-                        <div className="flex gap-2">
-                            <Button variant="outline" onClick={onClose} disabled={isJustificando}>
-                                Cancelar
-                            </Button>
-                            <Button onClick={handleSave} disabled={!tipoJustificativa || !justificativa || isJustificando}>
-                                {isJustificando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Resolver {osPendentes.length > 1 && autoShowNext && currentIndex < osPendentes.length - 1 && '& Avançar'}
-                            </Button>
-                            {!autoShowNext && currentIndex < osPendentes.length - 1 && (
-                                <Button
-                                    variant="outline"
-                                    onClick={handleNext}
-                                    disabled={isJustificando}
-                                >
-                                    Próxima
-                                    <ChevronRight className="h-4 w-4 ml-1" />
-                                </Button>
+                <DialogFooter className="sm:justify-between">
+                    {/* Navegação Esquerda - Desktop */}
+                    <div className="hidden sm:flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePrevious}
+                            disabled={currentIndex === 0 || isJustificando}
+                            className={cn(
+                                "transition-all",
+                                currentIndex === 0 ? "opacity-50" : "hover:bg-muted"
                             )}
-                        </div>
+                        >
+                            <ChevronLeft className="h-4 w-4 mr-1.5" />
+                            Anterior
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleSkip}
+                            disabled={currentIndex >= osPendentes.length - 1 || isJustificando}
+                            className="text-muted-foreground hover:text-foreground"
+                        >
+                            <SkipForward className="h-4 w-4 mr-1.5" />
+                            Pular
+                        </Button>
+                    </div>
+
+                    {/* Ações Principais - Sempre visível */}
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <Button 
+                            variant="outline" 
+                            onClick={onClose} 
+                            disabled={isJustificando}
+                            className="flex-1 sm:flex-none"
+                        >
+                            <X className="h-4 w-4 mr-1.5" />
+                            Cancelar
+                        </Button>
+                        <Button 
+                            onClick={handleSave} 
+                            disabled={!tipoJustificativa || !justificativa || isJustificando}
+                            className={cn(
+                                "flex-1 sm:flex-none",
+                                !tipoJustificativa || !justificativa 
+                                    ? "opacity-50" 
+                                    : "bg-primary hover:bg-primary/90"
+                            )}
+                        >
+                            {isJustificando ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                            )}
+                            Resolver{osPendentes.length > 1 && autoShowNext && currentIndex < osPendentes.length - 1 && ' e Avançar'}
+                        </Button>
+                        {!autoShowNext && currentIndex < osPendentes.length - 1 && (
+                            <Button
+                                variant="outline"
+                                onClick={handleNext}
+                                disabled={isJustificando}
+                                className="hidden sm:flex"
+                            >
+                                Próxima
+                                <ChevronRight className="h-4 w-4 ml-1.5" />
+                            </Button>
+                        )}
+                    </div>
+
+                    {/* Navegação Mobile - Versão compacta */}
+                    <div className="flex sm:hidden gap-2 w-full mt-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePrevious}
+                            disabled={currentIndex === 0 || isJustificando}
+                            className="flex-1"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleSkip}
+                            disabled={currentIndex >= osPendentes.length - 1 || isJustificando}
+                            className="flex-1"
+                        >
+                            <SkipForward className="h-4 w-4" />
+                        </Button>
+                        {!autoShowNext && currentIndex < osPendentes.length - 1 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleNext}
+                                disabled={isJustificando}
+                                className="flex-1"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        )}
                     </div>
                 </DialogFooter>
             </DialogContent>

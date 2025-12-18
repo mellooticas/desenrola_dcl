@@ -32,6 +32,12 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
   AlertTriangle,
   CheckCircle2,
   FileText,
@@ -41,6 +47,8 @@ import {
   Search,
   Plus,
   MessageSquarePlus,
+  ExternalLink,
+  Edit3,
 } from 'lucide-react'
 import Link from 'next/link'
 import { TIPOS_JUSTIFICATIVA_LABELS } from '@/lib/types/os-control'
@@ -386,31 +394,66 @@ export function OSControlPanel() {
                         {os.justificativa}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="h-8"
-                          >
-                            <Link href={`/pedidos/novo?os=${os.numero_os}`}>
-                              <Plus className="mr-2 h-3 w-3" />
-                              Novo Pedido
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8"
-                            onClick={() => {
-                              setSelectedOsNumber(os.numero_os)
-                              setModalOpen(true)
-                            }}
-                          >
-                            <MessageSquarePlus className="mr-2 h-3 w-3" />
-                            Justificar
-                          </Button>
-                        </div>
+                        <TooltipProvider>
+                          <div className="flex justify-end gap-1.5">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  asChild
+                                  className="h-8 px-2 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                                >
+                                  <Link href={`/pedidos/novo?os=${os.numero_os}`}>
+                                    <Plus className="h-4 w-4" />
+                                  </Link>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Criar novo pedido para esta OS</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                                  onClick={() => {
+                                    setSelectedOsNumber(os.numero_os)
+                                    setModalOpen(true)
+                                  }}
+                                >
+                                  <Edit3 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Justificar OS não lançada</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            {os.justificativa && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 px-2 hover:bg-purple-50 hover:text-purple-700 dark:hover:bg-purple-900/20 dark:hover:text-purple-400"
+                                    onClick={() => {
+                                      alert(`Justificativa:\n\n${os.justificativa}\n\nMotivo: ${os.tipo_justificativa ? TIPOS_JUSTIFICATIVA_LABELS[os.tipo_justificativa] : 'N/A'}`)
+                                    }}
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Ver justificativa completa</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </TooltipProvider>
                       </TableCell>
                     </TableRow>
                   ))}
