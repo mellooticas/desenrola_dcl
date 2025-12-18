@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Store,
-  Bell
+  Bell,
+  ClipboardCheck
 } from 'lucide-react'
 import {
   Tooltip,
@@ -43,6 +44,13 @@ const NAVIGATION_ITEMS = [
     icon: Package,
     gradient: 'from-purple-500 to-pink-500',
     permission: 'kanban'
+  },
+  {
+    href: '/controle-os',
+    label: 'Controle de OSs',
+    icon: ClipboardCheck,
+    gradient: 'from-yellow-500 to-orange-500',
+    permission: 'controle-os'
   },
   {
     href: '/alertas',

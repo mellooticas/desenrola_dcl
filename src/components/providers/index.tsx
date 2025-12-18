@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastProvider } from './ToastProvider'
 import { AuthProvider } from './AuthProvider'
 import { IntelligentThemeProvider } from '@/lib/contexts/IntelligentThemeContext'
+import { OSControlProvider } from '@/components/os-control'
 import { useState } from 'react'
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -40,9 +41,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <IntelligentThemeProvider>
         <AuthProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
+          <OSControlProvider autoCheck={true}>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </OSControlProvider>
         </AuthProvider>
       </IntelligentThemeProvider>
     </QueryClientProvider>

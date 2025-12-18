@@ -46,8 +46,8 @@ const TAMANHOS_FONTE = {
   grande: '14px'
 } as const
 
-export function PrintOrderButton({ 
-  pedido, 
+export function PrintOrderButton({
+  pedido,
   variant = 'default',
   size = 'default',
   className = '',
@@ -79,7 +79,7 @@ export function PrintOrderButton({
 
   const handlePrint = () => {
     if (!pedido) return
-    
+
     setPrinting(true)
 
     const printWindow = window.open('', '_blank', 'width=350,height=600')
@@ -166,13 +166,12 @@ export function PrintOrderButton({
         <div class="section">
           <div><span class="label">DATA PEDIDO:</span> ${pedido.data_pedido ? format(new Date(pedido.data_pedido), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : 'N/A'}</div>
           ${pedido.data_prometida ? `<div><span class="label">DATA PROM.:</span> ${format(new Date(pedido.data_prometida), 'dd/MM/yyyy', { locale: ptBR })}</div>` : ''}
-          ${printConfig.incluirSLA && pedido.dias_para_vencer_sla !== null ? `<div><span class="label">SLA:</span> ${
-            pedido.dias_para_vencer_sla < 0 
-              ? `ATRASADO (${Math.abs(pedido.dias_para_vencer_sla)} dias)`
-              : pedido.dias_para_vencer_sla === 0
-              ? 'VENCE HOJE'
-              : `${pedido.dias_para_vencer_sla} dias restantes`
-          }</div>` : ''}
+          ${printConfig.incluirSLA && pedido.dias_para_vencer_sla !== null ? `<div><span class="label">SLA:</span> ${pedido.dias_para_vencer_sla < 0
+        ? `ATRASADO (${Math.abs(pedido.dias_para_vencer_sla)} dias)`
+        : pedido.dias_para_vencer_sla === 0
+          ? 'VENCE HOJE'
+          : `${pedido.dias_para_vencer_sla} dias restantes`
+        }</div>` : ''}
         </div>
         
         <div class="linha"></div>
@@ -214,11 +213,11 @@ export function PrintOrderButton({
 
     printWindow.document.write(html)
     printWindow.document.close()
-    
-    printWindow.onload = function() {
+
+    printWindow.onload = function () {
       setTimeout(() => {
         printWindow.print()
-        printWindow.onafterprint = function() {
+        printWindow.onafterprint = function () {
           printWindow.close()
           setPrinting(false)
           toast.success('Pedido enviado para impressão!')
@@ -232,7 +231,7 @@ export function PrintOrderButton({
   if (!pedido) {
     return (
       <Button disabled variant={variant} size={size} className={className}>
-        <Printer className="w-4 h-4 mr-2" />
+        <Printer className={`w-4 h-4 ${showLabel ? 'mr-2' : ''}`} />
         {showLabel && 'Imprimir'}
       </Button>
     )
@@ -247,11 +246,11 @@ export function PrintOrderButton({
             size={size}
             className={className}
           >
-            <Printer className="w-4 h-4 mr-2" />
+            <Printer className={`w-4 h-4 ${showLabel ? 'mr-2' : ''}`} />
             {showLabel && 'Imprimir'}
           </Button>
         </DialogTrigger>
-        
+
         <DialogContent className="sm:max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -262,7 +261,7 @@ export function PrintOrderButton({
               Configure o que deseja imprimir e visualize como ficará antes de enviar para a impressora
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Coluna Esquerda: Configurações */}
             <div className="space-y-4">
@@ -271,7 +270,7 @@ export function PrintOrderButton({
                 <div className="space-y-2">
                   <Slider
                     value={[tamanhoParaSlider(printConfig.tamanhoFonte)]}
-                    onValueChange={(value: number[]) => 
+                    onValueChange={(value: number[]) =>
                       setPrintConfig(prev => ({ ...prev, tamanhoFonte: sliderParaTamanho(value[0]) }))
                     }
                     min={0}
@@ -297,10 +296,10 @@ export function PrintOrderButton({
                 <h3 className="font-semibold text-sm mb-3">O que Imprimir</h3>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
+                    <Checkbox
                       id="os-loja"
                       checked={printConfig.incluirOSLoja}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setPrintConfig(prev => ({ ...prev, incluirOSLoja: checked as boolean }))
                       }
                     />
@@ -310,10 +309,10 @@ export function PrintOrderButton({
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
+                    <Checkbox
                       id="os-lab"
                       checked={printConfig.incluirOSLab}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setPrintConfig(prev => ({ ...prev, incluirOSLab: checked as boolean }))
                       }
                     />
@@ -323,10 +322,10 @@ export function PrintOrderButton({
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
+                    <Checkbox
                       id="telefone"
                       checked={printConfig.incluirTelefone}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setPrintConfig(prev => ({ ...prev, incluirTelefone: checked as boolean }))
                       }
                     />
@@ -336,10 +335,10 @@ export function PrintOrderButton({
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
+                    <Checkbox
                       id="sla"
                       checked={printConfig.incluirSLA}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setPrintConfig(prev => ({ ...prev, incluirSLA: checked as boolean }))
                       }
                     />
@@ -349,10 +348,10 @@ export function PrintOrderButton({
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
+                    <Checkbox
                       id="valores"
                       checked={printConfig.incluirValores}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setPrintConfig(prev => ({ ...prev, incluirValores: checked as boolean }))
                       }
                     />
@@ -362,10 +361,10 @@ export function PrintOrderButton({
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
+                    <Checkbox
                       id="observacoes"
                       checked={printConfig.incluirObservacoes}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setPrintConfig(prev => ({ ...prev, incluirObservacoes: checked as boolean }))
                       }
                     />
@@ -376,10 +375,10 @@ export function PrintOrderButton({
 
                   {pedido.eh_garantia && (
                     <div className="flex items-center space-x-2">
-                      <Checkbox 
+                      <Checkbox
                         id="garantia"
                         checked={printConfig.incluirGarantia}
-                        onCheckedChange={(checked) => 
+                        onCheckedChange={(checked) =>
                           setPrintConfig(prev => ({ ...prev, incluirGarantia: checked as boolean }))
                         }
                       />
@@ -402,9 +401,9 @@ export function PrintOrderButton({
             <div className="lg:col-span-2">
               <h3 className="font-semibold text-sm mb-3">Preview (80mm)</h3>
               <ScrollArea className="h-[500px] w-full border rounded-lg bg-white">
-                <div 
+                <div
                   className="p-6 font-mono"
-                  style={{ 
+                  style={{
                     width: '80mm',
                     margin: '0 auto',
                     backgroundColor: 'white',
@@ -416,7 +415,7 @@ export function PrintOrderButton({
                     PEDIDO #{pedido.numero_sequencial}
                   </div>
                   <div className="border-t-2 border-dashed my-2"></div>
-                  
+
                   <div className="space-y-1">
                     <div><span className="font-bold">LOJA:</span> {pedido.loja_nome || 'N/A'}</div>
                     <div><span className="font-bold">CLIENTE:</span> {pedido.cliente_nome || 'N/A'}</div>
@@ -454,11 +453,11 @@ export function PrintOrderButton({
                     {printConfig.incluirSLA && pedido.dias_para_vencer_sla !== null && (
                       <div>
                         <span className="font-bold">SLA:</span> {' '}
-                        {pedido.dias_para_vencer_sla < 0 
+                        {pedido.dias_para_vencer_sla < 0
                           ? `ATRASADO (${Math.abs(pedido.dias_para_vencer_sla)} dias)`
                           : pedido.dias_para_vencer_sla === 0
-                          ? 'VENCE HOJE'
-                          : `${pedido.dias_para_vencer_sla} dias restantes`
+                            ? 'VENCE HOJE'
+                            : `${pedido.dias_para_vencer_sla} dias restantes`
                         }
                       </div>
                     )}

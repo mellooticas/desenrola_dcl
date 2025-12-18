@@ -7,19 +7,19 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table'
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Eye, 
+import {
+  Plus,
+  Search,
+  Filter,
+  Eye,
   Edit,
   Package,
   Download,
@@ -42,6 +42,7 @@ import { usePermissions } from '@/lib/hooks/use-permissions'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import { FilterBar, type FiltrosAvancados } from '@/components/pedidos/FilterBar'
+import { PrintOrderButton } from '@/components/pedidos/PrintOrderButton'
 
 // Configuração de cores otimizada
 const STATUS_CONFIG: Record<StatusPedido, { color: string; label: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -94,8 +95,8 @@ export default function PedidosPage() {
   const [totalItens, setTotalItens] = useState(0)
 
   // Opções para filtros
-  const [lojas, setLojas] = useState<Array<{id: string, nome: string}>>([])
-  const [laboratorios, setLaboratorios] = useState<Array<{id: string, nome: string}>>([])
+  const [lojas, setLojas] = useState<Array<{ id: string, nome: string }>>([])
+  const [laboratorios, setLaboratorios] = useState<Array<{ id: string, nome: string }>>([])
 
   // Estatísticas computadas (baseadas nos dados filtrados, não paginados)
   const estatisticas = useMemo(() => {
@@ -104,9 +105,9 @@ export default function PedidosPage() {
       acc[p.status] = (acc[p.status] || 0) + 1
       return acc
     }, {} as Record<StatusPedido, number>)
-    
+
     // NOVA LÓGICA: Só calcular valores se permitido
-    const valorTotal = permissions.canViewFinancialData() 
+    const valorTotal = permissions.canViewFinancialData()
       ? pedidosOriginais.reduce((sum, p) => sum + (p.valor_pedido || 0), 0)
       : 0
     const atrasados = pedidosOriginais.filter(p => p.dias_para_vencer_sla !== null && p.dias_para_vencer_sla < 0).length
@@ -142,11 +143,11 @@ export default function PedidosPage() {
     let resultado = pedidosOriginais
 
     // ========== BUSCAS ESPECÍFICAS ==========
-    
+
     // Busca por número da OS da loja
     if (filtros.numero_os_loja) {
       const busca = filtros.numero_os_loja.toLowerCase().trim()
-      resultado = resultado.filter(p => 
+      resultado = resultado.filter(p =>
         p.numero_os_fisica?.toLowerCase().includes(busca)
       )
     }
@@ -154,7 +155,7 @@ export default function PedidosPage() {
     // Busca por número da OS do laboratório
     if (filtros.numero_os_lab) {
       const busca = filtros.numero_os_lab.toLowerCase().trim()
-      resultado = resultado.filter(p => 
+      resultado = resultado.filter(p =>
         p.numero_pedido_laboratorio?.toLowerCase().includes(busca)
       )
     }
@@ -162,7 +163,7 @@ export default function PedidosPage() {
     // Busca por número do pedido (sequencial)
     if (filtros.numero_pedido) {
       const numero = filtros.numero_pedido.trim()
-      resultado = resultado.filter(p => 
+      resultado = resultado.filter(p =>
         p.numero_sequencial?.toString().includes(numero)
       )
     }
@@ -179,7 +180,7 @@ export default function PedidosPage() {
     // Busca geral (nome cliente, loja, laboratório)
     if (filtros.busca_geral) {
       const busca = filtros.busca_geral.toLowerCase()
-      resultado = resultado.filter(p => 
+      resultado = resultado.filter(p =>
         p.cliente_nome?.toLowerCase().includes(busca) ||
         p.loja_nome?.toLowerCase().includes(busca) ||
         p.laboratorio_nome?.toLowerCase().includes(busca) ||
@@ -206,7 +207,7 @@ export default function PedidosPage() {
     }
 
     // ========== FILTROS DE DATA ==========
-    
+
     if (filtros.data_inicio) {
       resultado = resultado.filter(p => p.data_pedido >= filtros.data_inicio)
     }
@@ -216,12 +217,12 @@ export default function PedidosPage() {
     }
 
     // ========== FILTRO DE SLA ==========
-    
+
     if (filtros.situacao_sla && filtros.situacao_sla !== 'todos') {
       resultado = resultado.filter(p => {
         const dias = p.dias_para_vencer_sla
         if (dias === null || dias === undefined) return false
-        
+
         switch (filtros.situacao_sla) {
           case 'no_prazo':
             return dias >= 5
@@ -328,7 +329,7 @@ export default function PedidosPage() {
     link.href = URL.createObjectURL(blob)
     link.download = `pedidos-${format(new Date(), 'yyyy-MM-dd-HHmm')}.csv`
     link.click()
-    
+
     toast.success(`Lista de ${pedidos.length} pedidos exportada com sucesso!`)
   }
 
@@ -345,7 +346,7 @@ export default function PedidosPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <main className="container mx-auto py-8 px-4">
           <div className="space-y-8">
-            
+
             {/* Header com glassmorphism */}
             <div className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl rounded-lg p-6">
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -491,10 +492,10 @@ export default function PedidosPage() {
                   <CardDescription>
                     {isHydrated && permissions.canViewFinancialData() && (
                       <>
-                        Ticket médio: R$ {estatisticas.ticketMedio.toLocaleString('pt-BR', { 
-                          minimumFractionDigits: 2, 
-                          maximumFractionDigits: 2 
-                        })} • 
+                        Ticket médio: R$ {estatisticas.ticketMedio.toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })} •
                       </>
                     )}
                     {estatisticas.atrasados} atrasados • {estatisticas.urgentes} urgentes
@@ -514,7 +515,7 @@ export default function PedidosPage() {
                     <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum pedido encontrado</h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-6">
-                      {Object.values(filtros).some(v => v && v !== 'todos') 
+                      {Object.values(filtros).some(v => v && v !== 'todos')
                         ? 'Tente ajustar os filtros para encontrar pedidos'
                         : 'Comece criando seu primeiro pedido'
                       }
@@ -555,7 +556,7 @@ export default function PedidosPage() {
                           </Select>
                           <span className="text-sm text-gray-600">por página</span>
                         </div>
-                        
+
                         <div className="text-sm text-gray-600">
                           Mostrando <span className="font-medium">{((paginaAtual - 1) * itensPorPagina) + 1}</span> a{' '}
                           <span className="font-medium">{Math.min(paginaAtual * itensPorPagina, pedidosFiltrados.length)}</span> de{' '}
@@ -607,124 +608,132 @@ export default function PedidosPage() {
                     </div>
 
                     <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader className="dark:bg-gray-800">
-                        <TableRow className="dark:border-gray-700">
-                          <TableHead className="w-16">Nº</TableHead>
-                          <TableHead>Cliente</TableHead>
-                          <TableHead>Loja</TableHead>
-                          <TableHead>Laboratório</TableHead>
-                          <TableHead>Classe</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Prioridade</TableHead>
-                          <TableHead>Data</TableHead>
-                          {isHydrated && permissions.canViewFinancialData() && (
-                            <TableHead className="text-right">Valor</TableHead>
-                          )}
-                          <TableHead className="text-center">SLA</TableHead>
-                          <TableHead className="text-center">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pedidos.map((pedido) => {
-                          const statusConfig = STATUS_CONFIG[pedido.status]
-                          const prioridadeConfig = PRIORIDADE_CONFIG[pedido.prioridade]
-                          
-                          return (
-                            <TableRow key={pedido.id} className="hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors duration-200 dark:border-gray-700">
-                              <TableCell className="font-mono font-medium dark:text-gray-300">
-                                #{pedido.numero_sequencial}
-                              </TableCell>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium dark:text-white">{pedido.cliente_nome}</div>
-                                  {pedido.cliente_telefone && (
-                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                      {pedido.cliente_telefone}
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm dark:text-gray-300">{pedido.loja_nome}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm dark:text-gray-300">{pedido.laboratorio_nome}</span>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-2">
-                                  <div 
-                                    className="w-3 h-3 rounded-full border dark:border-gray-600"
-                                    style={{ backgroundColor: pedido.classe_cor }}
-                                  />
-                                  <span className="text-sm dark:text-gray-300">{pedido.classe_nome}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={`${statusConfig.color} border text-xs`}>
-                                  {statusConfig.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className={`${prioridadeConfig.color} text-xs`}>
-                                  {prioridadeConfig.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm dark:text-gray-300">
-                                  {format(new Date(pedido.data_pedido), 'dd/MM/yy', { locale: ptBR })}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {pedido.dias_desde_pedido}d atrás
-                                </div>
-                              </TableCell>
-                              {isHydrated && permissions.canViewFinancialData() && (
-                                <TableCell className="text-right">
-                                  {pedido.valor_pedido ? (
-                                    <div className="text-sm font-medium">
-                                      R$ {pedido.valor_pedido.toLocaleString('pt-BR', { 
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2 
-                                      })}
-                                    </div>
+                      <Table>
+                        <TableHeader className="dark:bg-gray-800">
+                          <TableRow className="dark:border-gray-700">
+                            <TableHead className="w-16">Nº</TableHead>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead>Loja</TableHead>
+                            <TableHead>Laboratório</TableHead>
+                            <TableHead>Classe</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Prioridade</TableHead>
+                            <TableHead>Data</TableHead>
+                            {isHydrated && permissions.canViewFinancialData() && (
+                              <TableHead className="text-right">Valor</TableHead>
+                            )}
+                            <TableHead className="text-center">SLA</TableHead>
+                            <TableHead className="text-center">Ações</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pedidos.map((pedido) => {
+                            const statusConfig = STATUS_CONFIG[pedido.status]
+                            const prioridadeConfig = PRIORIDADE_CONFIG[pedido.prioridade]
+
+                            return (
+                              <TableRow key={pedido.id} className="hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors duration-200 dark:border-gray-700">
+                                <TableCell className="font-mono font-medium dark:text-gray-300">
+                                  #{pedido.numero_sequencial}
+                                </TableCell>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium dark:text-white">{pedido.cliente_nome}</div>
+                                    {pedido.cliente_telefone && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        {pedido.cliente_telefone}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm dark:text-gray-300">{pedido.loja_nome}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm dark:text-gray-300">{pedido.laboratorio_nome}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <div
+                                      className="w-3 h-3 rounded-full border dark:border-gray-600"
+                                      style={{ backgroundColor: pedido.classe_cor }}
+                                    />
+                                    <span className="text-sm dark:text-gray-300">{pedido.classe_nome}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className={`${statusConfig.color} border text-xs`}>
+                                    {statusConfig.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className={`${prioridadeConfig.color} text-xs`}>
+                                    {prioridadeConfig.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm dark:text-gray-300">
+                                    {format(new Date(pedido.data_pedido), 'dd/MM/yy', { locale: ptBR })}
+                                  </div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {pedido.dias_desde_pedido}d atrás
+                                  </div>
+                                </TableCell>
+                                {isHydrated && permissions.canViewFinancialData() && (
+                                  <TableCell className="text-right">
+                                    {pedido.valor_pedido ? (
+                                      <div className="text-sm font-medium">
+                                        R$ {pedido.valor_pedido.toLocaleString('pt-BR', {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400 text-sm">-</span>
+                                    )}
+                                  </TableCell>
+                                )}
+                                <TableCell className="text-center">
+                                  {pedido.dias_para_vencer_sla !== null ? (
+                                    <Badge
+                                      variant={pedido.dias_para_vencer_sla >= 0 ? 'default' : 'destructive'}
+                                      className="text-xs"
+                                    >
+                                      {pedido.dias_para_vencer_sla >= 0 ? '+' : ''}{pedido.dias_para_vencer_sla}d
+                                    </Badge>
                                   ) : (
                                     <span className="text-gray-400 text-sm">-</span>
                                   )}
                                 </TableCell>
-                              )}
-                              <TableCell className="text-center">
-                                {pedido.dias_para_vencer_sla !== null ? (
-                                  <Badge 
-                                    variant={pedido.dias_para_vencer_sla >= 0 ? 'default' : 'destructive'}
-                                    className="text-xs"
-                                  >
-                                    {pedido.dias_para_vencer_sla >= 0 ? '+' : ''}{pedido.dias_para_vencer_sla}d
-                                  </Badge>
-                                ) : (
-                                  <span className="text-gray-400 text-sm">-</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex justify-center space-x-1">
-                                  <Button variant="ghost" size="sm" asChild>
-                                    <Link href={`/pedidos/${pedido.id}`}>
-                                      <Eye className="w-4 h-4" />
-                                    </Link>
-                                  </Button>
-                                  {pedido.status !== 'ENTREGUE' && pedido.status !== 'CANCELADO' && (
+                                <TableCell>
+                                  <div className="flex justify-center space-x-1">
                                     <Button variant="ghost" size="sm" asChild>
-                                      <Link href={`/pedidos/${pedido.id}/editar`}>
-                                        <Edit className="w-4 h-4" />
+                                      <Link href={`/pedidos/${pedido.id}`}>
+                                        <Eye className="w-4 h-4" />
                                       </Link>
                                     </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
+
+                                    <PrintOrderButton
+                                      pedido={pedido}
+                                      variant="ghost"
+                                      size="sm"
+                                      showLabel={false}
+                                    />
+
+                                    {pedido.status !== 'ENTREGUE' && pedido.status !== 'CANCELADO' && (
+                                      <Button variant="ghost" size="sm" asChild>
+                                        <Link href={`/pedidos/${pedido.id}/editar`}>
+                                          <Edit className="w-4 h-4" />
+                                        </Link>
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
                     </div>
 
                     {/* Controles de Paginação Inferiores */}

@@ -4,6 +4,7 @@
 export const PAGE_PERMISSIONS = {
   dashboard: ['gestor', 'financeiro'],
   kanban: ['gestor', 'dcl', 'financeiro', 'loja'],
+  'controle-os': ['gestor', 'dcl'],
   alertas: ['gestor', 'dcl'],
   pedidos: ['gestor', 'dcl', 'financeiro', 'loja'],
   configuracoes: ['gestor']

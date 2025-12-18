@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useIntelligentTheme } from '@/lib/contexts/IntelligentThemeContext'
+import { OSPendentesBadge } from '@/components/os-control'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -171,6 +172,9 @@ export function CleanHeader({ isCollapsed, onToggleSidebar, className }: CleanHe
         {/* Right section - Actions */}
         <div className="flex items-center gap-2">
           
+          {/* OS Control Badge */}
+          <OSPendentesBadge showButton={true} />
+
           {/* Notifications */}
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
