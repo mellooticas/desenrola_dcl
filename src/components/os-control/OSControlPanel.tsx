@@ -366,8 +366,6 @@ export function OSControlPanel() {
                     <TableHead>Número OS</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Data Esperada</TableHead>
-                    <TableHead>Tipo Justificativa</TableHead>
-                    <TableHead>Justificativa</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -382,16 +380,6 @@ export function OSControlPanel() {
                       </TableCell>
                       <TableCell>
                         {new Date(os.data_esperada).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        {os.tipo_justificativa && (
-                          <span className="text-sm">
-                            {TIPOS_JUSTIFICATIVA_LABELS[os.tipo_justificativa]}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="max-w-[300px] truncate">
-                        {os.justificativa}
                       </TableCell>
                       <TableCell className="text-right">
                         <TooltipProvider>
