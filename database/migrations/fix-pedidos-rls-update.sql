@@ -19,6 +19,18 @@ FROM pg_policies
 WHERE tablename = 'pedidos'
 ORDER BY policyname;
 
+| schemaname | tablename | policyname                        | operacao | condicao                                                                                                                                                                                                         |
+| ---------- | --------- | --------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| public     | pedidos   | Acesso completo para autenticados | ALL      | true                                                                                                                                                                                                             |
+| public     | pedidos   | Usuarios veem pedidos da sua loja | SELECT   | ((loja_id IN ( SELECT usuarios.loja_id
+   FROM usuarios
+  WHERE (usuarios.id = auth.uid()))) OR (EXISTS ( SELECT 1
+   FROM usuarios
+  WHERE ((usuarios.id = auth.uid()) AND (usuarios.role = 'gestor'::text))))) |
+| public     | pedidos   | allow_all_operations_pedidos      | ALL      | true                                                                                                                                                                                                             |
+
+
+
 -- ============================================
 -- REMOVER POLÍTICAS ANTIGAS (SE EXISTIREM)
 -- ============================================
@@ -165,6 +177,27 @@ FROM pg_policies
 WHERE tablename IN ('pedidos', 'pedidos_timeline')
 ORDER BY tablename, cmd;
 
+| schemaname | tablename        | policyname                                      | operacao | roles           |
+| ---------- | ---------------- | ----------------------------------------------- | -------- | --------------- |
+| public     | pedidos          | Acesso completo para autenticados               | ALL      | {authenticated} |
+| public     | pedidos          | allow_all_operations_pedidos                    | ALL      | {public}        |
+| public     | pedidos          | Apenas gestores podem deletar pedidos           | DELETE   | {authenticated} |
+| public     | pedidos          | Usuarios podem inserir pedidos na sua loja      | INSERT   | {authenticated} |
+| public     | pedidos          | Usuarios veem pedidos da sua loja               | SELECT   | {authenticated} |
+| public     | pedidos          | Usuarios podem atualizar pedidos da sua loja    | UPDATE   | {authenticated} |
+| public     | pedidos_timeline | allow_all_timeline                              | ALL      | {public}        |
+| public     | pedidos_timeline | Sistema pode inserir na timeline                | INSERT   | {authenticated} |
+| public     | pedidos_timeline | Usuários autenticados podem inserir no timeline | INSERT   | {authenticated} |
+| public     | pedidos_timeline | Usuários autenticados podem inserir timeline    | INSERT   | {public}        |
+| public     | pedidos_timeline | Usuarios podem inserir timeline                 | INSERT   | {authenticated} |
+| public     | pedidos_timeline | Permitir leitura para todos                     | SELECT   | {authenticated} |
+| public     | pedidos_timeline | Todos podem visualizar timeline                 | SELECT   | {public}        |
+| public     | pedidos_timeline | Usuarios podem ver timeline                     | SELECT   | {authenticated} |
+| public     | pedidos_timeline | Usuários autenticados podem ver timeline        | SELECT   | {authenticated} |
+| public     | pedidos_timeline | Usuários autenticados podem atualizar timeline  | UPDATE   | {public}        |
+
+
+
 -- ============================================
 -- MENSAGEM DE SUCESSO
 -- ============================================
@@ -173,3 +206,9 @@ SELECT
   COUNT(*) as total_policies
 FROM pg_policies 
 WHERE tablename = 'pedidos';
+
+
+| status                               | total_policies |
+| ------------------------------------ | -------------- |
+| ✅ Políticas RLS criadas com sucesso! | 6              |
+
