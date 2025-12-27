@@ -181,9 +181,9 @@ export default function PedidoDetalhesPage() {
     try {
       setLoading(true)
       
-      // Primeiro, tentar carregar o pedido básico
+      // Primeiro, tentar carregar o pedido da view (que tem permissões mais permissivas/corretas)
       const { data: pedidoData, error: pedidoError } = await supabase
-        .from('pedidos')
+        .from('v_pedidos_kanban')
         .select('*')
         .eq('id', pedidoId)
         .single()
@@ -299,25 +299,25 @@ export default function PedidoDetalhesPage() {
         montador_contato: pedidoData.montador_contato || null,
         
         // Dados da loja (com fallbacks seguros)
-        loja_nome: loja?.nome || 'Loja não encontrada',
-        loja_codigo: loja?.codigo || undefined,
-        loja_endereco: loja?.endereco || null,
-        loja_telefone: loja?.telefone || null,
-        loja_whatsapp: loja?.whatsapp || null,
+        loja_nome: loja?.nome || pedidoData.loja_nome || 'Loja não encontrada',
+        loja_codigo: loja?.codigo || pedidoData.loja_codigo || undefined,
+        loja_endereco: loja?.endereco || null, // View atual não tem endereço
+        loja_telefone: loja?.telefone || null, // View atual não tem telefone
+        loja_whatsapp: loja?.whatsapp || null, // View atual não tem whatsapp
         
         // Dados do laboratório (com fallbacks seguros)
-        laboratorio_nome: laboratorio?.nome || 'Laboratório não encontrado',
-        laboratorio_codigo: laboratorio?.codigo || null,
-        laboratorio_sla_padrao: laboratorio?.sla_padrao_dias || undefined,
-        laboratorio_trabalha_sabado: laboratorio?.trabalha_sabado || false,
-        laboratorio_especialidades: laboratorio?.especialidades || null,
+        laboratorio_nome: laboratorio?.nome || pedidoData.laboratorio_nome || 'Laboratório não encontrado',
+        laboratorio_codigo: laboratorio?.codigo || pedidoData.laboratorio_codigo || null,
+        laboratorio_sla_padrao: laboratorio?.sla_padrao_dias || pedidoData.sla_padrao_dias || undefined,
+        laboratorio_trabalha_sabado: laboratorio?.trabalha_sabado || false, // View atual não tem essa info
+        laboratorio_especialidades: laboratorio?.especialidades || null, // View atual não tem essa info
         
         // Dados da classe (com fallbacks seguros)
-        classe_nome: classe?.nome || 'Classe não encontrada',
-        classe_codigo: classe?.codigo || null,
-        classe_categoria: classe?.categoria || null,
-        classe_sla_base: classe?.sla_base_dias || undefined,
-        classe_cor: classe?.cor_badge || undefined
+        classe_nome: classe?.nome || pedidoData.classe_lente_nome || pedidoData.classe_nome || 'Classe não encontrada',
+        classe_codigo: classe?.codigo || pedidoData.classe_codigo || null,
+        classe_categoria: classe?.categoria || pedidoData.classe_categoria || null,
+        classe_sla_base: classe?.sla_base_dias || pedidoData.classe_sla_dias || undefined,
+        classe_cor: classe?.cor_badge || pedidoData.classe_cor || undefined
       }
 
       setPedido(pedidoCompleto)

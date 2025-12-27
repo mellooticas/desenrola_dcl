@@ -48,7 +48,7 @@ const Logo = () => (
   width={180}  // Era 140, agora 210 (50% maior)
   height={60}  // Era 47, agora 70 (50% maior)
   priority={true}
-  className="hidden sm:block object-contain"
+  className="hidden sm:block object-contain w-auto h-auto"
   onError={(e) => {
     const target = e.target as HTMLImageElement
     target.src = "/logo_desenrola.png"
@@ -62,7 +62,7 @@ const Logo = () => (
   width={130}  // Era 100, agora 150 (50% maior)
   height={44}  // Era 34, agora 51 (50% maior)
   priority={true}
-  className="sm:hidden object-contain"
+  className="sm:hidden object-contain w-auto h-auto"
   onError={(e) => {
     const target = e.target as HTMLImageElement
     target.src = "/logo_desenrola.png"

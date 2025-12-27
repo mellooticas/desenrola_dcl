@@ -174,12 +174,21 @@ export default function EditarPedidoPage() {
         updated_by: userProfile?.id || 'sistema'
       }
 
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('pedidos')
         .update(updateData)
         .eq('id', pedidoId)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro detalhado do Supabase:', error)
+        throw error
+      }
+      
+      if (!data || data.length === 0) {
+        console.error('Nenhum registro foi atualizado. Verifique as permissões RLS.')
+        throw new Error('Nenhum registro foi atualizado. Verifique se você tem permissão para editar este pedido.')
+      }
 
       if (formData.status !== pedido.status) {
         const { error: timelineError } = await supabase
