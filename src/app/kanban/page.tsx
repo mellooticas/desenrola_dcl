@@ -232,110 +232,123 @@ const ROLE_PERMISSIONS: Record<string, {
 
 // ========== HOOK DE PERMISSÕES ==========
 const useUserPermissions = (userRole: string): UserPermissions => {
-  const permissions = ROLE_PERMISSIONS[userRole] || ROLE_PERMISSIONS['operador']
   const globalPermissions = usePermissions() // Hook global para canRevertStatus
+  
+  return useMemo(() => {
+    const permissions = ROLE_PERMISSIONS[userRole] || ROLE_PERMISSIONS['operador']
 
-  const getVisibleColumns = (): StatusPedido[] => {
-    return permissions.visibleColumns
-  }
-
-  const canViewColumn = (status: StatusPedido): boolean => {
-    return permissions.visibleColumns.includes(status)
-  }
-
-  const canEditColumn = (status: StatusPedido): boolean => {
-    return permissions.canEdit.includes(status)
-  }
-
-  const canDragCard = (status: StatusPedido): boolean => {
-    return permissions.canEdit.includes(status)
-  }
-
-  const getAllowedMoves = (currentStatus: StatusPedido): StatusPedido[] => {
-    return permissions.canMoveFrom[currentStatus] || []
-  }
-
-  const getNextStatus = (currentStatus: StatusPedido): StatusPedido | null => {
-    const statusFlow: Record<StatusPedido, StatusPedido | null> = {
-      'REGISTRADO': 'AG_PAGAMENTO',
-      'AG_PAGAMENTO': 'PAGO',
-      'PAGO': 'PRODUCAO',
-      'PRODUCAO': 'PRONTO',
-      'PRONTO': 'ENVIADO',
-      'ENVIADO': 'CHEGOU',
-      'CHEGOU': 'ENTREGUE',
-      'ENTREGUE': null,
-      'CANCELADO': null
+    const getVisibleColumns = (): StatusPedido[] => {
+      return permissions.visibleColumns
     }
 
-    const nextStatus = statusFlow[currentStatus]
-    const allowedMoves = getAllowedMoves(currentStatus)
-
-    return nextStatus && allowedMoves.includes(nextStatus) ? nextStatus : null
-  }
-
-  const getPrevStatus = (currentStatus: StatusPedido): StatusPedido | null => {
-    const statusFlow: Record<StatusPedido, StatusPedido | null> = {
-      'REGISTRADO': null,
-      'AG_PAGAMENTO': 'REGISTRADO',
-      'PAGO': 'AG_PAGAMENTO',
-      'PRODUCAO': 'PAGO',
-      'PRONTO': 'PRODUCAO',
-      'ENVIADO': 'PRONTO',
-      'CHEGOU': 'ENVIADO',
-      'ENTREGUE': 'CHEGOU',
-      'CANCELADO': null
+    const canViewColumn = (status: StatusPedido): boolean => {
+      return permissions.visibleColumns.includes(status)
     }
 
-    const prevStatus = statusFlow[currentStatus]
-    const allowedMoves = getAllowedMoves(currentStatus)
+    const canEditColumn = (status: StatusPedido): boolean => {
+      return permissions.canEdit.includes(status)
+    }
 
-    return prevStatus && allowedMoves.includes(prevStatus) ? prevStatus : null
-  }
+    const canDragCard = (status: StatusPedido): boolean => {
+      return permissions.canEdit.includes(status)
+    }
 
-  const canMoveToNext = (currentStatus: StatusPedido): boolean => {
-    return getNextStatus(currentStatus) !== null
-  }
+    const getAllowedMoves = (currentStatus: StatusPedido): StatusPedido[] => {
+      return permissions.canMoveFrom[currentStatus] || []
+    }
 
-  const canMoveToPrev = (currentStatus: StatusPedido): boolean => {
-    return getPrevStatus(currentStatus) !== null
-  }
+    const getNextStatus = (currentStatus: StatusPedido): StatusPedido | null => {
+      const statusFlow: Record<StatusPedido, StatusPedido | null> = {
+        'REGISTRADO': 'AG_PAGAMENTO',
+        'AG_PAGAMENTO': 'PAGO',
+        'PAGO': 'PRODUCAO',
+        'PRODUCAO': 'PRONTO',
+        'PRONTO': 'ENVIADO',
+        'ENVIADO': 'CHEGOU',
+        'CHEGOU': 'ENTREGUE',
+        'ENTREGUE': null,
+        'CANCELADO': null
+      }
 
-  const canViewFinancialData = (): boolean => {
-    return permissions.canViewFinancial
-  }
+      const nextStatus = statusFlow[currentStatus]
+      const allowedMoves = getAllowedMoves(currentStatus)
 
-  const canCreateOrder = (): boolean => {
-    return permissions.canCreateOrder
-  }
+      return nextStatus && allowedMoves.includes(nextStatus) ? nextStatus : null
+    }
 
-  const canCancelOrder = (): boolean => {
-    return permissions.canCancel
-  }
+    const getPrevStatus = (currentStatus: StatusPedido): StatusPedido | null => {
+      const statusFlow: Record<StatusPedido, StatusPedido | null> = {
+        'REGISTRADO': null,
+        'AG_PAGAMENTO': 'REGISTRADO',
+        'PAGO': 'AG_PAGAMENTO',
+        'PRODUCAO': 'PAGO',
+        'PRONTO': 'PRODUCAO',
+        'ENVIADO': 'PRONTO',
+        'CHEGOU': 'ENVIADO',
+        'ENTREGUE': 'CHEGOU',
+        'CANCELADO': null
+      }
 
-  return useMemo(() => ({
-    canViewColumn,
-    canEditColumn,
-    canDragCard,
-    canMoveToNext,
-    canMoveToPrev,
-    canViewFinancialData,
-    canCreateOrder,
-    canCancelOrder,
-    getVisibleColumns,
-    getNextStatus,
-    getPrevStatus,
-    getAllowedMoves,
-    canRevertStatus: globalPermissions.canRevertStatus // Adiciona permissão de reverter
-  }), [permissions, globalPermissions.canRevertStatus]) // Memorizar baseado nas permissões estáticas
+      const prevStatus = statusFlow[currentStatus]
+      const allowedMoves = getAllowedMoves(currentStatus)
+
+      return prevStatus && allowedMoves.includes(prevStatus) ? prevStatus : null
+    }
+
+    const canMoveToNext = (currentStatus: StatusPedido): boolean => {
+      return getNextStatus(currentStatus) !== null
+    }
+
+    const canMoveToPrev = (currentStatus: StatusPedido): boolean => {
+      return getPrevStatus(currentStatus) !== null
+    }
+
+    const canViewFinancialData = (): boolean => {
+      return permissions.canViewFinancial
+    }
+
+    const canCreateOrder = (): boolean => {
+      return permissions.canCreateOrder
+    }
+
+    const canCancelOrder = (): boolean => {
+      return permissions.canCancel
+    }
+
+    return {
+      canViewColumn,
+      canEditColumn,
+      canDragCard,
+      canMoveToNext,
+      canMoveToPrev,
+      canViewFinancialData,
+      canCreateOrder,
+      canCancelOrder,
+      getVisibleColumns,
+      getNextStatus,
+      getPrevStatus,
+      getAllowedMoves,
+      canRevertStatus: globalPermissions.canRevertStatus
+    }
+  }, [userRole, globalPermissions.canRevertStatus])
 }
 
 // ========== COMPONENTE PRINCIPAL ==========
 export default function KanbanBoard() {
+  console.log('🎨 KanbanBoard: Render')
+
   const router = useRouter()
   const queryClient = useQueryClient() // Para invalidar queries de alertas
   // CORREÇÃO: Usar cliente Supabase centralizado do AuthProvider
   const { user, userProfile, loading: authLoading, supabase } = useAuth()
+  
+  useEffect(() => {
+    console.log('🎨 KanbanBoard: Auth State Changed', { 
+      hasUser: !!user, 
+      userId: user?.id,
+      authLoading 
+    })
+  }, [user, authLoading])
   
   // ========== PERMISSÕES DEMO ==========
   const demoPermissions = usePermissions()
@@ -343,6 +356,7 @@ export default function KanbanBoard() {
   // ========== ESTADO ==========
   const [columns, setColumns] = useState<KanbanColumn[]>([])
   const [loading, setLoading] = useState(true)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedLoja, setSelectedLoja] = useState<string>('all')
@@ -376,7 +390,11 @@ export default function KanbanBoard() {
 
   // ========== FUNÇÕES DE DADOS ==========
   const loadPedidos = useCallback(async () => {
-    if (!supabase) return
+    console.log('🎨 KanbanBoard: loadPedidos START')
+    if (!supabase) {
+      console.log('🎨 KanbanBoard: loadPedidos ABORT (No Supabase)')
+      return
+    }
     
     try {
       setLoading(true)
@@ -455,7 +473,7 @@ export default function KanbanBoard() {
       })
 
       setColumns(newColumns)
-      console.log('✅ Kanban: Carregados', pedidosFiltrados.length, 'pedidos operacionais (sem ENTREGUE/CANCELADO)')
+      console.log('✅ Kanban: Carregados', pedidosFiltrados.length, 'pedidos operacionais')
     } catch (err) {
       console.error('Erro ao carregar pedidos:', err)
       setError(err instanceof Error ? err.message : 'Erro desconhecido ao carregar pedidos')
@@ -468,6 +486,7 @@ export default function KanbanBoard() {
       setColumns(emptyColumns)
     } finally {
       setLoading(false)
+      setIsInitialLoading(false)
     }
   }, [supabase, permissions, selectedLoja, selectedLab, visibleColumns, filtroUrgencia, filtroPrazo])
 
@@ -555,61 +574,9 @@ export default function KanbanBoard() {
 
   useEffect(() => {
     if (user && supabase) {
-      // Função inline para evitar dependência circular  
-      const loadPedidosInline = async () => {
-        try {
-          setLoading(true)
-          setError(null)
-
-          const visibleStatuses = permissions.getVisibleColumns()
-
-          // ✅ BUSCA NORMAL: Apenas pedidos operacionais (sem ENTREGUE/CANCELADO)
-          let query = supabase
-            .from('v_pedidos_kanban')
-            .select('*')
-            .not('status', 'in', '("ENTREGUE","CANCELADO")') // Excluir status finais
-
-          // Aplicar filtros existentes
-          if (selectedLoja !== 'all') {
-            query = query.eq('loja_id', selectedLoja)
-          }
-          if (selectedLab !== 'all') {
-            query = query.eq('laboratorio_id', selectedLab)
-          }
-
-          const { data: pedidosData, error } = await query
-
-          if (error) {
-            console.error('Erro Supabase ao buscar pedidos:', error)
-            throw new Error(error.message)
-          }
-
-          const pedidosFiltrados = (pedidosData || []).filter((p: any) => visibleStatuses.includes(p.status))
-
-          const newColumns = visibleColumns.map(column => ({
-            ...column,
-            pedidos: pedidosFiltrados.filter((p: any) => p.status === column.id)
-          }))
-
-          setColumns(newColumns)
-          console.log('✅ Kanban: Carregados', pedidosFiltrados.length, 'pedidos operacionais (sem ENTREGUE/CANCELADO)')
-        } catch (err) {
-          console.error('Erro ao carregar pedidos:', err)
-          setError(err instanceof Error ? err.message : 'Erro desconhecido ao carregar pedidos')
-
-          const emptyColumns = visibleColumns.map(column => ({
-            ...column,
-            pedidos: []
-          }))
-          setColumns(emptyColumns)
-        } finally {
-          setLoading(false)
-        }
-      }
-
-      loadPedidosInline()
+      loadPedidos()
     }
-  }, [user, supabase, selectedLoja, selectedLab, userRole, permissions, visibleColumns])
+  }, [user, supabase, loadPedidos])
 
   // ========== EFFECT DE HIDRATAÇÃO ==========
   useEffect(() => {
@@ -1347,7 +1314,7 @@ export default function KanbanBoard() {
           />
 
           {/* ========== LOADING OVERLAY ========== */}
-          {loading && (
+          {isInitialLoading && (
             <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
               <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-3">

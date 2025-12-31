@@ -143,6 +143,24 @@ FROM pg_policies
 WHERE tablename IN ('pedidos', 'pedidos_timeline')
 ORDER BY tablename, cmd;
 
+| status             | tablename        | policyname                                      | operacao |
+| ------------------ | ---------------- | ----------------------------------------------- | -------- |
+| ✅ POLICIES CRIADAS | pedidos          | pedidos_delete_policy                           | DELETE   |
+| ✅ POLICIES CRIADAS | pedidos          | pedidos_insert_policy                           | INSERT   |
+| ✅ POLICIES CRIADAS | pedidos          | pedidos_select_policy                           | SELECT   |
+| ✅ POLICIES CRIADAS | pedidos          | pedidos_update_policy                           | UPDATE   |
+| ✅ POLICIES CRIADAS | pedidos_timeline | allow_all_timeline                              | ALL      |
+| ✅ POLICIES CRIADAS | pedidos_timeline | Usuários autenticados podem inserir no timeline | INSERT   |
+| ✅ POLICIES CRIADAS | pedidos_timeline | timeline_insert_policy                          | INSERT   |
+| ✅ POLICIES CRIADAS | pedidos_timeline | Sistema pode inserir na timeline                | INSERT   |
+| ✅ POLICIES CRIADAS | pedidos_timeline | Usuários autenticados podem inserir timeline    | INSERT   |
+| ✅ POLICIES CRIADAS | pedidos_timeline | timeline_select_policy                          | SELECT   |
+| ✅ POLICIES CRIADAS | pedidos_timeline | Permitir leitura para todos                     | SELECT   |
+| ✅ POLICIES CRIADAS | pedidos_timeline | Todos podem visualizar timeline                 | SELECT   |
+| ✅ POLICIES CRIADAS | pedidos_timeline | Usuários autenticados podem ver timeline        | SELECT   |
+| ✅ POLICIES CRIADAS | pedidos_timeline | Usuários autenticados podem atualizar timeline  | UPDATE   |
+
+
 -- ============================================
 -- PASSO 6: TESTE RÁPIDO
 -- ============================================
@@ -157,11 +175,24 @@ SELECT
 FROM usuarios 
 WHERE id = auth.uid();
 
+
+Success. No rows returned
+
+
+
+
+
 -- Ver quantos pedidos você pode acessar
 SELECT 
   '📊 Acesso aos Pedidos' as info,
   COUNT(*) as total_pedidos_visiveis
 FROM pedidos;
+
+| info                  | total_pedidos_visiveis |
+| --------------------- | ---------------------- |
+| 📊 Acesso aos Pedidos | 524                    |
+
+
 
 -- ============================================
 -- RESULTADO FINAL
@@ -186,3 +217,24 @@ SELECT
     3. Verifique se está autenticado corretamente
   
   ' as detalhes;
+
+
+| titulo               | detalhes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅ CORREÇÃO APLICADA! | 
+  📋 O que foi feito:
+  
+  1. ✅ Removidas policies conflitantes (ALL operations)
+  2. ✅ Criadas policies específicas (SELECT, INSERT, UPDATE, DELETE)
+  3. ✅ RLS habilitado em pedidos e pedidos_timeline
+  4. ✅ Gestores têm acesso total
+  5. ✅ Usuários normais veem apenas pedidos da sua loja
+  
+  🎯 Próximo passo:
+  - Tente salvar o pedido novamente
+  - Se ainda der erro 401:
+    1. Faça logout/login no sistema
+    2. Limpe cache do navegador (Ctrl+Shift+Delete)
+    3. Verifique se está autenticado corretamente
+  
+   |

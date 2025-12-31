@@ -34,30 +34,32 @@ const publicRoutes = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Verificar se a rota é protegida
+  // Verificar se a rota é protegida (inclui dashboards E APIs)
   const isProtectedRoute = protectedRoutes.some(route =>
     pathname.startsWith(route)
-  )
+  ) || pathname.startsWith('/api/')
 
-  // Verificar se é API route
-  const isApiRoute = pathname.startsWith('/api/')
-  
   // Verificar se é rota pública específica
   const isPublicRoute = publicRoutes.includes(pathname)
 
-  // Permitir todas as APIs e rotas públicas
-  if (isApiRoute || isPublicRoute) {
+  // Permitir rotas públicas
+  if (isPublicRoute) {
     return NextResponse.next()
   }
 
   // Verificar token de autenticação
   const token = request.cookies.get('auth-token')?.value
-  const userRole = request.cookies.get('user-role')?.value // ← NOVO: cookie com role
+  const userRole = request.cookies.get('user-role')?.value 
 
   console.log('🔐 Middleware:', { pathname, token: !!token, userRole, isProtectedRoute })
 
   // Se não tem token e está tentando acessar rota protegida
   if (!token && isProtectedRoute) {
+    // Se for API, retorna 401 JSON em vez de redirecionar
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Não autorizado. Faça login.' }, { status: 401 })
+    }
+
     console.log('❌ Sem token, redirecionando para login')
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)

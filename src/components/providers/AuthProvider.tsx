@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
 // Tipos simplificados para evitar dependências
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Perfil de desenvolvimento (quando não há sessão Supabase)
   const [devProfile, setDevProfile] = useState<Usuario | null>(null)
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user?.id) {
       const profile = await getUserProfile(user.id)
       setUserProfile(profile)
@@ -119,9 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRoleCookie(profile.role)
       }
     }
-  }
+  }, [user])
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     try {
       // Chamar API de logout para limpar cookie
       await fetch('/api/auth/logout', { method: 'POST' })
@@ -147,10 +147,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error signing out:', error)
     }
-  }
+  }, [])
 
   // Login simplificado de desenvolvimento (compatível com LoginForm atual)
-  const login = async (email: string, senha: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, senha: string): Promise<boolean> => {
     setLoading(true)
     try {
       // Usar API original que agora funciona com Service Role correto
@@ -205,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     // Estratégia: PRIORIZAR sistema de desenvolvimento para evitar conflitos
@@ -323,32 +323,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ESTRATÉGIA SIMPLES: Perfil dev tem prioridade absoluta para evitar conflitos
   const effectiveProfile = devProfile ?? userProfile
-  const effectiveUser: User | null = devProfile 
+  const effectiveUser: User | null = useMemo(() => devProfile 
     ? { id: devProfile.id, email: devProfile.email }
-    : user
+    : user, [devProfile, user])
 
-  // Atualizar cookie apenas quando realmente mudar (evitar loops)
+  // Atualizar cookie de role de forma inteligente para evitar loops
   useEffect(() => {
-    const currentRole = effectiveProfile?.role
-    if (currentRole) {
-      console.log('🍪 AuthProvider: Definindo cookie role =', currentRole)
-      setRoleCookie(currentRole)
-    } else {
-      console.log('🍪 AuthProvider: Removendo cookie role')
-      removeRoleCookie()
-    }
-  }, [effectiveProfile?.role]) // Só quando role realmente mudar
+    // Só mexe no cookie se houver uma mudança real e o valor atual no cookie for diferente
+    if (typeof document !== 'undefined') {
+      const currentRole = effectiveProfile?.role
+      const cookieMatch = document.cookie.match(/user-role=([^;]+)/)
+      const currentCookieRole = cookieMatch ? cookieMatch[1] : null
 
-  const value: AuthContextType = {
-    user: effectiveUser,
-    userProfile: effectiveProfile,
-    loading,
-    supabase,
-    login,
-    logout: handleSignOut,
-    signOut: handleSignOut,
-    refreshProfile,
-  }
+      if (currentRole && currentRole !== currentCookieRole) {
+        setRoleCookie(currentRole)
+      } else if (!currentRole && currentCookieRole) {
+        removeRoleCookie()
+      }
+    }
+  }, [effectiveProfile?.role])
+
+  const value: AuthContextType = useMemo(() => {
+    console.log('🔄 AuthProvider: Context Value Updated', { 
+      hasUser: !!effectiveUser, 
+      userId: effectiveUser?.id,
+      hasProfile: !!effectiveProfile,
+      role: effectiveProfile?.role,
+      loading 
+    })
+    return {
+      user: effectiveUser,
+      userProfile: effectiveProfile,
+      loading,
+      supabase,
+      login,
+      logout: handleSignOut,
+      signOut: handleSignOut,
+      refreshProfile,
+    }
+  }, [effectiveUser, effectiveProfile, loading, login, handleSignOut, refreshProfile])
 
   return (
     <AuthContext.Provider value={value}>

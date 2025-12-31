@@ -65,13 +65,25 @@ const PRIORIDADE_CONFIG: Record<PrioridadeLevel, { color: string; label: string 
 }
 
 export default function PedidosPage() {
+  console.log('📦 PedidosPage: Render')
+
   // const router = useRouter() // Removido porque não estava sendo usado
   const { userProfile, loading: authLoading } = useAuth()
+  
+  useEffect(() => {
+    console.log('📦 PedidosPage: Auth State Changed', { 
+      hasProfile: !!userProfile, 
+      role: userProfile?.role,
+      authLoading 
+    })
+  }, [userProfile, authLoading])
+
   const permissions = usePermissions()
   const [isHydrated, setIsHydrated] = useState(false)
   const [pedidos, setPedidos] = useState<PedidoCompleto[]>([])
   const [pedidosOriginais, setPedidosOriginais] = useState<PedidoCompleto[]>([]) // Dataset completo
   const [loading, setLoading] = useState(true)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false)
   const [filtros, setFiltros] = useState<FiltrosAvancados>({
     busca_geral: '',
@@ -125,9 +137,11 @@ export default function PedidosPage() {
 
   // Carrega todos os pedidos do servidor (uma única vez)
   const carregarTodosPedidos = useCallback(async () => {
+    console.log('📦 PedidosPage: carregarTodosPedidos START')
     try {
       setLoading(true)
       const data = await supabaseHelpers.getPedidosKanban({}) // Sem filtros = todos os dados
+      console.log('📦 PedidosPage: Dados carregados', data?.length)
       setPedidosOriginais(data || [])
       setTotalItens(data?.length || 0)
     } catch (error) {
@@ -135,6 +149,7 @@ export default function PedidosPage() {
       toast.error('Erro ao carregar pedidos do servidor')
     } finally {
       setLoading(false)
+      setIsInitialLoading(false)
     }
   }, [])
 
@@ -359,7 +374,7 @@ export default function PedidosPage() {
                       Gestão de Pedidos
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 text-lg">
-                      {loading ? 'Carregando...' : (
+                      {isInitialLoading ? 'Carregando...' : (
                         <>
                           {estatisticas.total} pedidos
                           {isHydrated && permissions.canViewFinancialData() && (
@@ -481,14 +496,17 @@ export default function PedidosPage() {
                   <div className="flex items-center">
                     <Package className="w-5 h-5 mr-2 text-slate-700 dark:text-gray-300" />
                     <span className="text-slate-800 dark:text-white">Lista de Pedidos</span>
+                    {loading && !isInitialLoading && (
+                      <span className="ml-2 text-xs text-gray-500 animate-pulse">Atualizando...</span>
+                    )}
                   </div>
-                  {!loading && (
+                  {!isInitialLoading && (
                     <Badge variant="secondary" className="text-sm">
                       {pedidos.length} resultados
                     </Badge>
                   )}
                 </CardTitle>
-                {!loading && pedidos.length > 0 && (
+                {!isInitialLoading && pedidos.length > 0 && (
                   <CardDescription>
                     {isHydrated && permissions.canViewFinancialData() && (
                       <>
@@ -503,7 +521,7 @@ export default function PedidosPage() {
                 )}
               </CardHeader>
               <CardContent>
-                {loading ? (
+                {isInitialLoading ? (
                   <div className="flex justify-center py-12">
                     <div className="text-center">
                       <LoadingSpinner />

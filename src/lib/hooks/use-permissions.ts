@@ -1,4 +1,4 @@
-// lib/hooks/use-permissions.ts - VERSÃO TEMPORÁRIA SEM BANCO
+import { useMemo } from 'react'
 import { StatusPedido } from '@/lib/types/database'
 import { useAuth } from '@/components/providers/AuthProvider'
 
@@ -39,69 +39,70 @@ const ROLE_PERMISSIONS = {
 }
 
 export const usePermissions = (): UserPermissions => {
-  const { userProfile, loading } = useAuth()
-  
-  // Durante o carregamento ou se não há perfil, usar permissões padrão mais restritivas
+  const { userProfile } = useAuth()
   const role = userProfile?.role || 'loja'
-  const permissions = ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS] || ROLE_PERMISSIONS.loja
 
-  const canView = (status: StatusPedido): boolean => {
-    return permissions.colunas_visiveis.includes(status)
-  }
+  return useMemo(() => {
+    const permissions = ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS] || ROLE_PERMISSIONS.loja
 
-  const canEdit = (status: StatusPedido): boolean => {
-    if (role === 'gestor') return true
-    return permissions.status_origem.includes(status) || permissions.status_origem.includes('*')
-  }
-
-  const canMoveTo = (fromStatus: StatusPedido, toStatus: StatusPedido): boolean => {
-    if (role === 'gestor') return true
-    if (!permissions.status_origem.includes(fromStatus) && !permissions.status_origem.includes('*')) {
-      return false
+    const canView = (status: StatusPedido): boolean => {
+      return permissions.colunas_visiveis.includes(status)
     }
-    return permissions.status_destino_permitidos.includes(toStatus) || permissions.status_destino_permitidos.includes('*')
-  }
 
-  const hasAction = (action: string): boolean => {
-    return role === 'gestor'
-  }
-
-  const getVisibleColumns = (): StatusPedido[] => {
-    return permissions.colunas_visiveis as StatusPedido[]
-  }
-
-  const getAllowedMoves = (fromStatus: StatusPedido): StatusPedido[] => {
-    if (role === 'gestor') {
-      return ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU', 'ENTREGUE', 'CANCELADO']
+    const canEdit = (status: StatusPedido): boolean => {
+      if (role === 'gestor') return true
+      return permissions.status_origem.includes(status) || permissions.status_origem.includes('*')
     }
-    if (!canEdit(fromStatus)) return []
-    return permissions.status_destino_permitidos.filter(status => status !== '*') as StatusPedido[]
-  }
 
-  const canViewFinancialData = (): boolean => {
-    // NOVA REGRA: Loja NÃO pode ver dados financeiros
-    return role !== 'loja'
-  }
+    const canMoveTo = (fromStatus: StatusPedido, toStatus: StatusPedido): boolean => {
+      if (role === 'gestor') return true
+      if (!permissions.status_origem.includes(fromStatus) && !permissions.status_origem.includes('*')) {
+        return false
+      }
+      return permissions.status_destino_permitidos.includes(toStatus) || permissions.status_destino_permitidos.includes('*')
+    }
 
-  const canViewCostData = (): boolean => {
-    // NOVA REGRA: Financeiro vê custo, outros veem venda (exceto loja que não vê nada)
-    return role !== 'loja'
-  }
+    const hasAction = (action: string): boolean => {
+      return role === 'gestor'
+    }
 
-  const canSelectMontador = (): boolean => {
-    // NOVA REGRA: Apenas DCL pode selecionar montador
-    return role === 'dcl' || role === 'gestor'
-  }
+    const getVisibleColumns = (): StatusPedido[] => {
+      return permissions.colunas_visiveis as StatusPedido[]
+    }
 
-  return {
-    canView,
-    canEdit,
-    canMoveTo,
-    hasAction,
-    getVisibleColumns,
-    getAllowedMoves,
-    canViewFinancialData,
-    canViewCostData,
-    canSelectMontador
-  }
+    const getAllowedMoves = (fromStatus: StatusPedido): StatusPedido[] => {
+      if (role === 'gestor') {
+        return ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU', 'ENTREGUE', 'CANCELADO']
+      }
+      if (!canEdit(fromStatus)) return []
+      return permissions.status_destino_permitidos.filter(status => status !== '*') as StatusPedido[]
+    }
+
+    const canViewFinancialData = (): boolean => {
+      // NOVA REGRA: Loja NÃO pode ver dados financeiros
+      return role !== 'loja'
+    }
+
+    const canViewCostData = (): boolean => {
+      // NOVA REGRA: Financeiro vê custo, outros veem venda (exceto loja que não vê nada)
+      return role !== 'loja'
+    }
+
+    const canSelectMontador = (): boolean => {
+      // NOVA REGRA: Apenas DCL pode selecionar montador
+      return role === 'dcl' || role === 'gestor'
+    }
+
+    return {
+      canView,
+      canEdit,
+      canMoveTo,
+      hasAction,
+      getVisibleColumns,
+      getAllowedMoves,
+      canViewFinancialData,
+      canViewCostData,
+      canSelectMontador
+    }
+  }, [role])
 }
