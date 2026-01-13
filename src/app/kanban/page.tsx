@@ -28,6 +28,7 @@ import { PedidoDetailDrawer } from '@/components/kanban/PedidoDetailDrawer'
 import { usePermissions } from '@/lib/hooks/use-user-permissions'
 import { DemoModeAlert } from '@/components/permissions/DemoModeAlert'
 import { calcularUrgenciaPagamento, getPrioridadeOrdenacao, verificarFiltroPrazo, type NivelUrgencia, type FiltroPrazo } from '@/lib/utils/urgencia-pagamento'
+import { MontadorSelectorDialog } from '@/components/kanban/MontadorSelectorDialog'
 
 // ========== TYPES E INTERFACES ==========
 type KanbanColumn = {
@@ -367,6 +368,14 @@ export default function KanbanBoard() {
   const [isHydrated, setIsHydrated] = useState(false)
   const [filtroUrgencia, setFiltroUrgencia] = useState<NivelUrgencia | null>(null) // NOVO: Filtro de urgência
   const [filtroPrazo, setFiltroPrazo] = useState<FiltroPrazo>(null) // NOVO: Filtro de prazo
+  
+  // ========== ESTADO DO MODAL DE MONTADOR ==========
+  const [showMontadorDialog, setShowMontadorDialog] = useState(false)
+  const [pendingMove, setPendingMove] = useState<{
+    pedido: PedidoCompleto
+    destination: string
+    source: string
+  } | null>(null)
 
   // ========== PERMISSÕES ==========
   const userRole = userProfile?.role || 'operador'
@@ -583,10 +592,21 @@ export default function KanbanBoard() {
     setIsHydrated(true)
   }, [])
 
+  // ========== DEBUG: MONITORAR ESTADO DO MODAL ==========
+  useEffect(() => {
+    console.log('🔔 Estado do Modal de Montador:', {
+      showMontadorDialog,
+      hasPendingMove: !!pendingMove,
+      pedidoNumero: pendingMove?.pedido.numero_sequencial
+    })
+  }, [showMontadorDialog, pendingMove])
+
   // ========== FUNÇÕES DE AÇÃO ==========
   
   // 🔄 Função para mover pedido para próximo status via botão
   const handleMoveToNextStatus = async (pedido: PedidoCompleto) => {
+    console.log('⏩ handleMoveToNextStatus CHAMADO!', { pedidoId: pedido.id, status: pedido.status })
+    
     if (demoPermissions.isDemo) {
       alert('👁️ Modo Visualização: Você não pode mover cards.');
       return;
@@ -597,9 +617,30 @@ export default function KanbanBoard() {
     const allowedMoves = permissions.getAllowedMoves(pedido.status);
     const nextStatus = allowedMoves[0]; // Pega o primeiro status permitido
     
+    console.log('🔍 Próximo status:', nextStatus)
+    
     if (!nextStatus) {
       alert('Não há próximo status disponível para este pedido.');
       return;
+    }
+
+    // 🔒 VALIDAÇÃO: Se avançando para ENVIADO (Montagem), exigir montador
+    if (nextStatus === 'ENVIADO') {
+      console.log('🔍 Validando montador para ENVIADO/Montagem (botão):', {
+        pedidoId: pedido.id,
+        numeroSequencial: pedido.numero_sequencial,
+        montadorId: pedido.montador_id
+      })
+
+      // SEMPRE abrir modal para ENVIADO/Montagem
+      setPendingMove({
+        pedido,
+        destination: nextStatus,
+        source: pedido.status
+      })
+      setShowMontadorDialog(true)
+      console.log('✅ Modal ativado via botão!')
+      return
     }
     
     try {
@@ -683,22 +724,41 @@ export default function KanbanBoard() {
     }
   };
   
-  const handleDragEnd = async (result: DropResult) => {
+  const handleDragEnd = useCallback(async (result: DropResult) => {
+    console.log('🎯 handleDragEnd CHAMADO!', result)
+    
     // 🔒 PROTEÇÃO DEMO: Bloquear drag & drop
     if (demoPermissions.isDemo) {
       alert('👁️ Modo Visualização: Você não pode mover cards no Kanban.');
       return;
     }
     
-    if (!supabase) return
+    if (!supabase) {
+      console.error('❌ Supabase não disponível')
+      return
+    }
     
     const { destination, source, draggableId } = result
 
-    if (!destination) return
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return
+    console.log('📦 Dados do drag:', {
+      de: source.droppableId,
+      para: destination?.droppableId,
+      cardId: draggableId
+    })
+
+    if (!destination) {
+      console.log('⚠️ Sem destino, cancelando')
+      return
+    }
+    
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+      console.log('⚠️ Mesma posição, cancelando')
+      return
+    }
 
     // ✅ NOVA VALIDAÇÃO: Não permitir drag para status finais (tratados pela gestão de pedidos)
     if (destination.droppableId === 'ENTREGUE' || destination.droppableId === 'CANCELADO') {
+      console.log('⚠️ Tentativa de mover para status final')
       alert('Status finais são gerenciados na seção de pedidos. Use os botões de ação do card.')
       return
     }
@@ -706,57 +766,116 @@ export default function KanbanBoard() {
     const sourceColumn = columns.find(col => col.id === source.droppableId)
     const destColumn = columns.find(col => col.id === destination.droppableId)
 
-    if (!sourceColumn || !destColumn) return
+    if (!sourceColumn || !destColumn) {
+      console.error('❌ Coluna não encontrada')
+      return
+    }
 
     const pedido = sourceColumn.pedidos.find(p => p.id === draggableId)
-    if (!pedido) return
+    if (!pedido) {
+      console.error('❌ Pedido não encontrado')
+      return
+    }
+
+    console.log('📋 Pedido encontrado:', {
+      id: pedido.id,
+      numero: pedido.numero_sequencial,
+      status: pedido.status,
+      destino: destination.droppableId
+    })
 
     // Verificar permissões
     const allowedMoves = permissions.getAllowedMoves(pedido.status)
+    console.log('🔐 Movimentos permitidos:', allowedMoves)
+    
     if (!allowedMoves.includes(destination.droppableId as StatusPedido)) {
+      console.warn('⚠️ Movimento não permitido')
       alert(`Você não tem permissão para mover este pedido de ${STATUS_LABELS[pedido.status]} para ${STATUS_LABELS[destination.droppableId as StatusPedido]}.`)
       return
     }
 
+    // 🔒 VALIDAÇÃO CRÍTICA: Se movendo para ENVIADO (Montagem), SEMPRE exigir montador
+    console.log('🔍 Verificando se destino é ENVIADO (Montagem):', destination.droppableId === 'ENVIADO')
+    
+    if (destination.droppableId === 'ENVIADO') {
+      console.log('🔍 VALIDAÇÃO MONTADOR ATIVADA! Abrindo modal...')
+      console.log('🔍 Dados do pedido:', {
+        pedidoId: pedido.id,
+        numeroSequencial: pedido.numero_sequencial,
+        montadorId: pedido.montador_id,
+        temMontador: !!pedido.montador_id
+      })
+
+      // SEMPRE abrir modal para ENVIADO/Montagem (garante controle de estatísticas)
+      setPendingMove({
+        pedido,
+        destination: destination.droppableId,
+        source: source.droppableId
+      })
+      setShowMontadorDialog(true)
+      console.log('✅ Modal setado para abrir!')
+      return
+    }
+
+    // Prosseguir com a movimentação normal (outros status)
+    await executarMovimentacao(pedido, destination.droppableId, source.droppableId)
+  }, [columns, permissions, supabase, userProfile, user, queryClient, setPendingMove, setShowMontadorDialog])
+
+  // Função auxiliar para executar a movimentação
+  const executarMovimentacao = async (
+    pedido: PedidoCompleto, 
+    destinationStatus: string, 
+    sourceStatus: string,
+    montadorId?: string
+  ) => {
+    if (!supabase) return
+
     try {
-      // CORREÇÃO: Usar cliente Supabase direto para melhor performance
+      console.log('🚀 Executando movimentação:', {
+        pedidoId: pedido.id,
+        de: sourceStatus,
+        para: destinationStatus,
+        montadorId: montadorId || 'nenhum'
+      })
+
+      // Se há montador_id, atualizar primeiro
+      if (montadorId) {
+        console.log('📝 Atualizando montador no pedido...')
+        const { error: updateError } = await supabase
+          .from('pedidos')
+          .update({ montador_id: montadorId })
+          .eq('id', pedido.id)
+
+        if (updateError) {
+          console.error('❌ Erro ao atualizar montador:', updateError)
+          throw updateError
+        }
+        console.log('✅ Montador atribuído com sucesso!')
+      }
+
+      // Alterar status
+      console.log('📝 Alterando status do pedido...')
       const { data, error } = await supabase
         .rpc('alterar_status_pedido', {
           pedido_uuid: pedido.id,
-          novo_status: destination.droppableId,
-          observacao: `Movido via drag & drop de ${STATUS_LABELS[source.droppableId as StatusPedido]} para ${STATUS_LABELS[destination.droppableId as StatusPedido]}`,
+          novo_status: destinationStatus,
+          observacao: montadorId 
+            ? `Movido para ${STATUS_LABELS[destinationStatus as StatusPedido]} com montador atribuído`
+            : `Movido de ${STATUS_LABELS[sourceStatus as StatusPedido]} para ${STATUS_LABELS[destinationStatus as StatusPedido]}`,
           usuario: userProfile?.nome || user?.email || 'Sistema'
         })
 
       if (error) {
-        console.error('Erro Supabase ao alterar status:', error)
+        console.error('❌ Erro Supabase ao alterar status:', error)
         throw error
       }
+      console.log('✅ Status alterado com sucesso!')
 
       // Invalidar queries de alertas para forçar atualização imediata
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'alertas_criticos'] })
 
-      // Atualizar estado local otimisticamente
-      const newColumns = columns.map(column => {
-        if (column.id === source.droppableId) {
-          return {
-            ...column,
-            pedidos: column.pedidos.filter(p => p.id !== draggableId)
-          }
-        }
-        if (column.id === destination.droppableId) {
-          const updatedPedido = { ...pedido, status: destination.droppableId as StatusPedido }
-          const newPedidos = [...column.pedidos]
-          newPedidos.splice(destination.index, 0, updatedPedido)
-          return {
-            ...column,
-            pedidos: newPedidos
-          }
-        }
-        return column
-      })
-
-      setColumns(newColumns)
+      // Recarregar pedidos
+      await loadPedidos()
 
     } catch (error) {
       console.error('Erro ao mover pedido:', error)
@@ -764,6 +883,34 @@ export default function KanbanBoard() {
       // Recarregar dados em caso de erro
       loadPedidos()
     }
+  }
+
+  // Handler para quando o montador é selecionado
+  const handleMontadorSelected = async (montadorId: string) => {
+    console.log('👤 Montador selecionado:', montadorId)
+    
+    if (!pendingMove) {
+      console.error('❌ Nenhuma movimentação pendente!')
+      return
+    }
+
+    console.log('🔄 Processando movimentação pendente:', {
+      pedido: pendingMove.pedido.numero_sequencial,
+      de: pendingMove.source,
+      para: pendingMove.destination,
+      montadorId
+    })
+
+    await executarMovimentacao(
+      pendingMove.pedido,
+      pendingMove.destination,
+      pendingMove.source,
+      montadorId
+    )
+
+    // Limpar estado pendente
+    setPendingMove(null)
+    console.log('✅ Movimentação concluída e estado limpo')
   }
 
   const handleAdvanceStatus = async (pedido: PedidoCompleto) => {
@@ -787,6 +934,24 @@ export default function KanbanBoard() {
     if (!nextStatus) {
       console.warn('⚠️ Próximo status não disponível')
       alert('Este pedido já está no status final ou você não tem permissão para avançá-lo.')
+      return
+    }
+
+    // 🔒 VALIDAÇÃO: Se avançando para ENVIADO (Montagem), exigir montador
+    if (nextStatus === 'ENVIADO') {
+      console.log('🔍 Validando montador para ENVIADO/Montagem (botão avançar):', {
+        pedidoId: pedido.id,
+        numeroSequencial: pedido.numero_sequencial,
+        montadorId: pedido.montador_id
+      })
+
+      // SEMPRE abrir modal para ENVIADO/Montagem
+      setPendingMove({
+        pedido,
+        destination: nextStatus,
+        source: pedido.status
+      })
+      setShowMontadorDialog(true)
       return
     }
 
@@ -975,6 +1140,16 @@ export default function KanbanBoard() {
     const canMoveNext = permissions.canMoveToNext(pedido.status)
     const canMovePrev = permissions.canMoveToPrev(pedido.status)
     const canDrag = permissions.canDragCard(pedido.status)
+    
+    // DEBUG: Log para ver se drag está habilitado
+    if (index === 0 && columnId === 'PRONTO') {
+      console.log('🎯 Card config:', {
+        pedidoId: pedido.id,
+        status: pedido.status,
+        canDrag,
+        isDragDisabled: !canDrag
+      })
+    }
     
     // Status que permitem reverter (não incluir REGISTRADO inicial e CANCELADO final)
     const canRevert = permissions.canRevertStatus && 
@@ -1194,7 +1369,18 @@ export default function KanbanBoard() {
             </div>
           </div>          {/* ========== KANBAN BOARD ========== */}
           <div className="flex-1 overflow-x-auto py-2">
-            <DragDropContext onDragEnd={handleDragEnd}>
+            <DragDropContext 
+              onDragEnd={(result) => {
+                console.log('🎯🎯🎯 onDragEnd DISPARADO!', result)
+                handleDragEnd(result)
+              }}
+              onDragStart={(start) => {
+                console.log('🚀 onDragStart:', start)
+              }}
+              onDragUpdate={(update) => {
+                console.log('⏫ onDragUpdate:', update)
+              }}
+            >
               <div className="flex gap-6 min-w-max px-2">
                 {filteredColumns.map(column => {
                   const IconComponent = STATUS_ICONS[column.id]
@@ -1311,6 +1497,14 @@ export default function KanbanBoard() {
               'Avançar'
             }
             prevStatusLabel="Voltar"
+          />
+
+          {/* ========== MODAL DE SELEÇÃO DE MONTADOR ========== */}
+          <MontadorSelectorDialog
+            open={showMontadorDialog}
+            onOpenChange={setShowMontadorDialog}
+            onSelect={handleMontadorSelected}
+            pedidoNumero={pendingMove?.pedido.numero_sequencial?.toString()}
           />
 
           {/* ========== LOADING OVERLAY ========== */}
