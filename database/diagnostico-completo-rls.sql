@@ -19,7 +19,7 @@ SELECT
   role as "Role"
 FROM usuarios
 WHERE id = auth.uid();
-
+ 
 -- 📊 Se retornar vazio, você não está na tabela usuarios!
 -- 📊 Se retornar dados, anote o loja_id
 

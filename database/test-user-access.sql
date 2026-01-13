@@ -7,7 +7,7 @@
 SELECT 
   auth.uid() as meu_user_id,
   (SELECT nome FROM usuarios WHERE id = auth.uid()) as meu_nome,
-  (SELECT loja_id FROM usuarios WHERE id = auth.uid()) as minha_loja_id,
+  (SELECT loja_id FROM usuarios WHERE id = auth.uid()) as minha_loja_id, 
   (SELECT role FROM usuarios WHERE id = auth.uid()) as minha_role;
 
 -- 📊 Resultado: Deve mostrar seus dados
