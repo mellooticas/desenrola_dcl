@@ -297,11 +297,12 @@ export function PedidoDetailDrawer({
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => window.location.href = `/laboratorios/${pedido.laboratorio_id}`}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <Beaker className="w-4 h-4" />
                   Laboratório
+                  <ExternalLink className="w-3 h-3 ml-auto text-gray-400" />
                 </CardTitle>
               </CardHeader>
               <CardContent>

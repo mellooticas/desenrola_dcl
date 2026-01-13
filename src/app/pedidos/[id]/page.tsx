@@ -814,6 +814,25 @@ export default function PedidoDetalhesPage() {
                     </div>
                   </div>
 
+                  {/* Montador Responsável */}
+                  {pedido.montador_nome && (
+                    <div className="p-3 bg-cyan-50/30 dark:bg-cyan-950/30 rounded-lg border dark:border-cyan-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                        <span className="font-medium text-cyan-900 dark:text-cyan-300">Montador</span>
+                      </div>
+                      <p className="font-semibold dark:text-white">{pedido.montador_nome}</p>
+                      {pedido.montador_local && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{pedido.montador_local}</p>
+                      )}
+                      {pedido.montador_contato && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          📞 {pedido.montador_contato}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Tratamentos Aplicados */}
                   {tratamentos && tratamentos.length > 0 && (
                     <div className="p-3 bg-amber-50/30 dark:bg-amber-950/30 rounded-lg border dark:border-amber-800">

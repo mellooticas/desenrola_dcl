@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Store,
   Bell,
-  ClipboardCheck
+  ClipboardCheck,
+  Wrench
 } from 'lucide-react'
 import {
   Tooltip,
@@ -51,6 +52,13 @@ const NAVIGATION_ITEMS = [
     icon: ClipboardCheck,
     gradient: 'from-yellow-500 to-orange-500',
     permission: 'controle-os'
+  },
+  {
+    href: '/montagens',
+    label: 'Montagens',
+    icon: Wrench,
+    gradient: 'from-indigo-500 to-blue-500',
+    permission: 'montagens'
   },
   {
     href: '/alertas',

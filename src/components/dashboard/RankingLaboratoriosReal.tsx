@@ -79,89 +79,93 @@ export function RankingLaboratoriosReal({ filters, performanceLabs }: RankingLab
           </div>
         ) : (
           <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
-            {ranking.map((lab) => (
-              <div 
-                key={lab.nome} 
-                className={`p-4 rounded-lg border transition-all hover:shadow-md ${
-                  lab.posicao === 1 ? 'bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200 dark:border-amber-800' :
-                  lab.posicao === 2 ? 'bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/30 dark:to-gray-900/30 border-slate-200 dark:border-slate-700' :
-                  lab.posicao === 3 ? 'bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-orange-200 dark:border-orange-800' :
-                  'bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-700'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="text-2xl">
-                      {getMedalIcon(lab.posicao)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{lab.nome}</h3>
-                        <Badge variant="outline" className="text-xs dark:border-gray-600 dark:text-gray-300">
-                          #{lab.posicao}
-                        </Badge>
+            {ranking.map((lab) => {
+              const labData = performanceLabs.find(p => p.laboratorio_nome === lab.nome)
+              return (
+                <div 
+                  key={lab.nome} 
+                  className={`p-4 rounded-lg border transition-all hover:shadow-md cursor-pointer ${
+                    lab.posicao === 1 ? 'bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200 dark:border-amber-800' :
+                    lab.posicao === 2 ? 'bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/30 dark:to-gray-900/30 border-slate-200 dark:border-slate-700' :
+                    lab.posicao === 3 ? 'bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-orange-200 dark:border-orange-800' :
+                    'bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-700'
+                  }`}
+                  onClick={() => labData && (window.location.href = `/laboratorios/${labData.laboratorio_id}`)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">
+                        {getMedalIcon(lab.posicao)}
                       </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm text-slate-600">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{lab.leadTime.toFixed(1)} dias</span>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{lab.nome}</h3>
+                          <Badge variant="outline" className="text-xs dark:border-gray-600 dark:text-gray-300">
+                            #{lab.posicao}
+                          </Badge>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" />
-                          <span>{lab.pedidos} pedidos</span>
+                        <div className="grid grid-cols-2 gap-4 text-sm text-slate-600">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{lab.leadTime.toFixed(1)} dias</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            <span>{lab.pedidos} pedidos</span>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    
+                    <div className="text-right">
+                      <Badge className={`mb-2 ${getSlaColor(lab.slaCompliance)}`}>
+                        SLA {lab.slaCompliance.toFixed(1)}%
+                      </Badge>
+                      <p className="text-sm font-medium text-slate-800">
+                        {formatCurrency(lab.faturamento)}
+                      </p>
+                    </div>
                   </div>
-                  
-                  <div className="text-right">
-                    <Badge className={`mb-2 ${getSlaColor(lab.slaCompliance)}`}>
-                      SLA {lab.slaCompliance.toFixed(1)}%
-                    </Badge>
-                    <p className="text-sm font-medium text-slate-800">
-                      {formatCurrency(lab.faturamento)}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Barra de progresso SLA */}
-                <div className="mt-3">
-                  <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-                    <span>Performance SLA</span>
-                    <span>{lab.slaCompliance.toFixed(1)}%</span>
+                  {/* Barra de progresso SLA */}
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                      <span>Performance SLA</span>
+                      <span>{lab.slaCompliance.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-500 ${
+                          lab.slaCompliance >= 95 ? 'bg-gradient-to-r from-emerald-400 to-emerald-600' :
+                          lab.slaCompliance >= 85 ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
+                          lab.slaCompliance >= 70 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
+                          'bg-gradient-to-r from-red-400 to-red-600'
+                        }`}
+                        style={{ width: `${Math.min(lab.slaCompliance, 100)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-500 ${
-                        lab.slaCompliance >= 95 ? 'bg-gradient-to-r from-emerald-400 to-emerald-600' :
-                        lab.slaCompliance >= 85 ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
-                        lab.slaCompliance >= 70 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
-                        'bg-gradient-to-r from-red-400 to-red-600'
-                      }`}
-                      style={{ width: `${Math.min(lab.slaCompliance, 100)}%` }}
-                    />
-                  </div>
-                </div>
 
-                {/* Métricas adicionais */}
-                <div className="mt-3 pt-3 border-t border-slate-200 grid grid-cols-3 gap-2 text-xs text-slate-600">
-                  <div className="text-center">
-                    <p>Taxa Entrega</p>
-                    <p className="font-medium text-slate-800">{lab.taxa_entrega.toFixed(1)}%</p>
-                  </div>
-                  <div className="text-center">
-                    <p>Atrasados</p>
-                    <p className="font-medium text-red-600">{lab.pedidos_atrasados}</p>
-                  </div>
-                  <div className="text-center">
-                    <p>Ticket Médio</p>
-                    <p className="font-medium text-blue-600">
-                      {formatCurrency(lab.pedidos > 0 ? lab.faturamento / lab.pedidos : 0)}
-                    </p>
+                  {/* Métricas adicionais */}
+                  <div className="mt-3 pt-3 border-t border-slate-200 grid grid-cols-3 gap-2 text-xs text-slate-600">
+                    <div className="text-center">
+                      <p>Taxa Entrega</p>
+                      <p className="font-medium text-slate-800">{lab.taxa_entrega.toFixed(1)}%</p>
+                    </div>
+                    <div className="text-center">
+                      <p>Atrasados</p>
+                      <p className="font-medium text-red-600">{lab.pedidos_atrasados}</p>
+                    </div>
+                    <div className="text-center">
+                      <p>Ticket Médio</p>
+                      <p className="font-medium text-blue-600">
+                        {formatCurrency(lab.pedidos > 0 ? lab.faturamento / lab.pedidos : 0)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
