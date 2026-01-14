@@ -34,6 +34,16 @@ WHERE schemaname = 'public'
     'view_ranking_montadores'
   );
 
+
+| schemaname | tablename                          | owner    |
+| ---------- | ---------------------------------- | -------- |
+| public     | view_kpis_montadores               | postgres |
+| public     | view_performance_diaria_montadores | postgres |
+| public     | view_ranking_montadores            | postgres |
+| public     | view_relatorio_montagens           | postgres |
+
+
+
 -- 6. Verificar grants
 SELECT 
   table_schema,
@@ -50,3 +60,59 @@ WHERE table_schema = 'public'
   )
 ORDER BY table_name, grantee;
 
+
+
+| table_schema | table_name                         | privilege_type | grantee       |
+| ------------ | ---------------------------------- | -------------- | ------------- |
+| public       | view_kpis_montadores               | SELECT         | anon          |
+| public       | view_kpis_montadores               | SELECT         | authenticated |
+| public       | view_kpis_montadores               | REFERENCES     | postgres      |
+| public       | view_kpis_montadores               | TRIGGER        | postgres      |
+| public       | view_kpis_montadores               | INSERT         | postgres      |
+| public       | view_kpis_montadores               | DELETE         | postgres      |
+| public       | view_kpis_montadores               | TRUNCATE       | postgres      |
+| public       | view_kpis_montadores               | SELECT         | postgres      |
+| public       | view_kpis_montadores               | UPDATE         | postgres      |
+| public       | view_kpis_montadores               | UPDATE         | service_role  |
+| public       | view_kpis_montadores               | DELETE         | service_role  |
+| public       | view_kpis_montadores               | INSERT         | service_role  |
+| public       | view_kpis_montadores               | SELECT         | service_role  |
+| public       | view_performance_diaria_montadores | SELECT         | anon          |
+| public       | view_performance_diaria_montadores | SELECT         | authenticated |
+| public       | view_performance_diaria_montadores | TRUNCATE       | postgres      |
+| public       | view_performance_diaria_montadores | REFERENCES     | postgres      |
+| public       | view_performance_diaria_montadores | TRIGGER        | postgres      |
+| public       | view_performance_diaria_montadores | INSERT         | postgres      |
+| public       | view_performance_diaria_montadores | UPDATE         | postgres      |
+| public       | view_performance_diaria_montadores | SELECT         | postgres      |
+| public       | view_performance_diaria_montadores | DELETE         | postgres      |
+| public       | view_performance_diaria_montadores | INSERT         | service_role  |
+| public       | view_performance_diaria_montadores | SELECT         | service_role  |
+| public       | view_performance_diaria_montadores | UPDATE         | service_role  |
+| public       | view_performance_diaria_montadores | DELETE         | service_role  |
+| public       | view_ranking_montadores            | SELECT         | anon          |
+| public       | view_ranking_montadores            | SELECT         | authenticated |
+| public       | view_ranking_montadores            | TRIGGER        | postgres      |
+| public       | view_ranking_montadores            | INSERT         | postgres      |
+| public       | view_ranking_montadores            | SELECT         | postgres      |
+| public       | view_ranking_montadores            | UPDATE         | postgres      |
+| public       | view_ranking_montadores            | DELETE         | postgres      |
+| public       | view_ranking_montadores            | TRUNCATE       | postgres      |
+| public       | view_ranking_montadores            | REFERENCES     | postgres      |
+| public       | view_ranking_montadores            | UPDATE         | service_role  |
+| public       | view_ranking_montadores            | DELETE         | service_role  |
+| public       | view_ranking_montadores            | SELECT         | service_role  |
+| public       | view_ranking_montadores            | INSERT         | service_role  |
+| public       | view_relatorio_montagens           | SELECT         | anon          |
+| public       | view_relatorio_montagens           | SELECT         | authenticated |
+| public       | view_relatorio_montagens           | UPDATE         | postgres      |
+| public       | view_relatorio_montagens           | DELETE         | postgres      |
+| public       | view_relatorio_montagens           | TRUNCATE       | postgres      |
+| public       | view_relatorio_montagens           | REFERENCES     | postgres      |
+| public       | view_relatorio_montagens           | TRIGGER        | postgres      |
+| public       | view_relatorio_montagens           | SELECT         | postgres      |
+| public       | view_relatorio_montagens           | INSERT         | postgres      |
+| public       | view_relatorio_montagens           | UPDATE         | service_role  |
+| public       | view_relatorio_montagens           | DELETE         | service_role  |
+| public       | view_relatorio_montagens           | INSERT         | service_role  |
+| public       | view_relatorio_montagens           | SELECT         | service_role  |

@@ -838,19 +838,35 @@ export default function KanbanBoard() {
         montadorId: montadorId || 'nenhum'
       })
 
-      // Se há montador_id, atualizar primeiro
+      // Se há montador_id, atualizar primeiro usando API (Service Role)
       if (montadorId) {
-        console.log('📝 Atualizando montador no pedido...')
-        const { error: updateError } = await supabase
-          .from('pedidos')
-          .update({ montador_id: montadorId })
-          .eq('id', pedido.id)
+        console.log('📝 Atualizando montador no pedido via API...', {
+          pedidoId: pedido.id,
+          numeroSequencial: pedido.numero_sequencial,
+          montadorId: montadorId
+        })
+        
+        // Usar API com Service Role Key para bypass RLS
+        const response = await fetch('/api/pedidos/update-montador', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pedidoId: pedido.id,
+            montadorId: montadorId
+          })
+        })
 
-        if (updateError) {
-          console.error('❌ Erro ao atualizar montador:', updateError)
-          throw updateError
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+          console.error('❌ Erro ao atualizar montador:', errorData)
+          throw new Error(errorData.error || 'Falha ao atualizar montador')
         }
-        console.log('✅ Montador atribuído com sucesso!')
+
+        const result = await response.json()
+        console.log('✅ Montador atribuído com sucesso via API!', {
+          updated: result.updated,
+          data: result.data
+        })
       }
 
       // Alterar status
@@ -873,6 +889,16 @@ export default function KanbanBoard() {
 
       // Invalidar queries de alertas para forçar atualização imediata
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'alertas_criticos'] })
+      
+      // 🔄 INVALIDAR QUERIES DE MONTAGENS quando montador é atribuído
+      if (montadorId) {
+        console.log('🔄 Invalidando queries de montagens...')
+        queryClient.invalidateQueries({ queryKey: ['montagens'] })
+        queryClient.invalidateQueries({ queryKey: ['montador-detalhes'] })
+        queryClient.invalidateQueries({ queryKey: ['laboratorio-montadores'] })
+        queryClient.invalidateQueries({ queryKey: ['laboratorio-kpis'] })
+        queryClient.invalidateQueries({ queryKey: ['laboratorio-pedidos'] })
+      }
 
       // Recarregar pedidos
       await loadPedidos()
