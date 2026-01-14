@@ -51,3 +51,12 @@ FROM pedidos
 WHERE montador_id IS NOT NULL
 ORDER BY numero_sequencial DESC
 LIMIT 5;
+
+
+| numero_sequencial | montador_id                          | data_envio_montagem | data_prevista_montagem | status  |
+| ----------------- | ------------------------------------ | ------------------- | ---------------------- | ------- |
+| 646               | 41412e4a-68af-431b-a5d7-54b96291fe37 | 2026-01-13          | 2026-01-16             | CHEGOU  |
+| 644               | 56d71159-70ce-403b-8362-ebe44b18d882 | 2026-01-13          | 2026-01-16             | ENVIADO |
+| 641               | 41412e4a-68af-431b-a5d7-54b96291fe37 | 2026-01-13          | 2026-01-16             | CHEGOU  |
+| 629               | 56d71159-70ce-403b-8362-ebe44b18d882 | 2026-01-13          | 2026-01-16             | ENVIADO |
+| 583               | 56d71159-70ce-403b-8362-ebe44b18d882 | 2026-01-13          | 2026-01-16             | ENVIADO |
