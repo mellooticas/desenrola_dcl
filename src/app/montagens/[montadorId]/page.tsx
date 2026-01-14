@@ -4,14 +4,14 @@ import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { MontagemTable } from '@/components/montagens/MontagemTable'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, TrendingUp, Clock, Package, Award, LayoutGrid, List, Filter } from 'lucide-react'
+import { ArrowLeft, TrendingUp, Clock, Package, Award, LayoutGrid, List, Filter, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -124,21 +124,39 @@ export default function MontadorDetalhePage({
     },
   })
 
-  // Query de pedidos com filtro de data
+  // Query de pedidos com filtro de data (otimizada com limit)
   const { data: pedidos, isLoading: isLoadingPedidos } = useQuery({
     queryKey: ['montador-pedidos', montadorId, dateRange.start.toISOString(), dateRange.end.toISOString()],
     queryFn: async () => {
+      // Usar view v_pedidos_kanban sem ordenação (view já tem ORDER BY interno)
       const { data, error } = await supabase
         .from('v_pedidos_kanban')
-        .select('*')
+        .select('id, numero_sequencial, cliente_nome, status, data_envio_montagem, data_conclusao_producao, lead_time_producao_horas, prioridade, created_at')
         .eq('montador_id', montadorId)
-        .gte('created_at', dateRange.start.toISOString())
-        .lte('created_at', dateRange.end.toISOString())
-        .order('created_at', { ascending: false })
+        .limit(200) // Buscar mais pedidos para filtrar depois
 
       if (error) throw error
-      return data as Pedido[]
+      
+      // Filtrar por data em memória
+      const startTime = dateRange.start.getTime()
+      const endTime = dateRange.end.getTime()
+      
+      const filtered = (data as any[]).filter(pedido => {
+        if (!pedido.created_at) return false
+        const pedidoTime = new Date(pedido.created_at).getTime()
+        return pedidoTime >= startTime && pedidoTime <= endTime
+      })
+      
+      // Converter nomes de campos para match com interface Pedido
+      return filtered.slice(0, 100).map(p => ({
+        ...p,
+        data_enviado_montagem: p.data_envio_montagem,
+        data_montagem_concluida: p.data_conclusao_producao,
+        tempo_montagem_horas: p.lead_time_producao_horas
+      })) as Pedido[]
     },
+    staleTime: 30000, // Cache por 30 segundos
+    gcTime: 60000,
   })
 
   // Stats filtrados por período
@@ -164,16 +182,33 @@ export default function MontadorDetalhePage({
     }
   }, [pedidos])
 
-  if (isLoading || !montador) {
+  if (isLoading) {
     return (
       <div className="flex flex-col gap-6 p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3" />
+          <div className="h-12 bg-muted rounded w-1/3" />
           <div className="grid gap-4 md:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-32 bg-muted rounded" />
             ))}
           </div>
+          <div className="h-40 bg-muted rounded" />
+          <div className="grid gap-4 md:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-40 bg-muted rounded" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!montador) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-muted-foreground">Montador não encontrado</p>
         </div>
       </div>
     )
@@ -396,8 +431,12 @@ export default function MontadorDetalhePage({
         </CardHeader>
         <CardContent>
           {isLoadingPedidos ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-40 bg-muted rounded" />
+                </div>
+              ))}
             </div>
           ) : !pedidos || pedidos.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
@@ -438,10 +477,10 @@ export default function MontadorDetalhePage({
                           Concluído: {format(new Date(pedido.data_montagem_concluida), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                         </div>
                       )}
-                      {pedido.tempo_montagem_horas !== null && (
+                      {pedido.tempo_montagem_horas !== null && pedido.tempo_montagem_horas !== undefined && (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <TrendingUp className="h-3 w-3" />
-                          Tempo: {pedido.tempo_montagem_horas.toFixed(1)}h
+                          Tempo: {Number(pedido.tempo_montagem_horas).toFixed(1)}h
                         </div>
                       )}
                       {pedido.prioridade && pedido.prioridade !== 'NORMAL' && (
@@ -455,7 +494,66 @@ export default function MontadorDetalhePage({
               ))}
             </div>
           ) : (
-            <MontagemTable montadorId={montadorId} />
+            /* Lista view */
+            <div className="rounded-md border">
+              {isLoadingPedidos ? (
+                <div className="flex items-center justify-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : !pedidos || pedidos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <Package className="h-12 w-12 mb-4 opacity-50" />
+                  <p className="text-muted-foreground">Nenhuma montagem no período selecionado</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>OS</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Enviado</TableHead>
+                      <TableHead>Concluído</TableHead>
+                      <TableHead>Tempo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pedidos.map((pedido) => (
+                      <TableRow key={pedido.id}>
+                        <TableCell className="font-medium">#{pedido.numero_sequencial}</TableCell>
+                        <TableCell>{pedido.cliente_nome}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              pedido.status === 'ENTREGUE' || pedido.data_montagem_concluida
+                                ? 'default'
+                                : 'secondary'
+                            }
+                          >
+                            {pedido.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {pedido.data_enviado_montagem
+                            ? format(new Date(pedido.data_enviado_montagem), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {pedido.data_montagem_concluida
+                            ? format(new Date(pedido.data_montagem_concluida), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {pedido.tempo_montagem_horas !== null && pedido.tempo_montagem_horas !== undefined
+                            ? `${Number(pedido.tempo_montagem_horas).toFixed(1)}h`
+                            : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

@@ -12,6 +12,12 @@ SELECT
 FROM pedidos
 WHERE numero_sequencial = 644;
 
+| id                                   | numero_sequencial | status  | montador_id | updated_at                    |
+| ------------------------------------ | ----------------- | ------- | ----------- | ----------------------------- |
+| 0df4535e-e39c-4b1c-9a83-4985158cf0ba | 644               | ENVIADO | null        | 2026-01-13 21:10:15.781026+00 |
+
+
+
 -- 2. DESABILITAR TODOS OS TRIGGERS (temporário para teste)
 ALTER TABLE pedidos DISABLE TRIGGER ALL;
 
