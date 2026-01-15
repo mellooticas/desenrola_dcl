@@ -32,6 +32,7 @@ interface MontadorDetalhes {
 interface Pedido {
   id: string
   numero_sequencial: number
+  numero_os_fisica: string | null
   cliente_nome: string
   status: string
   data_enviado_montagem: string | null
@@ -131,7 +132,7 @@ export default function MontadorDetalhePage({
       // Usar view v_pedidos_kanban sem ordenação (view já tem ORDER BY interno)
       const { data, error } = await supabase
         .from('v_pedidos_kanban')
-        .select('id, numero_sequencial, cliente_nome, status, data_envio_montagem, data_conclusao_producao, lead_time_producao_horas, prioridade, created_at')
+        .select('id, numero_sequencial, numero_os_fisica, cliente_nome, status, data_envio_montagem, data_conclusao_producao, lead_time_producao_horas, prioridade, created_at')
         .eq('montador_id', montadorId)
         .limit(200) // Buscar mais pedidos para filtrar depois
 
@@ -446,23 +447,31 @@ export default function MontadorDetalhePage({
           ) : viewMode === 'cards' ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {pedidos.map((pedido) => (
-                <Card key={pedido.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="text-sm text-muted-foreground">OS #{pedido.numero_sequencial}</div>
-                        <div className="font-semibold mt-1">{pedido.cliente_nome}</div>
+                <Link key={pedido.id} href={`/pedidos/${pedido.id}`}>
+                  <Card className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="text-sm text-muted-foreground">
+                            OS #{pedido.numero_sequencial}
+                            {pedido.numero_os_fisica && (
+                              <span className="ml-2 text-blue-600 font-medium">
+                                • Loja: {pedido.numero_os_fisica}
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-semibold mt-1">{pedido.cliente_nome}</div>
+                        </div>
+                        <Badge
+                          variant={
+                            pedido.status === 'ENTREGUE' || pedido.data_montagem_concluida
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
+                          {pedido.status}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant={
-                          pedido.status === 'ENTREGUE' || pedido.data_montagem_concluida
-                            ? 'default'
-                            : 'secondary'
-                        }
-                      >
-                        {pedido.status}
-                      </Badge>
-                    </div>
                     
                     <div className="space-y-2 text-sm">
                       {pedido.data_enviado_montagem && (
@@ -491,6 +500,7 @@ export default function MontadorDetalhePage({
                     </div>
                   </CardContent>
                 </Card>
+                </Link>
               ))}
             </div>
           ) : (

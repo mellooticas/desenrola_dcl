@@ -232,6 +232,25 @@ export async function POST(request: NextRequest) {
 
     // A função retorna apenas o UUID do pedido criado
     const pedidoId = resultado as string
+
+    // Atualizar com campos de LENTE INTELIGENTE (se fornecidos)
+    // Atualizar com campos de LENTE INTELIGENTE (se fornecidos)
+    if (body.grupo_canonico_id || body.lente_id) {
+       console.log('👓 Atualizando pedido com dados do catálogo:', { 
+         grupo: body.grupo_canonico_id, 
+         lente: body.lente_id 
+       })
+       
+       const updateData: any = {
+         grupo_canonico_id: body.grupo_canonico_id || null,
+         lente_id: body.lente_id || null
+       }
+
+       if (body.lente_nome_snapshot) updateData.lente_nome_snapshot = body.lente_nome_snapshot
+       if (body.lente_slug_snapshot) updateData.lente_slug_snapshot = body.lente_slug_snapshot
+
+       await supabase.from('pedidos').update(updateData).eq('id', pedidoId)
+    }
     
     // Buscar o pedido completo para retornar
     const { data: pedidoCriado, error: errorBusca } = await supabase

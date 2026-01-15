@@ -1,0 +1,6 @@
+
+# ========================================
+# BANCO DE LENTES - Best Lens Catalog
+# ========================================
+NEXT_PUBLIC_LENTES_SUPABASE_URL=https://jrhevexrzaoeyhmpwvgs.supabase.co
+NEXT_PUBLIC_LENTES_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyaGV2ZXhyemFvZXlobXB3dmdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxNDI1MTMsImV4cCI6MjA3NTcxODUxM30.fOMiindaZq_hGdvv1AeFkRvj5LXp6K1HSAt3hqYg6mo

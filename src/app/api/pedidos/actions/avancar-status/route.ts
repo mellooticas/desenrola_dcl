@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 
 // Fluxo de status válidos
 const FLUXO_STATUS: Record<StatusPedido, StatusPedido | null> = {
+  'PENDENTE': 'REGISTRADO', // DCL escolhe lente → registra
   'REGISTRADO': 'AG_PAGAMENTO',
   'AG_PAGAMENTO': 'PAGO',
   'PAGO': 'PRODUCAO',

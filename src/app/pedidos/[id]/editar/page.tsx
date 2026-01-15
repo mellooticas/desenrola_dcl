@@ -174,21 +174,40 @@ export default function EditarPedidoPage() {
         updated_by: userProfile?.id || 'sistema'
       }
 
+      // Debug: Log do que está sendo enviado
+      console.log('🔍 DEBUG - Tentando atualizar pedido:', {
+        pedidoId,
+        updateData,
+        userProfileId: userProfile?.id,
+        userRole: userProfile?.role
+      })
+
       const { error, data } = await supabase
         .from('pedidos')
         .update(updateData)
         .eq('id', pedidoId)
         .select()
 
+      // Debug: Log da resposta
+      console.log('📡 DEBUG - Resposta do Supabase:', {
+        error,
+        data,
+        dataLength: data?.length
+      })
+
       if (error) {
-        console.error('Erro detalhado do Supabase:', error)
+        console.error('❌ Erro detalhado do Supabase:', error)
         throw error
       }
       
       if (!data || data.length === 0) {
-        console.error('Nenhum registro foi atualizado. Verifique as permissões RLS.')
+        console.error('⚠️ Nenhum registro foi atualizado. Verifique as permissões RLS.')
+        console.error('🔍 PedidoId usado:', pedidoId)
+        console.error('🔍 UpdateData:', updateData)
         throw new Error('Nenhum registro foi atualizado. Verifique se você tem permissão para editar este pedido.')
       }
+
+      console.log('✅ Pedido atualizado com sucesso!', data)
 
       if (formData.status !== pedido.status) {
         const { error: timelineError } = await supabase

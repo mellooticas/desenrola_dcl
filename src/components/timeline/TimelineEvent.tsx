@@ -27,6 +27,7 @@ interface TimelineEventProps {
 // Função para obter o label do status
 const getStatusLabel = (status: StatusPedido): string => {
   const labels = {
+    'PENDENTE': 'Pendente - Análise DCL',
     'REGISTRADO': 'Registrado',
     'AG_PAGAMENTO': 'Aguardando Pagamento',
     'PAGO': 'Pago',

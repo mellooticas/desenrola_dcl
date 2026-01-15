@@ -10,6 +10,7 @@ const ROUTE_PERMISSIONS = {
   '/kanban': ['gestor', 'dcl', 'financeiro', 'loja', 'demo_viewer'],
   '/alertas': ['gestor', 'dcl', 'demo_viewer'],
   '/pedidos': ['gestor', 'dcl', 'financeiro', 'loja', 'demo_viewer'], 
+  '/montagens': ['gestor', 'dcl', 'financeiro', 'demo_viewer'], // Módulo de controle de montagens
   '/configuracoes': ['gestor'] // Demo NÃO pode acessar configurações
 }
 
@@ -19,6 +20,7 @@ const protectedRoutes = [
   '/pedidos', 
   '/kanban',
   '/alertas',
+  '/montagens', // Módulo de controle de montagens
   '/configuracoes',
 ]
 

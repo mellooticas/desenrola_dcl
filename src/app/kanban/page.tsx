@@ -75,6 +75,7 @@ interface UserPermissions {
 
 // ========== CONSTANTES ==========
 const STATUS_ICONS: Record<StatusPedido, React.ComponentType<any>> = {
+  'PENDENTE': Clock, // 🆕 Novo status para DCL escolher lente
   'REGISTRADO': Package,
   'AG_PAGAMENTO': DollarSign,
   'PAGO': CheckCircle,
@@ -89,6 +90,7 @@ const STATUS_ICONS: Record<StatusPedido, React.ComponentType<any>> = {
 
 // Gradientes por status para modernização
 const STATUS_GRADIENTS: Record<StatusPedido, string> = {
+  'PENDENTE': 'from-slate-400 to-slate-500', // 🆕 Novo status
   'REGISTRADO': 'from-blue-500 to-cyan-500',
   'AG_PAGAMENTO': 'from-yellow-500 to-amber-500',
   'PAGO': 'from-green-500 to-emerald-500',
@@ -118,9 +120,10 @@ const ROLE_PERMISSIONS: Record<string, {
   canCancel: boolean
 }> = {
   'admin': {
-    visibleColumns: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
-    canEdit: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
+    visibleColumns: ['PENDENTE', 'REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
+    canEdit: ['PENDENTE', 'REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
     canMoveFrom: {
+      'PENDENTE': ['REGISTRADO', 'CANCELADO'], // 🆕 DCL escolhe lente → registra
       'REGISTRADO': ['AG_PAGAMENTO', 'CANCELADO'],
       'AG_PAGAMENTO': ['REGISTRADO', 'PAGO', 'CANCELADO'],
       'PAGO': ['AG_PAGAMENTO', 'PRODUCAO', 'CANCELADO'],
@@ -137,9 +140,10 @@ const ROLE_PERMISSIONS: Record<string, {
   },
   'gestor': {
     // Todos os 3 gestores: admin@dcl.com.br, gestor@dcl.com.br, junior@oticastatymello.com.br
-    visibleColumns: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
-    canEdit: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
+    visibleColumns: ['PENDENTE', 'REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
+    canEdit: ['PENDENTE', 'REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
     canMoveFrom: {
+      'PENDENTE': ['REGISTRADO', 'CANCELADO'], // 🆕 DCL escolhe lente → registra
       'REGISTRADO': ['AG_PAGAMENTO', 'CANCELADO'],
       'AG_PAGAMENTO': ['PAGO', 'CANCELADO'],
       'PAGO': ['PRODUCAO', 'CANCELADO'],
@@ -156,9 +160,10 @@ const ROLE_PERMISSIONS: Record<string, {
   },
   'dcl': {
     // DCL Laboratório: dcl@oticastatymello.com.br
-    visibleColumns: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
-    canEdit: ['REGISTRADO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO'], // NÃO pode editar AG_PAGAMENTO nem CHEGOU (é da loja)
+    visibleColumns: ['PENDENTE', 'REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
+    canEdit: ['PENDENTE', 'REGISTRADO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO'], // NÃO pode editar AG_PAGAMENTO nem CHEGOU
     canMoveFrom: {
+      'PENDENTE': ['REGISTRADO', 'CANCELADO'], // 🆕 DCL escolhe lente → registra
       'REGISTRADO': ['AG_PAGAMENTO', 'CANCELADO'],
       'AG_PAGAMENTO': [], // Só visualiza, não pode mover (responsabilidade do financeiro)
       'PAGO': ['PRODUCAO', 'CANCELADO'],
@@ -178,6 +183,7 @@ const ROLE_PERMISSIONS: Record<string, {
     visibleColumns: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO'], // Precisa ver REGISTRADO para acompanhar fluxo
     canEdit: ['AG_PAGAMENTO', 'PAGO'],
     canMoveFrom: {
+      'PENDENTE': [], // Só visualiza se tiver acesso
       'REGISTRADO': [], // Só visualiza
       'AG_PAGAMENTO': ['PAGO', 'CANCELADO'], // Move para PAGO quando recebe pagamento
       'PAGO': ['AG_PAGAMENTO', 'CANCELADO'], // Pode reverter pagamento se necessário
@@ -197,6 +203,7 @@ const ROLE_PERMISSIONS: Record<string, {
     visibleColumns: ['ENVIADO', 'CHEGOU'], // Só vê final do fluxo
     canEdit: ['CHEGOU'], // Só pode editar CHEGOU para entregar
     canMoveFrom: {
+      'PENDENTE': [],
       'REGISTRADO': [],
       'AG_PAGAMENTO': [],
       'PAGO': [],
@@ -215,6 +222,7 @@ const ROLE_PERMISSIONS: Record<string, {
     visibleColumns: ['REGISTRADO', 'AG_PAGAMENTO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENVIADO', 'CHEGOU'],
     canEdit: ['REGISTRADO', 'AG_PAGAMENTO'],
     canMoveFrom: {
+      'PENDENTE': [],
       'REGISTRADO': ['AG_PAGAMENTO'],
       'AG_PAGAMENTO': ['REGISTRADO', 'PAGO'],
       'PAGO': [],
@@ -260,6 +268,7 @@ const useUserPermissions = (userRole: string): UserPermissions => {
 
     const getNextStatus = (currentStatus: StatusPedido): StatusPedido | null => {
       const statusFlow: Record<StatusPedido, StatusPedido | null> = {
+        'PENDENTE': 'REGISTRADO',
         'REGISTRADO': 'AG_PAGAMENTO',
         'AG_PAGAMENTO': 'PAGO',
         'PAGO': 'PRODUCAO',
@@ -279,7 +288,8 @@ const useUserPermissions = (userRole: string): UserPermissions => {
 
     const getPrevStatus = (currentStatus: StatusPedido): StatusPedido | null => {
       const statusFlow: Record<StatusPedido, StatusPedido | null> = {
-        'REGISTRADO': null,
+        'PENDENTE': null,
+        'REGISTRADO': 'PENDENTE',
         'AG_PAGAMENTO': 'REGISTRADO',
         'PAGO': 'AG_PAGAMENTO',
         'PRODUCAO': 'PAGO',
@@ -383,6 +393,7 @@ export default function KanbanBoard() {
 
   const visibleColumns = useMemo(() => {
     const baseColumns: KanbanColumn[] = [
+      { id: 'PENDENTE', title: 'Pendente - DCL', color: '#94a3b8', pedidos: [] }, // 🆕 Novo
       { id: 'REGISTRADO', title: 'Registrado', color: STATUS_COLORS.REGISTRADO, pedidos: [] },
       { id: 'AG_PAGAMENTO', title: 'Aguard. Pagamento', color: STATUS_COLORS.AG_PAGAMENTO, pedidos: [] },
       { id: 'PAGO', title: 'Pago', color: STATUS_COLORS.PAGO, pedidos: [] },
@@ -676,7 +687,8 @@ export default function KanbanBoard() {
 
     // Mapeamento reverso de status (baseado no fluxo real do sistema)
     const reverseFlow: Record<StatusPedido, StatusPedido | null> = {
-      'REGISTRADO': null, // Início do fluxo, não pode reverter
+      'PENDENTE': null, // Início do fluxo, não pode reverter
+      'REGISTRADO': 'PENDENTE',
       'AG_PAGAMENTO': 'REGISTRADO',
       'PAGO': 'AG_PAGAMENTO',
       'PRODUCAO': 'PAGO',

@@ -2,6 +2,7 @@ import { StatusPedido, PrioridadeLevel } from '@/lib/types/database'
 
 // Status Colors (matching database design)
 export const STATUS_COLORS: Record<StatusPedido, string> = {
+  'PENDENTE': '#94a3b8',        // 🆕 Slate 400 - DCL analisa receita
   'REGISTRADO': '#94A3B8',      // Slate 400
   'AG_PAGAMENTO': '#F59E0B',    // Amber 500
   'PAGO': '#10B981',            // Emerald 500
@@ -15,6 +16,7 @@ export const STATUS_COLORS: Record<StatusPedido, string> = {
 
 // Status Labels for UI
 export const STATUS_LABELS: Record<StatusPedido, string> = {
+  'PENDENTE': 'Pendente - Análise DCL',
   'REGISTRADO': 'Registrado',
   'AG_PAGAMENTO': 'Aguardando Pagamento',
   'PAGO': 'Pago',
@@ -44,6 +46,7 @@ export const PRIORITY_LABELS: Record<PrioridadeLevel, string> = {
 
 // Kanban Column Order
 export const KANBAN_COLUMNS: StatusPedido[] = [
+  'PENDENTE',
   'REGISTRADO',
   'AG_PAGAMENTO',
   'PAGO',
@@ -56,6 +59,7 @@ export const KANBAN_COLUMNS: StatusPedido[] = [
 
 // Status transitions allowed (for validation)
 export const ALLOWED_TRANSITIONS: Record<StatusPedido, StatusPedido[]> = {
+  'PENDENTE': ['REGISTRADO', 'CANCELADO'],
   'REGISTRADO': ['AG_PAGAMENTO', 'CANCELADO'],
   'AG_PAGAMENTO': ['PAGO', 'CANCELADO'],
   'PAGO': ['PRODUCAO', 'CANCELADO'],

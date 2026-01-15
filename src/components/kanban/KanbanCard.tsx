@@ -2,7 +2,7 @@ import { PedidoCompleto } from '@/lib/types/database'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
+import {
   Eye,
   ChevronLeft,
   ChevronRight,
@@ -32,14 +32,14 @@ function getSlaStatus(pedido: PedidoCompleto) {
   const hoje = new Date()
   const dataSlaLab = pedido.data_sla_laboratorio ? new Date(pedido.data_sla_laboratorio) : null
   const dataPromessaCliente = pedido.data_prometida ? new Date(pedido.data_prometida) : null
-  
+
   // Usar campos calculados da view se disponíveis
   const slaAtrasado = pedido.sla_atrasado ?? (dataSlaLab ? dataSlaLab < hoje : false)
   const slaAlerta = pedido.sla_alerta ?? (dataSlaLab ? dataSlaLab <= new Date(hoje.getTime() + 24 * 60 * 60 * 1000) : false)
-  
+
   const diasParaSla = pedido.dias_para_sla ?? (dataSlaLab ? Math.ceil((dataSlaLab.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : null)
   const diasParaPromessa = pedido.dias_para_promessa ?? (dataPromessaCliente ? Math.ceil((dataPromessaCliente.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) : null)
-  
+
   return {
     slaAtrasado,
     slaAlerta,
@@ -52,7 +52,7 @@ function getSlaStatus(pedido: PedidoCompleto) {
 
 function getCardStyles(pedido: PedidoCompleto, slaStatus: ReturnType<typeof getSlaStatus>) {
   const { slaAtrasado, slaAlerta } = slaStatus
-  
+
   // GARANTIA sempre laranja/amber
   if (pedido.eh_garantia) {
     return {
@@ -61,7 +61,7 @@ function getCardStyles(pedido: PedidoCompleto, slaStatus: ReturnType<typeof getS
       badgeClass: "bg-gradient-to-r from-amber-600 to-orange-600 text-white"
     }
   }
-  
+
   // SLA ATRASADO - Vermelho intenso
   if (slaAtrasado) {
     return {
@@ -70,7 +70,7 @@ function getCardStyles(pedido: PedidoCompleto, slaStatus: ReturnType<typeof getS
       badgeClass: "bg-gradient-to-r from-red-600 to-red-700 text-white"
     }
   }
-  
+
   // SLA EM ALERTA - Amarelo/laranja
   if (slaAlerta) {
     return {
@@ -79,7 +79,7 @@ function getCardStyles(pedido: PedidoCompleto, slaStatus: ReturnType<typeof getS
       badgeClass: "bg-gradient-to-r from-yellow-600 to-orange-600 text-white"
     }
   }
-  
+
   // STATUS NORMAL - Verde/azul
   return {
     cardClass: "bg-gradient-to-br from-green-50 to-blue-50 border border-green-200 hover:border-blue-300 shadow-green-50",
@@ -88,16 +88,16 @@ function getCardStyles(pedido: PedidoCompleto, slaStatus: ReturnType<typeof getS
   }
 }
 
-export function KanbanCard({ 
-  pedido, 
-  onClick, 
+export function KanbanCard({
+  pedido,
+  onClick,
   isDragging,
   onMoveLeft,
   onMoveRight,
   canMoveLeft = false,
   canMoveRight = false
 }: KanbanCardProps) {
-  
+
   const slaStatus = getSlaStatus(pedido)
   const cardStyles = getCardStyles(pedido, slaStatus)
 
@@ -125,7 +125,7 @@ export function KanbanCard({
     >
       {/* Header colorido com gradiente inteligente */}
       <div className={cn("h-1.5", cardStyles.headerClass)}></div>
-      
+
       {/* Indicador de status SLA */}
       {(slaStatus.slaAtrasado || slaStatus.slaAlerta) && (
         <div className="absolute top-2 right-2 z-10">
@@ -136,19 +136,19 @@ export function KanbanCard({
           )}
         </div>
       )}
-      
+
       <CardContent className="p-3">
-        
+
         {/* 🚀 TERMÔMETRO COMPACTO (Badge no topo - AG_PAGAMENTO) */}
         {pedido.status === 'AG_PAGAMENTO' && pedido.data_prometida && (
           <div className="mb-3 space-y-2">
-            <BadgeUrgencia 
+            <BadgeUrgencia
               dataPrometida={pedido.data_prometida}
               dataPedido={pedido.data_pedido}
               showDias={true}
               className="w-full justify-center py-2 text-sm"
             />
-            
+
             {/* Datas Visíveis: Prometido + SLA Lab */}
             <div className="grid grid-cols-2 gap-2">
               {/* Data Prometida ao Cliente */}
@@ -161,7 +161,7 @@ export function KanbanCard({
                   {new Date(pedido.data_prometida).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                 </div>
               </div>
-              
+
               {/* SLA do Laboratório */}
               {pedido.data_sla_laboratorio && (
                 <div className="bg-blue-100 border border-blue-300 rounded-lg p-2 text-center">
@@ -177,12 +177,12 @@ export function KanbanCard({
             </div>
           </div>
         )}
-        
+
         {/* Header com OS Principal */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Badge 
-              variant="secondary" 
+            <Badge
+              variant="secondary"
               className={cn(
                 "text-xs font-mono font-bold px-3 py-1 shadow-sm",
                 cardStyles.badgeClass
@@ -190,7 +190,7 @@ export function KanbanCard({
             >
               OS #{pedido.numero_sequencial}
             </Badge>
-            
+
             {pedido.eh_garantia && (
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
@@ -227,7 +227,7 @@ export function KanbanCard({
               </div>
             </div>
           )}
-          
+
           {pedido.numero_pedido_laboratorio && (
             <div className={cn(
               "rounded-md px-2 py-1.5 border-l-3",
@@ -277,6 +277,17 @@ export function KanbanCard({
           </div>
         </div>
 
+        {/* 👓 LENTE DO PEDIDO (Inteligente ou Classe) */}
+        <div className="mb-3 px-1">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+            <Sparkles className="w-3 h-3 text-indigo-500" />
+            <span className="font-medium">Lente / Produto</span>
+          </div>
+          <div className="text-sm font-bold text-gray-800 line-clamp-2 leading-tight">
+            {pedido.lente_nome_snapshot || pedido.classe_nome || 'Não definida'}
+          </div>
+        </div>
+
         {/* Laboratório com badge estilizado */}
         <div className="mb-3">
           <div className={cn(
@@ -300,8 +311,8 @@ export function KanbanCard({
               {pedido.custo_lentes && pedido.status === 'AG_PAGAMENTO' && (
                 <div className={cn(
                   "flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full border",
-                  pedido.eh_garantia 
-                    ? "bg-gradient-to-r from-amber-200 to-amber-300 text-amber-900 border-amber-400" 
+                  pedido.eh_garantia
+                    ? "bg-gradient-to-r from-amber-200 to-amber-300 text-amber-900 border-amber-400"
                     : "bg-gradient-to-r from-purple-200 to-purple-300 text-purple-900 border-purple-400"
                 )}>
                   <DollarSign className="w-3 h-3" />
@@ -332,12 +343,12 @@ export function KanbanCard({
             {slaStatus.diasParaSla !== null && (
               <div className="mb-2">
                 <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                  <div 
+                  <div
                     className={cn(
                       "h-full transition-all duration-500",
-                      slaStatus.slaAtrasado 
-                        ? "bg-gradient-to-r from-red-500 to-red-600" 
-                        : slaStatus.slaAlerta 
+                      slaStatus.slaAtrasado
+                        ? "bg-gradient-to-r from-red-500 to-red-600"
+                        : slaStatus.slaAlerta
                           ? "bg-gradient-to-r from-yellow-500 to-orange-500"
                           : "bg-gradient-to-r from-blue-500 to-green-500"
                     )}
@@ -348,15 +359,15 @@ export function KanbanCard({
                 </div>
               </div>
             )}
-            
+
             <div className="grid grid-cols-2 gap-2">
               {/* SLA Lab - Controle Interno */}
               {slaStatus.dataSlaLab && (
                 <div className={cn(
                   "rounded-lg p-2 border text-center",
-                  slaStatus.slaAtrasado 
-                    ? "bg-red-100 border-red-300" 
-                    : slaStatus.slaAlerta 
+                  slaStatus.slaAtrasado
+                    ? "bg-red-100 border-red-300"
+                    : slaStatus.slaAlerta
                       ? "bg-yellow-100 border-yellow-300"
                       : "bg-blue-100 border-blue-300"
                 )}>
@@ -380,7 +391,7 @@ export function KanbanCard({
                     slaStatus.slaAtrasado ? "text-red-700" : slaStatus.slaAlerta ? "text-yellow-700" : "text-blue-700"
                   )}>
                     {slaStatus.diasParaSla !== null ? (
-                      slaStatus.diasParaSla < 0 ? 
+                      slaStatus.diasParaSla < 0 ?
                         `${Math.abs(slaStatus.diasParaSla)}d atraso` :
                         slaStatus.dataSlaLab?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                     ) : (
@@ -399,7 +410,7 @@ export function KanbanCard({
                   </div>
                   <div className="text-xs font-bold text-green-700">
                     {slaStatus.diasParaPromessa !== null ? (
-                      slaStatus.diasParaPromessa < 0 ? 
+                      slaStatus.diasParaPromessa < 0 ?
                         `${Math.abs(slaStatus.diasParaPromessa)}d atraso` :
                         slaStatus.dataPromessaCliente?.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                     ) : (
@@ -428,7 +439,7 @@ export function KanbanCard({
                 <ChevronLeft className="h-3 w-3" />
               </Button>
             )}
-            
+
             {canMoveRight && (
               <Button
                 size="sm"
@@ -443,7 +454,7 @@ export function KanbanCard({
               </Button>
             )}
           </div>
-          
+
           <Button
             size="sm"
             variant="ghost"

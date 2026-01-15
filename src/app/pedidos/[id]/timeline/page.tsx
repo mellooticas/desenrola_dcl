@@ -101,6 +101,13 @@ const STATUS_CONFIG: Record<StatusPedido, {
   icon: React.ElementType
   label: string
 }> = {
+  'PENDENTE': {
+    color: '#94a3b8',
+    bg: 'rgba(148, 163, 184, 0.1)',
+    border: 'rgba(148, 163, 184, 0.3)',
+    icon: Clock,
+    label: 'Pendente - Análise DCL'
+  },
   'REGISTRADO': { 
     color: '#94A3B8', 
     bg: 'rgba(148, 163, 184, 0.1)', 

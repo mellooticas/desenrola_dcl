@@ -11,6 +11,7 @@ interface StatusMarkerProps {
 // Função para obter a cor do status
 const getStatusColor = (status: StatusPedido): string => {
   const colors = {
+    'PENDENTE': 'bg-slate-400',
     'REGISTRADO': 'bg-gray-500',
     'AG_PAGAMENTO': 'bg-yellow-500', 
     'PAGO': 'bg-blue-500',

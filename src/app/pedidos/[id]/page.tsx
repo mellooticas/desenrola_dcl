@@ -34,7 +34,6 @@ import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { PedidoHeader } from '@/components/pedidos/PedidoHeader'
 import { KPICard } from '@/components/dashboard/KPICard'
-import { PedidoTimeline } from '@/components/kanban/PedidoTimeline'
 import type { StatusPedido, PrioridadeLevel, PedidoCompleto } from '@/lib/types/database'
 
 interface PedidoDetalhes {
@@ -320,6 +319,16 @@ export default function PedidoDetalhesPage() {
         classe_cor: classe?.cor_badge || pedidoData.classe_cor || undefined
       }
 
+      // Debug: Log dados do montador
+      console.log('🔧 Dados do montador:', {
+        montador_id: pedidoCompleto.montador_id,
+        montador_nome: pedidoCompleto.montador_nome,
+        montador_local: pedidoCompleto.montador_local,
+        montador_contato: pedidoCompleto.montador_contato,
+        custo_montagem: pedidoCompleto.custo_montagem,
+        data_montagem: pedidoCompleto.data_montagem
+      })
+
       setPedido(pedidoCompleto)
       
       // Carregar dados relacionados em paralelo (com tratamento de erros individual)
@@ -382,6 +391,7 @@ export default function PedidoDetalhesPage() {
 
   const getStatusColor = (status: StatusPedido): string => {
     const colors = {
+      'PENDENTE': 'bg-slate-400',
       'REGISTRADO': 'bg-gray-500',
       'AG_PAGAMENTO': 'bg-yellow-500', 
       'PAGO': 'bg-blue-500',
@@ -397,6 +407,7 @@ export default function PedidoDetalhesPage() {
 
   const getStatusLabel = (status: StatusPedido): string => {
     const labels = {
+      'PENDENTE': 'Pendente - Análise DCL',
       'REGISTRADO': 'Registrado',
       'AG_PAGAMENTO': 'Aguardando Pagamento',
       'PAGO': 'Pago',
@@ -447,6 +458,11 @@ export default function PedidoDetalhesPage() {
     const margem = valor - custo
     const percentual = valor > 0 ? (margem / valor) * 100 : 0
     return { valor: margem, percentual }
+  }
+
+  // Formatar percentual com 2 casas decimais
+  const formatarPercentual = (valor: number): string => {
+    return valor.toFixed(2) + '%'
   }
 
   if (!userProfile) {
@@ -527,12 +543,16 @@ export default function PedidoDetalhesPage() {
               format="currency"
               className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
             />
-            <KPICard 
-              title="Margem %"
-              value={calcularMargem(pedido.valor_pedido, pedido.custo_lentes).percentual}
-              format="percentage"
-              className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
-            />
+            <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground dark:text-gray-400">Margem %</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold dark:text-white">
+                  {formatarPercentual(calcularMargem(pedido.valor_pedido, pedido.custo_lentes).percentual)}
+                </div>
+              </CardContent>
+            </Card>
             <KPICard 
               title="Dias no Sistema"
               value={calcularDiasDesdePedido(pedido.data_pedido)}
@@ -547,8 +567,8 @@ export default function PedidoDetalhesPage() {
             />
           </div>
 
-          {/* Layout Principal em 3 Colunas */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Layout Principal em 2 Colunas */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Coluna 1: Informações do Cliente e Dados Ópticos */}
             <div className="space-y-6">
               {/* Informações do Cliente */}
@@ -727,140 +747,8 @@ export default function PedidoDetalhesPage() {
                   </CardContent>
                 </Card>
               )}
-            </div>
 
-            {/* Coluna 2: Dados dos Estabelecimentos e Timeline */}
-            <div className="space-y-6">
-              {/* Estabelecimentos Expandidos */}
-              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 dark:text-white">
-                    <Building className="w-5 h-5" />
-                    <span>Estabelecimentos</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Loja Detalhada */}
-                  <div className="p-3 bg-blue-50/30 dark:bg-blue-950/30 rounded-lg border dark:border-blue-800">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span className="font-medium text-blue-900 dark:text-blue-300">Loja</span>
-                    </div>
-                    <p className="font-semibold dark:text-white">{pedido.loja_nome}</p>
-                    {pedido.loja_codigo && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Código: {pedido.loja_codigo}</p>
-                    )}
-                    {pedido.loja_endereco && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{pedido.loja_endereco}</p>
-                    )}
-                    <div className="flex gap-4 mt-2">
-                      {pedido.loja_telefone && (
-                        <span className="text-sm text-gray-600 dark:text-gray-400">📞 {pedido.loja_telefone}</span>
-                      )}
-                      {pedido.loja_whatsapp && (
-                        <span className="text-sm text-green-600 dark:text-green-400">📱 {pedido.loja_whatsapp}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Laboratório Detalhado */}
-                  <div className="p-3 bg-purple-50/30 dark:bg-purple-950/30 rounded-lg border dark:border-purple-800">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Stethoscope className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      <span className="font-medium text-purple-900 dark:text-purple-300">Laboratório</span>
-                    </div>
-                    <p className="font-semibold dark:text-white">{pedido.laboratorio_nome}</p>
-                    {pedido.laboratorio_codigo && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Código: {pedido.laboratorio_codigo}</p>
-                    )}
-                    <div className="flex gap-4 mt-2 text-sm">
-                      {pedido.laboratorio_sla_padrao && (
-                        <span className="text-gray-600 dark:text-gray-400">
-                          SLA: {pedido.laboratorio_sla_padrao} dias
-                        </span>
-                      )}
-                      {pedido.laboratorio_trabalha_sabado && (
-                        <span className="text-green-600 dark:text-green-400">✓ Sábado</span>
-                      )}
-                    </div>
-                    {pedido.laboratorio_especialidades && pedido.laboratorio_especialidades.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-muted-foreground dark:text-gray-400">Especialidades:</p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {pedido.laboratorio_especialidades.map((esp, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {esp}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Classe de Lente */}
-                  <div className="p-3 bg-green-50/30 dark:bg-green-950/30 rounded-lg border dark:border-green-800">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Package className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      <span className="font-medium text-green-900 dark:text-green-300">Classe de Lente</span>
-                    </div>
-                    <p className="font-semibold dark:text-white">{pedido.classe_nome}</p>
-                    <div className="flex gap-4 mt-2 text-sm">
-                      {pedido.classe_categoria && (
-                        <span className="text-gray-600 dark:text-gray-400">Categoria: {pedido.classe_categoria}</span>
-                      )}
-                      {pedido.classe_sla_base && (
-                        <span className="text-gray-600 dark:text-gray-400">SLA: {pedido.classe_sla_base} dias</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Montador Responsável */}
-                  {pedido.montador_nome && (
-                    <div className="p-3 bg-cyan-50/30 dark:bg-cyan-950/30 rounded-lg border dark:border-cyan-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Users className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                        <span className="font-medium text-cyan-900 dark:text-cyan-300">Montador</span>
-                      </div>
-                      <p className="font-semibold dark:text-white">{pedido.montador_nome}</p>
-                      {pedido.montador_local && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{pedido.montador_local}</p>
-                      )}
-                      {pedido.montador_contato && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          📞 {pedido.montador_contato}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Tratamentos Aplicados */}
-                  {tratamentos && tratamentos.length > 0 && (
-                    <div className="p-3 bg-amber-50/30 dark:bg-amber-950/30 rounded-lg border dark:border-amber-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Settings className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                        <span className="font-medium text-amber-900 dark:text-amber-300">Tratamentos Aplicados</span>
-                      </div>
-                      <div className="space-y-2">
-                        {tratamentos.map((tratamento: any) => (
-                          <div key={tratamento.id} className="flex items-center justify-between">
-                            <span className="text-sm font-medium dark:text-gray-200">{tratamento.nome || 'Tratamento'}</span>
-                            {tratamento.custo_unitario && (
-                              <span className="text-sm text-amber-700 dark:text-amber-400 font-mono">
-                                R$ {Number(tratamento.custo_unitario).toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Coluna 3: Datas, Financeiro e Controle */}
-            <div className="space-y-6">
-              {/* Timeline de Datas */}
+              {/* Controle de Datas */}
               <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 dark:text-white">
@@ -1011,6 +899,140 @@ export default function PedidoDetalhesPage() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Coluna 2: Estabelecimentos, SLA e Observações */}
+            <div className="space-y-6">
+              {/* Estabelecimentos Expandidos */}
+              <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 dark:text-white">
+                    <Building className="w-5 h-5" />
+                    <span>Estabelecimentos</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Loja Detalhada */}
+                  <div className="p-3 bg-blue-50/30 dark:bg-blue-950/30 rounded-lg border dark:border-blue-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="font-medium text-blue-900 dark:text-blue-300">Loja</span>
+                    </div>
+                    <p className="font-semibold dark:text-white">{pedido.loja_nome}</p>
+                    {pedido.loja_codigo && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Código: {pedido.loja_codigo}</p>
+                    )}
+                    {pedido.loja_endereco && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{pedido.loja_endereco}</p>
+                    )}
+                    <div className="flex gap-4 mt-2">
+                      {pedido.loja_telefone && (
+                        <span className="text-sm text-gray-600 dark:text-gray-400">📞 {pedido.loja_telefone}</span>
+                      )}
+                      {pedido.loja_whatsapp && (
+                        <span className="text-sm text-green-600 dark:text-green-400">📱 {pedido.loja_whatsapp}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Laboratório Detalhado */}
+                  <div className="p-3 bg-purple-50/30 dark:bg-purple-950/30 rounded-lg border dark:border-purple-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Stethoscope className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <span className="font-medium text-purple-900 dark:text-purple-300">Laboratório</span>
+                    </div>
+                    <p className="font-semibold dark:text-white">{pedido.laboratorio_nome}</p>
+                    {pedido.laboratorio_codigo && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Código: {pedido.laboratorio_codigo}</p>
+                    )}
+                    <div className="flex gap-4 mt-2 text-sm">
+                      {pedido.laboratorio_sla_padrao && (
+                        <span className="text-gray-600 dark:text-gray-400">
+                          SLA: {pedido.laboratorio_sla_padrao} dias
+                        </span>
+                      )}
+                      {pedido.laboratorio_trabalha_sabado && (
+                        <span className="text-green-600 dark:text-green-400">✓ Sábado</span>
+                      )}
+                    </div>
+                    {pedido.laboratorio_especialidades && pedido.laboratorio_especialidades.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs text-muted-foreground dark:text-gray-400">Especialidades:</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {pedido.laboratorio_especialidades.map((esp, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {esp}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Classe de Lente */}
+                  <div className="p-3 bg-green-50/30 dark:bg-green-950/30 rounded-lg border dark:border-green-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <span className="font-medium text-green-900 dark:text-green-300">Classe de Lente</span>
+                    </div>
+                    <p className="font-semibold dark:text-white">{pedido.classe_nome}</p>
+                    <div className="flex gap-4 mt-2 text-sm">
+                      {pedido.classe_categoria && (
+                        <span className="text-gray-600 dark:text-gray-400">Categoria: {pedido.classe_categoria}</span>
+                      )}
+                      {pedido.classe_sla_base && (
+                        <span className="text-gray-600 dark:text-gray-400">SLA: {pedido.classe_sla_base} dias</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Montador Responsável */}
+                  {(pedido.montador_nome || pedido.montador_id) && (
+                    <div className="p-3 bg-cyan-50/30 dark:bg-cyan-950/30 rounded-lg border dark:border-cyan-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                        <span className="font-medium text-cyan-900 dark:text-cyan-300">Montador Responsável</span>
+                      </div>
+                      {pedido.montador_nome ? (
+                        <>
+                          <p className="font-semibold dark:text-white">{pedido.montador_nome}</p>
+                          {pedido.montador_local && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{pedido.montador_local}</p>
+                          )}
+                          {pedido.montador_contato && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                              📞 {pedido.montador_contato}
+                            </p>
+                          )}
+                          {pedido.custo_montagem && (
+                            <p className="text-sm text-cyan-700 dark:text-cyan-400 mt-2 font-medium">
+                              💰 R$ {Number(pedido.custo_montagem).toFixed(2)}
+                            </p>
+                          )}
+                          {pedido.data_montagem && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Atribuído em {format(parseISO(pedido.data_montagem), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <div className="bg-yellow-50/50 dark:bg-yellow-950/30 border border-yellow-200/50 dark:border-yellow-800 rounded p-2 mt-2">
+                          <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                            ⚠️ Montador vinculado mas dados incompletos
+                          </p>
+                          <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                            ID: {pedido.montador_id}
+                          </p>
+                          <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                            Execute o script de atualização para popular os dados
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                </CardContent>
+              </Card>
 
               {/* SLA e Métricas */}
               <Card className="backdrop-blur-xl bg-white/30 dark:bg-gray-800/30 border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl transition-all duration-300">
@@ -1123,36 +1145,83 @@ export default function PedidoDetalhesPage() {
                   </CardContent>
                 </Card>
               )}
+            </div>
+          </div>
 
-              {/* Timeline SLA */}
-              <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+          {/* Progresso do Pedido - Full Width */}
+          <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    <span>Timeline SLA</span>
+                    <Activity className="w-5 h-5" />
+                    <span>Progresso do Pedido</span>
                     {pedido.sla_atrasado && (
                       <Badge className="bg-red-500 text-white ml-auto">
                         <AlertTriangle className="w-3 h-3 mr-1" />
-                        SLA ATRASADO
+                        ATRASADO
                       </Badge>
                     )}
                     {pedido.sla_alerta && !pedido.sla_atrasado && (
                       <Badge className="bg-yellow-500 text-white ml-auto">
-                        <Activity className="w-3 h-3 mr-1" />
-                        SLA EM ALERTA
+                        ALERTA
                       </Badge>
                     )}
                   </CardTitle>
-                  <CardDescription>
-                    Acompanhe o progresso e prazos do pedido
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <PedidoTimeline pedido={pedido} />
+                  <div className="space-y-4">
+                    {/* Barra de Progresso Visual */}
+                    <div className="flex items-center gap-2">
+                      {['REGISTRADO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENTREGUE'].map((status, idx) => {
+                        const isComplete = ['REGISTRADO', 'PAGO', 'PRODUCAO', 'PRONTO', 'ENTREGUE'].indexOf(pedido.status) >= idx
+                        const isCurrent = pedido.status === status
+                        return (
+                          <div key={status} className="flex-1">
+                            <div className={`h-2 rounded-full transition-all duration-300 ${
+                              isComplete ? 'bg-green-500 dark:bg-green-400' : 
+                              isCurrent ? 'bg-blue-500 dark:bg-blue-400 animate-pulse' :
+                              'bg-gray-200 dark:bg-gray-700'
+                            }`} />
+                            <p className={`text-xs mt-1 text-center ${
+                              isCurrent ? 'font-bold text-blue-600 dark:text-blue-400' :
+                              isComplete ? 'text-green-600 dark:text-green-400' :
+                              'text-gray-400 dark:text-gray-600'
+                            }`}>
+                              {status === 'REGISTRADO' ? 'Registro' :
+                               status === 'PAGO' ? 'Pago' :
+                               status === 'PRODUCAO' ? 'Produção' :
+                               status === 'PRONTO' ? 'Pronto' : 'Entregue'}
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Métricas SLA Horizontais */}
+                    <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground dark:text-gray-400">Dias no Sistema</p>
+                        <p className="text-lg font-bold dark:text-white">{calcularDiasDesdePedido(pedido.data_pedido)}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground dark:text-gray-400">SLA Restante</p>
+                        <p className={`text-lg font-bold ${
+                          pedido.sla_atrasado ? 'text-red-500 dark:text-red-400' :
+                          pedido.sla_alerta ? 'text-yellow-500 dark:text-yellow-400' :
+                          'text-green-500 dark:text-green-400'
+                        }`}>
+                          {calcularSLARestante(pedido.data_prevista_pronto) || '-'} dias
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground dark:text-gray-400">Promessa</p>
+                        <p className="text-lg font-bold text-blue-500 dark:text-blue-400">
+                          {pedido.data_prometida ? format(parseISO(pedido.data_prometida), 'dd/MM', { locale: ptBR }) : '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </div>
-          </div>
         </div>
       </main>
     </div>

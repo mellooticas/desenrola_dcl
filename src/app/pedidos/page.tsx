@@ -46,6 +46,7 @@ import { PrintOrderButton } from '@/components/pedidos/PrintOrderButton'
 
 // Configuração de cores otimizada
 const STATUS_CONFIG: Record<StatusPedido, { color: string; label: string; icon: React.ComponentType<{ className?: string }> }> = {
+  'PENDENTE': { color: 'bg-slate-100 text-slate-700 border-slate-300', label: 'Pendente', icon: Clock },
   'REGISTRADO': { color: 'bg-slate-100 text-slate-800 border-slate-200', label: 'Registrado', icon: Package },
   'AG_PAGAMENTO': { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'Aguard. Pagamento', icon: Clock },
   'PAGO': { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', label: 'Pago', icon: CheckCircle },

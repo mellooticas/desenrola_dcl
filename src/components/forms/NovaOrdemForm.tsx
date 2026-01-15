@@ -13,14 +13,15 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { 
-  Plus, Clock, Calculator, AlertCircle, Shield, DollarSign, 
+import {
+  Plus, Clock, Calculator, AlertCircle, Shield, DollarSign,
   Building2, MapPin, User, CheckCircle2, ArrowLeft, ArrowRight, Calendar, Printer, CheckCircle
 } from 'lucide-react'
 import { supabaseHelpers } from '@/lib/supabase/helpers'
 import { Laboratorio, Loja, ClasseLente, Tratamento, PrioridadeLevel, PRIORIDADE_LABELS, PedidoCompleto } from '@/lib/types/database'
 import { PrintOrderButton } from '@/components/pedidos/PrintOrderButton'
 import { supabase } from '@/lib/supabase/client'
+import { LenteSelector } from '../lentes/LenteSelector'
 
 interface NovaOrdemFormProps {
   onSuccess?: () => void
@@ -33,14 +34,13 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
   const [loadingData, setLoadingData] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [pedidoCriado, setPedidoCriado] = useState<PedidoCompleto | null>(null)
-  
+
   // Dados para seleção
   const [lojas, setLojas] = useState<Loja[]>([])
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
   const [classes, setClasses] = useState<ClasseLente[]>([])
   const [tratamentos, setTratamentos] = useState<Tratamento[]>([])
-  
-  // Form data otimizado
+
   const [formData, setFormData] = useState({
     loja_id: '',
     laboratorio_id: '',
@@ -56,9 +56,22 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
     tratamentos_ids: [] as string[],
     observacoes: '',
     observacoes_garantia: '',
-    data_prometida_manual: '' // Novo campo para data prometida personalizada
+    data_prometida_manual: '',
+
+    // Novos campos inteligentes
+    grupo_canonico_id: null as string | null,
+    lente_id: null as string | null,
+    nome_lente_selecionada: null as string | null,
+    lente_slug_snapshot: null as string | null
   })
-  
+
+  // Mapeamento de tipos para classes (memória)
+  const mapTipoLenteToClasse = (tipo: string, classesDisponiveis: ClasseLente[]) => {
+    // Tenta encontrar uma classe compatível pelo nome
+    const termo = tipo === 'visao_simples' ? 'simples' : tipo === 'multifocal' ? 'multifocal' : 'bifocal'
+    return classesDisponiveis.find(c => c.nome.toLowerCase().includes(termo))?.id || ''
+  }
+
   // SLA calculado com separação lab vs cliente
   const [slaInfo, setSlaInfo] = useState<{
     diasSlaLab: number
@@ -102,7 +115,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
     // 3. CALCULAR DATAS
     const dataSlaLab = addBusinessDays(new Date(), diasSlaLab)
     const dataPromessaCliente = addBusinessDays(new Date(), diasPromessaCliente)
-    
+
     setSlaInfo({
       diasSlaLab,
       diasPromessaCliente,
@@ -130,14 +143,14 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
   const loadInitialData = async () => {
     try {
       setLoadingData(true)
-      
+
       const [lojasData, labsData, classesData, tratamentosData] = await Promise.all([
         supabaseHelpers.getLojas(),
         supabaseHelpers.getLaboratorios(),
         supabaseHelpers.getClassesLente(),
         supabaseHelpers.getTratamentos().catch(() => []) // Não quebra se falhar
       ])
-      
+
       setLojas(lojasData)
       setLaboratorios(labsData)
       setClasses(classesData)
@@ -152,21 +165,21 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
   const addBusinessDays = (date: Date, days: number): Date => {
     const result = new Date(date)
     let addedDays = 0
-    
+
     while (addedDays < days) {
       result.setDate(result.getDate() + 1)
       if (result.getDay() !== 0 && result.getDay() !== 6) {
         addedDays++
       }
     }
-    
+
     return result
   }
 
   const handleTratamentoChange = (tratamentoId: string, checked: boolean) => {
     setFormData(prev => ({
       ...prev,
-      tratamentos_ids: checked 
+      tratamentos_ids: checked
         ? [...prev.tratamentos_ids, tratamentoId]
         : prev.tratamentos_ids.filter(id => id !== tratamentoId)
     }))
@@ -188,7 +201,11 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
       tratamentos_ids: [],
       observacoes: '',
       observacoes_garantia: '',
-      data_prometida_manual: '' // Limpar data prometida manual
+      data_prometida_manual: '',
+      grupo_canonico_id: null,
+      lente_id: null,
+      nome_lente_selecionada: null,
+      lente_slug_snapshot: null
     })
     setStep(1)
     setSlaInfo(null)
@@ -196,7 +213,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.loja_id || !formData.laboratorio_id || !formData.classe_lente_id || !formData.cliente_nome) {
       alert('Preencha todos os campos obrigatórios')
       return
@@ -204,7 +221,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
 
     try {
       setLoading(true)
-      
+
       const pedidoData = {
         loja_id: formData.loja_id,
         laboratorio_id: formData.laboratorio_id,
@@ -220,9 +237,13 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
         tratamentos_ids: formData.tratamentos_ids,
         observacoes: formData.observacoes || undefined,
         observacoes_garantia: formData.eh_garantia ? formData.observacoes_garantia : undefined,
-        data_prometida_manual: formData.data_prometida_manual || undefined // Nova data prometida
+        data_prometida_manual: formData.data_prometida_manual || undefined,
+        grupo_canonico_id: formData.grupo_canonico_id || undefined,
+        lente_id: formData.lente_id || undefined,
+        lente_nome_snapshot: formData.nome_lente_selecionada || undefined,
+        lente_slug_snapshot: formData.lente_slug_snapshot || undefined
       }
-      
+
       // DEBUG: Log dos dados que estão sendo enviados
       console.log('📋 Dados sendo enviados para API:', {
         numero_os_fisica: pedidoData.numero_os_fisica,
@@ -230,7 +251,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
         cliente_nome: pedidoData.cliente_nome,
         eh_garantia: pedidoData.eh_garantia
       })
-      
+
       const resultado = await supabaseHelpers.criarPedidoCompleto(pedidoData)
 
       // Buscar dados completos do pedido para impressão
@@ -274,10 +295,13 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
     }
   }
 
-  const canProceedStep1 = formData.loja_id && formData.laboratorio_id
-  const canProceedStep2 = formData.classe_lente_id
+  // Passo 1 agora só exige Loja (Laboratório vem da lente no passo 2)
+  const canProceedStep1 = Boolean(formData.loja_id)
+
+  // Passo 2 exige Lente (que define Lab e Classe)
+  const canProceedStep2 = Boolean(formData.laboratorio_id && formData.classe_lente_id)
   const canSubmit = Boolean(
-    formData.cliente_nome && 
+    formData.cliente_nome &&
     formData.numero_pedido_laboratorio
   )
 
@@ -293,21 +317,19 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
       ].map(({ num, label, icon: Icon }, index) => (
         <React.Fragment key={num}>
           <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-medium transition-all ${
-              num === step
-                ? 'bg-blue-600 text-white shadow-lg scale-110'
-                : num < step
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-medium transition-all ${num === step
+              ? 'bg-blue-600 text-white shadow-lg scale-110'
+              : num < step
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-200 text-gray-600'
-            }`}>
+              }`}>
               {num < step ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Icon className="w-3 h-3 sm:w-4 sm:h-4" />}
             </div>
             <span className="text-xs mt-1 font-medium text-center px-1">{label}</span>
           </div>
           {index < 2 && (
-            <div className={`flex-1 h-0.5 mx-1 sm:mx-2 transition-all ${
-              num < step ? 'bg-green-600' : 'bg-gray-200'
-            }`} />
+            <div className={`flex-1 h-0.5 mx-1 sm:mx-2 transition-all ${num < step ? 'bg-green-600' : 'bg-gray-200'
+              }`} />
           )}
         </React.Fragment>
       ))}
@@ -345,29 +367,13 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
           </Select>
         </div>
 
-        {/* Laboratório */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <Calculator className="w-4 h-4 text-green-600" />
-            Laboratório *
-          </Label>
-          <Select value={formData.laboratorio_id} onValueChange={(value) => setFormData(prev => ({ ...prev, laboratorio_id: value }))}>
-            <SelectTrigger className="h-12 bg-white/70 backdrop-blur-sm border-gray-300 hover:bg-white/90 transition-all duration-200">
-              <SelectValue placeholder="Selecione o laboratório" />
-            </SelectTrigger>
-            <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20">
-              {laboratorios.map(lab => (
-                <SelectItem key={lab.id} value={lab.id} className="hover:bg-green-50/80">
-                  <div className="flex items-center justify-between w-full">
-                    <span className="font-medium">{lab.nome}</span>
-                    <Badge className="ml-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white">
-                      {lab.sla_padrao_dias}d SLA
-                    </Badge>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Laboratório removido daqui - movido para Step 2 automático via LenteSelector */}
+        <div className="p-3 bg-blue-50 border border-blue-100 rounded-md text-sm text-blue-800 flex items-start gap-3">
+          <Calculator className="w-5 h-5 text-blue-600 mt-0.5" />
+          <div>
+            <strong>Fluxo Atualizado:</strong>
+            <p className="mt-1">A seleção do Laboratório agora é feita automaticamente ao escolher a <strong>Lente</strong> no próximo passo.</p>
+          </div>
         </div>
 
         {/* OS Física */}
@@ -402,8 +408,8 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
         </Card>
       )}
 
-      <Button 
-        onClick={() => setStep(2)} 
+      <Button
+        onClick={() => setStep(2)}
         disabled={!canProceedStep1}
         className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
       >
@@ -421,29 +427,63 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
       </div>
 
       <div className="space-y-4">
-        {/* Classe da Lente */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <Shield className="w-4 h-4 text-purple-600" />
-            Classe da Lente *
+        {/* SELETOR DE LENTES INTELIGENTE */}
+        <div className="space-y-3">
+          <Label className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-blue-600" />
+            Selecione a Lente
+          </Label>
+
+          <LenteSelector
+            onSelect={(lente) => {
+              console.log('👓 Lente selecionada:', lente)
+
+              const classeId = mapTipoLenteToClasse(lente.tipo_lente, classes)
+
+              setFormData(prev => ({
+                ...prev,
+                grupo_canonico_id: lente.grupo_canonico_id,
+                nome_lente_selecionada: lente.nome_grupo,
+                lente_slug_snapshot: lente.slug,
+                laboratorio_id: lente.fornecedor_id, // Laboratório vem do fornecedor da lente!
+                custo_lentes: lente.preco_medio.toFixed(2), // Custo sugerido
+                classe_lente_id: classeId // Tenta auto-selecionar a classe
+              }))
+            }}
+            grupoSelecionadoId={formData.grupo_canonico_id}
+            className="border-2 border-blue-100 rounded-xl p-4 bg-white shadow-sm"
+          />
+
+          {/* Feedback da seleção */}
+          {formData.nome_lente_selecionada && (
+            <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <div>
+                  <div className="font-medium text-green-900">{formData.nome_lente_selecionada}</div>
+                  <div className="text-xs text-green-700">Laboratório e Preço atualizados automaticamente</div>
+                </div>
+              </div>
+              <Badge variant="outline" className="bg-white border-green-200 text-green-800">
+                R$ {formData.custo_lentes}
+              </Badge>
+            </div>
+          )}
+        </div>
+
+        {/* Classe da Lente (Select Manual como Fallback/Confirmação) */}
+        <div className="space-y-2 pt-4 border-t border-gray-100">
+          <Label className="text-sm font-medium flex items-center gap-2 text-gray-600">
+            Confirmação da Classe (Interno)
           </Label>
           <Select value={formData.classe_lente_id} onValueChange={(value) => setFormData(prev => ({ ...prev, classe_lente_id: value }))}>
-            <SelectTrigger className="h-12 bg-white/70 backdrop-blur-sm border-gray-300 hover:bg-white/90 transition-all duration-200">
-              <SelectValue placeholder="Selecione a classe da lente" />
+            <SelectTrigger className="h-10 bg-gray-50 border-gray-200">
+              <SelectValue placeholder="Selecione a classe..." />
             </SelectTrigger>
-            <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20">
+            <SelectContent>
               {classes.map(classe => (
-                <SelectItem key={classe.id} value={classe.id} className="hover:bg-purple-50/80">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-3 h-3 rounded shadow-sm"
-                      style={{ backgroundColor: classe.cor_badge }}
-                    />
-                    <span className="font-medium">{classe.nome}</span>
-                    <Badge className="text-xs bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                      {classe.sla_base_dias}d
-                    </Badge>
-                  </div>
+                <SelectItem key={classe.id} value={classe.id}>
+                  {classe.nome} ({classe.sla_base_dias}d)
                 </SelectItem>
               ))}
             </SelectContent>
@@ -501,7 +541,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
                         onCheckedChange={(checked: boolean) => handleTratamentoChange(tratamento.id, checked)}
                       />
                       <div className="flex items-center gap-2 flex-1">
-                        <div 
+                        <div
                           className="w-3 h-3 rounded"
                           style={{ backgroundColor: tratamento.cor_badge }}
                         />
@@ -533,7 +573,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
                 <CheckCircle2 className="w-4 h-4" />
                 <span className="font-medium">Prazos Calculados</span>
               </div>
-              
+
               <div className="grid grid-cols-1 gap-4">
                 {/* SLA Lab - Controle Interno */}
                 <div className="bg-blue-100/60 rounded-lg p-3 border border-blue-200">
@@ -548,7 +588,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
                 {/* Data Prometida ao Cliente - NOVA SEÇÃO */}
                 <div className="bg-green-100/60 rounded-lg p-3 border border-green-200">
                   <div className="text-xs font-medium text-green-600 mb-2">🤝 Data Prometida ao Cliente</div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
                       <input
@@ -564,7 +604,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
                         <span className="text-gray-500 ml-1">({slaInfo.diasPromessaCliente} dias)</span>
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
                       <input
                         type="radio"
@@ -583,7 +623,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
                         Personalizada:
                       </label>
                     </div>
-                    
+
                     {formData.data_prometida_manual && (
                       <div className="ml-6 mt-2">
                         <Input
@@ -619,8 +659,8 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar
         </Button>
-        <Button 
-          onClick={() => setStep(3)} 
+        <Button
+          onClick={() => setStep(3)}
           disabled={!canProceedStep2}
           className="flex-1 h-12 bg-blue-600 hover:bg-blue-700"
         >
@@ -837,7 +877,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
-          <Button 
+          <Button
             onClick={handleSubmit}
             disabled={!canSubmit || loading}
             className="flex-1 h-12 bg-green-600 hover:bg-green-700"
@@ -881,7 +921,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
 
           <div className="sticky top-[100px] sm:top-[120px] bg-white z-10 px-4 sm:px-6 py-2 sm:py-3 border-b">
             {renderStepIndicator()}
-          </div> 
+          </div>
 
           <div className="px-4 sm:px-6 pb-4 sm:pb-6">
             {loadingData ? (
@@ -893,7 +933,7 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
               <form onSubmit={handleSubmit}>
                 {step === 1 && renderStep1()}
                 {step === 2 && renderStep2()}
-                {step === 3 && renderStep3()} 
+                {step === 3 && renderStep3()}
               </form>
             )}
           </div>
@@ -902,72 +942,72 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
 
       {/* Modal de Sucesso */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mx-auto mb-4">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-          </div>
-          <DialogTitle className="text-center text-xl font-bold">
-            Pedido Criado com Sucesso!
-          </DialogTitle>
-          <DialogDescription className="text-center">
-            {pedidoCriado && `Pedido #${pedidoCriado.numero_sequencial} foi criado`}
-          </DialogDescription>
-        </DialogHeader>
-
-        {pedidoCriado && (
-          <div className="space-y-4">
-            <div className="bg-slate-50 rounded-lg p-4 space-y-2">
-              <div>
-                <p className="text-sm text-slate-500">Cliente</p>
-                <p className="font-medium">{pedidoCriado.cliente_nome}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Loja</p>
-                <p className="font-medium">{pedidoCriado.loja_nome}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Laboratório</p>
-                <p className="font-medium">{pedidoCriado.laboratorio_nome}</p>
-              </div>
-              {pedidoCriado.numero_os_fisica && (
-                <div>
-                  <p className="text-sm text-slate-500">OS Loja</p>
-                  <p className="font-medium">{pedidoCriado.numero_os_fisica}</p>
-                </div>
-              )}
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mx-auto mb-4">
+              <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
+            <DialogTitle className="text-center text-xl font-bold">
+              Pedido Criado com Sucesso!
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              {pedidoCriado && `Pedido #${pedidoCriado.numero_sequencial} foi criado`}
+            </DialogDescription>
+          </DialogHeader>
 
-            <Alert className="border-blue-200 bg-blue-50">
-              <Printer className="h-4 w-4 text-blue-600" />
-              <AlertTitle className="text-blue-900">Deseja imprimir agora?</AlertTitle>
-              <AlertDescription className="text-blue-700">
-                Você pode imprimir os detalhes deste pedido antes de continuar.
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
-
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setShowSuccessModal(false)}
-            className="w-full sm:w-auto"
-          >
-            Fechar
-          </Button>
           {pedidoCriado && (
-            <PrintOrderButton
-              pedido={pedidoCriado}
-              variant="default"
-              size="default"
-              className="w-full sm:w-auto"
-            />
+            <div className="space-y-4">
+              <div className="bg-slate-50 rounded-lg p-4 space-y-2">
+                <div>
+                  <p className="text-sm text-slate-500">Cliente</p>
+                  <p className="font-medium">{pedidoCriado.cliente_nome}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Loja</p>
+                  <p className="font-medium">{pedidoCriado.loja_nome}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Laboratório</p>
+                  <p className="font-medium">{pedidoCriado.laboratorio_nome}</p>
+                </div>
+                {pedidoCriado.numero_os_fisica && (
+                  <div>
+                    <p className="text-sm text-slate-500">OS Loja</p>
+                    <p className="font-medium">{pedidoCriado.numero_os_fisica}</p>
+                  </div>
+                )}
+              </div>
+
+              <Alert className="border-blue-200 bg-blue-50">
+                <Printer className="h-4 w-4 text-blue-600" />
+                <AlertTitle className="text-blue-900">Deseja imprimir agora?</AlertTitle>
+                <AlertDescription className="text-blue-700">
+                  Você pode imprimir os detalhes deste pedido antes de continuar.
+                </AlertDescription>
+              </Alert>
+            </div>
           )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full sm:w-auto"
+            >
+              Fechar
+            </Button>
+            {pedidoCriado && (
+              <PrintOrderButton
+                pedido={pedidoCriado}
+                variant="default"
+                size="default"
+                className="w-full sm:w-auto"
+              />
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
