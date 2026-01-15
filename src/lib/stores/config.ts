@@ -87,6 +87,7 @@ const DEFAULT_CONFIG: ConfiguracaoSistema = {
   },
   cores: {
     status: {
+      'PENDENTE': '#94A3B8',        // Cinza (alias para REGISTRADO)
       'REGISTRADO': '#94A3B8',      // Cinza
       'AG_PAGAMENTO': '#F59E0B',    // Amarelo
       'PAGO': '#10B981',            // Verde claro
