@@ -1,0 +1,38 @@
+# Configuração Netlify - Desenrola DCL
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Configuração de Secrets Scanning
+# As chaves NEXT_PUBLIC_* são intencionalmente públicas e incluídas no bundle
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_LENTES_SUPABASE_ANON_KEY,NEXT_PUBLIC_LENTES_SUPABASE_URL"
+
+# Headers para otimização de cache
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Redirecionamentos para Next.js Image Optimization
+[[redirects]]
+  from = "/_next/image"
+  query = { url = ":url", w = ":width", q = ":quality" }
+  to = "/.netlify/images?url=:url&w=:width&q=:quality"
+  status = 200
+
+[[redirects]]
+  from = "/_ipx/*"
+  query = { url = ":url", w = ":width", q = ":quality" }
+  to = "/.netlify/images?url=:url&w=:width&q=:quality"
+  status = 200
+
+# Plugin Next.js
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
