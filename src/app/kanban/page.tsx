@@ -13,12 +13,12 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Search, Bell, Eye, ArrowLeft, ArrowRight, CheckCircle, Lock, RefreshCw, Copy, Package, AlertCircle, X, DollarSign, Clock, MapPin, Truck } from 'lucide-react'
+import { Search, Bell, Eye, ArrowLeft, ArrowRight, CheckCircle, Lock, RefreshCw, Copy, Package, AlertCircle, X, DollarSign, Clock, MapPin, Truck, Plus } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { PedidoCompleto, StatusPedido, PrioridadeLevel, Montador } from '@/lib/types/database'
 import { STATUS_COLORS, STATUS_LABELS } from '@/lib/utils/constants'
 import { cn } from '@/lib/utils'
-import NovaOrdemForm from '@/components/forms/NovaOrdemForm'
+import { CriarPedidoWizard } from '@/components/forms/CriarPedidoWizard'
 import { KanbanCard } from '@/components/kanban/KanbanCard'
 import { KanbanCardModern } from '@/components/kanban/KanbanCardModern'
 import { KanbanColumnHeader } from '@/components/kanban/KanbanColumnHeader'
@@ -378,6 +378,7 @@ export default function KanbanBoard() {
   const [isHydrated, setIsHydrated] = useState(false)
   const [filtroUrgencia, setFiltroUrgencia] = useState<NivelUrgencia | null>(null) // NOVO: Filtro de urgência
   const [filtroPrazo, setFiltroPrazo] = useState<FiltroPrazo>(null) // NOVO: Filtro de prazo
+  const [showCriarPedidoWizard, setShowCriarPedidoWizard] = useState(false) // NOVO: Wizard de criação
   
   // ========== ESTADO DO MODAL DE MONTADOR ==========
   const [showMontadorDialog, setShowMontadorDialog] = useState(false)
@@ -1336,7 +1337,13 @@ export default function KanbanBoard() {
 
                 {/* 🔒 PROTEÇÃO: Ocultar botão de criar para demo */}
                 {permissions.canCreateOrder() && !demoPermissions.isDemo && (
-                  <NovaOrdemForm onSuccess={loadPedidos} />
+                  <Button 
+                    onClick={() => setShowCriarPedidoWizard(true)}
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Novo Pedido
+                  </Button>
                 )}
 
                 <Link href="/pedidos">
@@ -1543,6 +1550,17 @@ export default function KanbanBoard() {
             onOpenChange={setShowMontadorDialog}
             onSelect={handleMontadorSelected}
             pedidoNumero={pendingMove?.pedido.numero_sequencial?.toString()}
+          />
+
+          {/* ========== WIZARD DE CRIAÇÃO DE PEDIDO ========== */}
+          <CriarPedidoWizard 
+            open={showCriarPedidoWizard}
+            onOpenChange={setShowCriarPedidoWizard}
+            onSuccess={() => {
+              loadPedidos()
+              setShowCriarPedidoWizard(false)
+            }}
+            lojaPreSelecionada={selectedLoja !== 'all' ? selectedLoja : undefined}
           />
 
           {/* ========== LOADING OVERLAY ========== */}
