@@ -19,6 +19,7 @@ import { PedidoCompleto, StatusPedido, PrioridadeLevel, Montador } from '@/lib/t
 import { STATUS_COLORS, STATUS_LABELS } from '@/lib/utils/constants'
 import { cn } from '@/lib/utils'
 import { CriarPedidoWizard } from '@/components/forms/CriarPedidoWizard'
+import { CriarPedidoWizardV2 } from '@/components/forms/CriarPedidoWizardV2'
 import { KanbanCard } from '@/components/kanban/KanbanCard'
 import { KanbanCardModern } from '@/components/kanban/KanbanCardModern'
 import { KanbanColumnHeader } from '@/components/kanban/KanbanColumnHeader'
@@ -1552,15 +1553,14 @@ export default function KanbanBoard() {
             pedidoNumero={pendingMove?.pedido.numero_sequencial?.toString()}
           />
 
-          {/* ========== WIZARD DE CRIAÇÃO DE PEDIDO ========== */}
-          <CriarPedidoWizard 
+          {/* ========== WIZARD DE CRIAÇÃO DE PEDIDO V2 (SIMPLIFICADO) ========== */}
+          <CriarPedidoWizardV2
             open={showCriarPedidoWizard}
-            onOpenChange={setShowCriarPedidoWizard}
+            onClose={() => setShowCriarPedidoWizard(false)}
             onSuccess={() => {
               loadPedidos()
               setShowCriarPedidoWizard(false)
             }}
-            lojaPreSelecionada={selectedLoja !== 'all' ? selectedLoja : undefined}
           />
 
           {/* ========== LOADING OVERLAY ========== */}

@@ -118,7 +118,7 @@ export function CriarPedidoWizard({
       const { data, error } = await lentesClient
         .from('v_grupos_canonicos')
         .select('*')
-        .ilike('nome_comercial', `%${termo}%`)
+        .ilike('nome_grupo', `%${termo}%`)
         .limit(10)
       
       if (error) throw error

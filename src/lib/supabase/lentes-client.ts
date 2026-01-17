@@ -107,23 +107,23 @@ export const testLentesConnection = async () => {
 
 // Tipos TypeScript para as views principais
 export type GrupoCanonicoView = {
-  grupo_id: string
+  id: string // ✅ Campo correto da view v_grupos_canonicos
   nome_grupo: string
   slug: string
   tipo_lente: 'visao_simples' | 'multifocal' | 'bifocal' | 'leitura' | 'ocupacional'
   material: string
   indice_refracao: string
-  categoria: 'economica' | 'intermediaria' | 'premium' | 'super_premium'
+  categoria_predominante: string // ✅ Nome correto no banco
   preco_minimo: number
   preco_medio: number
   preco_maximo: number
   total_lentes: number
-  total_fornecedores: number
   total_marcas: number
   is_premium: boolean
-  antirreflexo: boolean
-  blue_light: boolean
-  fotossensiveis: string
+  tratamento_antirreflexo: boolean // ✅ Nome correto
+  tratamento_blue_light: boolean // ✅ Nome correto
+  tratamento_fotossensiveis: string // ✅ Nome correto
+  peso: number
 }
 
 export type FornecedorPorLenteView = {
