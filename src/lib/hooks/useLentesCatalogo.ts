@@ -69,6 +69,37 @@ export interface LenteDetalhada {
   ativo: boolean
 }
 
+export interface LenteComLaboratorio {
+  lente_id: string
+  lente_nome: string
+  lente_slug: string
+  nome_canonizado: string
+  
+  // Grupo
+  grupo_canonico_id: string
+  
+  // Especificações
+  tipo_lente: 'visao_simples' | 'multifocal' | 'bifocal' | 'leitura' | 'ocupacional'
+  material: string
+  indice_refracao: string
+  
+  // Laboratório (fornecedor)
+  fornecedor_id: string
+  fornecedor_nome: string
+  
+  // Marca
+  marca_id: string | null
+  marca_nome: string | null
+  
+  // Financeiro
+  preco_custo: number
+  prazo_dias: number
+  
+  // Status
+  ativo: boolean
+  categoria: string
+}
+
 export interface FiltrosLente {
   tipo_lente?: 'visao_simples' | 'multifocal' | 'bifocal'
   material?: string
@@ -77,6 +108,16 @@ export interface FiltrosLente {
   preco_max?: number
   is_premium?: boolean
   busca?: string // Busca por nome
+  
+  // ⚡ NOVOS FILTROS: Tratamentos
+  tratamento_antirreflexo?: boolean
+  tratamento_antirrisco?: boolean
+  tratamento_uv?: boolean
+  tratamento_blue_light?: boolean
+  tratamento_fotossensiveis?: 'nenhum' | 'fotocromático' | 'polarizado' | null
+  
+  // ⚡ NOVO FILTRO: Marca
+  marca_id?: string
 }
 
 // ============================================================
@@ -87,8 +128,9 @@ export function useGruposCanonicos(filtros?: FiltrosLente) {
   return useQuery({
     queryKey: ['grupos-canonicos', filtros],
     queryFn: async () => {
+      // ⚡ Usar v_grupos_canonicos (view pública no schema public)
       let query = lentesClient
-        .from('v_grupos_canonicos_completos')
+        .from('v_grupos_canonicos')
         .select('*')
         .order('preco_medio', { ascending: true })
 
@@ -121,6 +163,30 @@ export function useGruposCanonicos(filtros?: FiltrosLente) {
         query = query.ilike('nome_grupo', `%${filtros.busca}%`)
       }
 
+      // ⚡ NOVOS FILTROS: Tratamentos
+      if (filtros?.tratamento_antirreflexo !== undefined) {
+        query = query.eq('tratamento_antirreflexo', filtros.tratamento_antirreflexo)
+      }
+
+      if (filtros?.tratamento_antirrisco !== undefined) {
+        query = query.eq('tratamento_antirrisco', filtros.tratamento_antirrisco)
+      }
+
+      if (filtros?.tratamento_uv !== undefined) {
+        query = query.eq('tratamento_uv', filtros.tratamento_uv)
+      }
+
+      if (filtros?.tratamento_blue_light !== undefined) {
+        query = query.eq('tratamento_blue_light', filtros.tratamento_blue_light)
+      }
+
+      if (filtros?.tratamento_fotossensiveis) {
+        query = query.eq('tratamento_fotossensiveis', filtros.tratamento_fotossensiveis)
+      }
+
+      // ⚡ NOVO FILTRO: Marca (buscar lentes da marca e depois agrupar - complexo, fazer server-side depois)
+      // Por enquanto, vamos ignorar filtro de marca no hook (fazer no componente após receber dados)
+
       const { data, error } = await query
 
       if (error) {
@@ -145,35 +211,26 @@ export function useLentesDoGrupo(grupoCanonicoId: string | null) {
     queryFn: async () => {
       if (!grupoCanonicoId) return []
 
+      console.log('[useLentesDoGrupo] Buscando lentes do grupo:', grupoCanonicoId)
+
       const { data, error } = await lentesClient
-        .from('lentes')
-        .select(`
-          id,
-          fornecedor_id,
-          marca_id,
-          grupo_canonico_id,
-          nome_lente,
-          tipo_lente,
-          material,
-          indice_refracao,
-          preco_venda_sugerido,
-          preco_custo,
-          ativo
-        `)
+        .from('v_lentes_cotacao_compra')
+        .select('*')
         .eq('grupo_canonico_id', grupoCanonicoId)
         .eq('ativo', true)
-        .order('preco_venda_sugerido', { ascending: true })
+        .order('preco_custo', { ascending: true }) // Melhor custo primeiro
 
       if (error) {
-        console.error('Erro ao buscar lentes do grupo:', error)
+        console.error('[useLentesDoGrupo] Erro ao buscar lentes:', error)
         throw error
       }
 
-      return data as LenteDetalhada[]
+      console.log(`[useLentesDoGrupo] ✅ ${data?.length || 0} lentes encontradas`)
+      return data as LenteComLaboratorio[]
     },
     enabled: !!grupoCanonicoId,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   })
 }
 
@@ -187,23 +244,11 @@ export function useLenteDetalhes(lenteId: string | null) {
     queryFn: async () => {
       if (!lenteId) return null
 
+      // ⚡ Usar v_lentes_cotacao_compra que já tem todos os joins
       const { data, error } = await lentesClient
-        .from('lentes')
-        .select(`
-          *,
-          fornecedor:fornecedor_id (
-            id,
-            nome,
-            prazo_visao_simples,
-            prazo_multifocal
-          ),
-          grupo_canonico:grupo_canonico_id (
-            id,
-            nome_grupo,
-            tipo_lente
-          )
-        `)
-        .eq('id', lenteId)
+        .from('v_lentes_cotacao_compra')
+        .select('*')
+        .eq('lente_id', lenteId)
         .single()
 
       if (error) {

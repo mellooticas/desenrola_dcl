@@ -436,18 +436,26 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
 
           <LenteSelector
             onSelect={(lente) => {
-              console.log('👓 Lente selecionada:', lente)
+              console.log('👓 Lente selecionada (2 passos):', lente)
 
               const classeId = mapTipoLenteToClasse(lente.tipo_lente, classes)
 
               setFormData(prev => ({
                 ...prev,
+                // IDs de referência
+                lente_id: lente.lente_id, // ← Lente específica do laboratório
                 grupo_canonico_id: lente.grupo_canonico_id,
-                nome_lente_selecionada: lente.nome_grupo,
+                laboratorio_id: lente.fornecedor_id, // ← Fornecedor = Laboratório
+                
+                // Snapshots para exibição
+                nome_lente_selecionada: lente.nome_lente, // ← Nome completo da lente
                 lente_slug_snapshot: lente.slug,
-                laboratorio_id: lente.fornecedor_id, // Laboratório vem do fornecedor da lente!
-                custo_lentes: lente.preco_medio.toFixed(2), // Custo sugerido
-                classe_lente_id: classeId // Tenta auto-selecionar a classe
+                
+                // Custos REAIS do laboratório escolhido
+                custo_lentes: lente.preco_custo.toFixed(2), // ← Custo real, não médio!
+                
+                // Auto-classificação
+                classe_lente_id: classeId
               }))
             }}
             grupoSelecionadoId={formData.grupo_canonico_id}
@@ -461,7 +469,9 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                 <div>
                   <div className="font-medium text-green-900">{formData.nome_lente_selecionada}</div>
-                  <div className="text-xs text-green-700">Laboratório e Preço atualizados automaticamente</div>
+                  <div className="text-xs text-green-700">
+                    Laboratório e Custo Real confirmados ✅
+                  </div>
                 </div>
               </div>
               <Badge variant="outline" className="bg-white border-green-200 text-green-800">

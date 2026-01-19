@@ -19,6 +19,7 @@ import { DemoModeAlert } from '@/components/permissions/DemoModeAlert'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { PrintOrderButton } from '@/components/pedidos/PrintOrderButton'
+import { LenteSelector } from '@/components/lentes/LenteSelector'
 
 export default function NovaOrdemPage() {
   const router = useRouter()
@@ -27,6 +28,20 @@ export default function NovaOrdemPage() {
   const [carregandoDados, setCarregandoDados] = useState(true)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [pedidoCriado, setPedidoCriado] = useState<PedidoCompleto | null>(null)
+  
+  // Estado para lente selecionada
+  const [lenteSelecionada, setLenteSelecionada] = useState<{
+    lente_id: string
+    grupo_canonico_id: string
+    fornecedor_id: string
+    nome_lente: string
+    nome_grupo: string
+    fornecedor_nome: string
+    preco_custo: number
+    prazo_dias: number
+    tipo_lente: string
+    marca_nome: string | null
+  } | null>(null)
   
   // Dados para selects
   const [lojas, setLojas] = useState<Loja[]>([])
@@ -50,7 +65,15 @@ export default function NovaOrdemPage() {
     tratamentos_ids: [] as string[],
     observacoes: '',
     observacoes_garantia: '',
-    data_prometida_manual: '' // Campo para data prometida ao cliente
+    data_prometida_manual: '', // Campo para data prometida ao cliente
+    // Campos de lentes do catálogo Best Lens
+    lente_selecionada_id: '',
+    grupo_canonico_id: '',
+    fornecedor_lente_id: '',
+    preco_lente: 0,
+    custo_lente: 0,
+    nome_lente: '',
+    nome_grupo_canonico: ''
   })
   
   // Calculados
@@ -172,6 +195,38 @@ export default function NovaOrdemPage() {
     setValorTotal(total)
   }
 
+  // Handler para quando selecionar lente do catálogo
+  const handleLenteSelect = (lenteData: {
+    lente_id: string
+    grupo_canonico_id: string
+    fornecedor_id: string
+    nome_lente: string
+    nome_grupo: string
+    fornecedor_nome: string
+    preco_custo: number
+    prazo_dias: number
+    tipo_lente: string
+    marca_nome: string | null
+  }) => {
+    setLenteSelecionada(lenteData)
+    
+    // Atualizar formData com dados da lente
+    setFormData(prev => ({
+      ...prev,
+      lente_selecionada_id: lenteData.lente_id,
+      grupo_canonico_id: lenteData.grupo_canonico_id,
+      fornecedor_lente_id: lenteData.fornecedor_id,
+      laboratorio_id: lenteData.fornecedor_id, // ← Atualiza automaticamente o laboratório!
+      custo_lente: lenteData.preco_custo,
+      preco_lente: lenteData.preco_custo,
+      custo_lentes: lenteData.preco_custo.toString(),
+      nome_lente: lenteData.nome_lente,
+      nome_grupo_canonico: lenteData.nome_grupo
+    }))
+    
+    toast.success(`Lente selecionada: ${lenteData.nome_lente}`)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -193,6 +248,14 @@ export default function NovaOrdemPage() {
         numero_pedido_laboratorio: formData.numero_pedido_laboratorio || null,
         valor_pedido: valorTotal > 0 ? valorTotal : null,
         custo_lentes: parseFloat(formData.custo_lentes) || null,
+        // ✨ Dados da lente do catálogo Best Lens
+        lente_selecionada_id: formData.lente_selecionada_id || null,
+        grupo_canonico_id: formData.grupo_canonico_id || null,
+        fornecedor_lente_id: formData.fornecedor_lente_id || null,
+        preco_lente: formData.preco_lente || null,
+        custo_lente: formData.custo_lente || null,
+        nome_lente: formData.nome_lente || null,
+        nome_grupo_canonico: formData.nome_grupo_canonico || null,
         eh_garantia: formData.eh_garantia,
         tratamentos_ids: formData.tratamentos_ids,
         observacoes: formData.observacoes || null,
@@ -419,6 +482,74 @@ export default function NovaOrdemPage() {
                   <span className="text-sm font-medium text-blue-800">
                     SLA Calculado: {slaCalculado} dias úteis
                   </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ========== NOVO: Seleção de Lente do Catálogo ========== */}
+          <Card className="dark:bg-gray-800 dark:border-gray-700 md:col-span-2">
+            <CardHeader>
+              <CardTitle className="dark:text-white flex items-center gap-2">
+                🔍 Catálogo Best Lens
+                <Badge variant="secondary" className="text-xs">
+                  1.411 Lentes · 461 Grupos
+                </Badge>
+              </CardTitle>
+              <CardDescription className="dark:text-gray-400">
+                Selecione lente do catálogo oficial (2 passos: grupo → fornecedor)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LenteSelector 
+                onSelect={handleLenteSelect}
+                grupoSelecionadoId={formData.grupo_canonico_id || null}
+              />
+              
+              {/* Mostrar lente selecionada */}
+              {lenteSelecionada && (
+                <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="font-semibold text-green-900 dark:text-green-100">
+                        ✅ Lente Selecionada
+                      </p>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        {lenteSelecionada.nome_lente}
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-400">
+                        Grupo: {lenteSelecionada.nome_grupo}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-green-600 dark:text-green-400 mt-2">
+                        <span>Fornecedor: {lenteSelecionada.fornecedor_nome}</span>
+                        <span>•</span>
+                        <span>Custo: R$ {lenteSelecionada.preco_custo.toFixed(2)}</span>
+                        <span>•</span>
+                        <span>Prazo: {lenteSelecionada.prazo_dias} dias</span>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setLenteSelecionada(null)
+                        setFormData(prev => ({
+                          ...prev,
+                          lente_selecionada_id: '',
+                          grupo_canonico_id: '',
+                          fornecedor_lente_id: '',
+                          custo_lente: 0,
+                          preco_lente: 0,
+                          nome_lente: '',
+                          nome_grupo_canonico: ''
+                        }))
+                      }}
+                      className="text-green-600 hover:text-green-800"
+                    >
+                      Trocar
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

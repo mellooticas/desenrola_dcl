@@ -1,16 +1,20 @@
 /**
- * 🔍 LenteSelector - Seletor de Lentes do Catálogo Best Lens
+ * 🔍 LenteSelector - Seletor de Lentes do Catálogo Best Lens (2 Passos)
+ * 
+ * PASSO 1: Escolhe grupo canônico (com filtros)
+ * PASSO 2: Modal mostra laboratórios disponíveis para escolha manual
  * 
  * Permite escolher lente do catálogo de 1.411 lentes (461 grupos)
- * Ao selecionar → retorna grupo_canonico_id, lente_id, fornecedor_id
+ * Ao selecionar → retorna lente_id, grupo_canonico_id, fornecedor_id, custo
  */
 
 'use client'
 
 import React, { useState, useMemo } from 'react'
 import { Search, Filter, X, Check, ChevronRight } from 'lucide-react'
-import { useGruposCanonicos, type GrupoCanonicoCompleto, type FiltrosLente } from '@/lib/hooks/useLentesCatalogo'
+import { useGruposCanonicos, type GrupoCanonicoCompleto, type FiltrosLente, type LenteComLaboratorio } from '@/lib/hooks/useLentesCatalogo'
 import { cn } from '@/lib/utils'
+import { LenteDetalhesModal } from './LenteDetalhesModal'
 
 // ============================================================
 // TIPOS
@@ -18,13 +22,24 @@ import { cn } from '@/lib/utils'
 
 interface LenteSelectorProps {
   onSelect: (data: {
+    // IDs principais
+    lente_id: string
     grupo_canonico_id: string
-    nome_grupo: string
     fornecedor_id: string // ID do fornecedor (= laboratorio_id)
+    
+    // Dados de exibição
+    nome_lente: string
+    nome_grupo: string
     fornecedor_nome: string
-    preco_medio: number
+    slug: string
+    
+    // Dados de custo/prazo
+    preco_custo: number // ← Custo real do laboratório escolhido
+    prazo_dias: number
+    
+    // Classificação
     tipo_lente: string
-    slug: string // Snapshot para URLs amigáveis
+    marca_nome: string | null
   }) => void
   grupoSelecionadoId?: string | null
   className?: string
@@ -38,6 +53,9 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
   const [filtros, setFiltros] = useState<FiltrosLente>({})
   const [busca, setBusca] = useState('')
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
+  
+  // ⚡ Estado para modal de 2º passo
+  const [grupoSelecionado, setGrupoSelecionado] = useState<GrupoCanonicoCompleto | null>(null)
 
   const { data: grupos, isLoading, error } = useGruposCanonicos({ ...filtros, busca })
 
@@ -47,24 +65,39 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
     return grupos
   }, [grupos])
 
-  const handleSelectGrupo = (grupo: GrupoCanonicoCompleto) => {
-    // Pegar primeiro fornecedor disponível (pode expandir para escolher depois)
-    const fornecedor = grupo.fornecedores_disponiveis[0]
+  // ⚡ PASSO 1: Clicar no grupo abre modal
+  const handleClickGrupo = (grupo: GrupoCanonicoCompleto) => {
+    console.log('[LenteSelector] Grupo selecionado - abrindo modal:', grupo.nome_grupo)
+    setGrupoSelecionado(grupo)
+  }
 
-    if (!fornecedor) {
-      console.error('Grupo sem fornecedores disponíveis:', grupo.nome_grupo)
-      return
-    }
-
-    onSelect({
-      grupo_canonico_id: grupo.id,
-      nome_grupo: grupo.nome_grupo,
-      fornecedor_id: fornecedor.id, // ← Este é o laboratorio_id!
-      fornecedor_nome: fornecedor.nome,
-      preco_medio: grupo.preco_medio,
-      tipo_lente: grupo.tipo_lente,
-      slug: grupo.slug
+  // ⚡ PASSO 2: Selecionar lente específica no modal
+  const handleSelectLente = (lente: LenteComLaboratorio) => {
+    console.log('[LenteSelector] Lente final selecionada:', {
+      lente_id: lente.lente_id,
+      fornecedor: lente.fornecedor_nome,
+      custo: lente.preco_custo
     })
+    
+    onSelect({
+      lente_id: lente.lente_id,
+      grupo_canonico_id: lente.grupo_canonico_id,
+      fornecedor_id: lente.fornecedor_id,
+      
+      nome_lente: lente.lente_nome,
+      nome_grupo: grupoSelecionado?.nome_grupo || '',
+      fornecedor_nome: lente.fornecedor_nome,
+      slug: lente.lente_slug,
+      
+      preco_custo: lente.preco_custo,
+      prazo_dias: lente.prazo_dias,
+      
+      tipo_lente: lente.tipo_lente,
+      marca_nome: lente.marca_nome
+    })
+    
+    // Fechar modal
+    setGrupoSelecionado(null)
   }
 
   const limparFiltros = () => {
@@ -113,7 +146,7 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
 
       {/* Painel de Filtros */}
       {mostrarFiltros && (
-        <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 space-y-3">
+        <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50 space-y-4">
           {/* Tipo de Lente */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -173,6 +206,54 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
               <span className="text-sm text-gray-700 dark:text-gray-300">Apenas lentes premium</span>
             </label>
           </div>
+
+          {/* ⚡ NOVOS FILTROS: Tratamentos */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tratamentos
+            </label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filtros.tratamento_antirreflexo || false}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, tratamento_antirreflexo: e.target.checked ? true : undefined }))}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Antirreflexo</span>
+              </label>
+              
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filtros.tratamento_antirrisco || false}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, tratamento_antirrisco: e.target.checked ? true : undefined }))}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Antirrisco</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filtros.tratamento_uv || false}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, tratamento_uv: e.target.checked ? true : undefined }))}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Proteção UV</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filtros.tratamento_blue_light || false}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, tratamento_blue_light: e.target.checked ? true : undefined }))}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">Blue Light (Luz Azul)</span>
+              </label>
+            </div>
+          </div>
         </div>
       )}
 
@@ -203,7 +284,7 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
                 key={grupo.id}
                 grupo={grupo}
                 isSelected={grupo.id === grupoSelecionadoId}
-                onSelect={() => handleSelectGrupo(grupo)}
+                onSelect={() => handleClickGrupo(grupo)}
               />
             ))
           )}
@@ -216,6 +297,14 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
           {gruposFiltrados.length} {gruposFiltrados.length === 1 ? 'lente encontrada' : 'lentes encontradas'}
         </div>
       )}
+
+      {/* ⚡ MODAL DE ESCOLHA DE LABORATÓRIO (Passo 2) */}
+      <LenteDetalhesModal
+        grupo={grupoSelecionado}
+        isOpen={!!grupoSelecionado}
+        onClose={() => setGrupoSelecionado(null)}
+        onSelect={handleSelectLente}
+      />
     </div>
   )
 }

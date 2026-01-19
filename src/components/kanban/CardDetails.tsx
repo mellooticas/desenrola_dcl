@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { usePermissions } from '@/lib/hooks/use-permissions'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -105,8 +105,13 @@ export function CardDetails({ pedido, open, onClose, onUpdate, userProfile }: Ca
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-3">
-              <span>Pedido #{pedido.numero_sequencial}</span>
+            <DialogTitle>
+              Pedido #{pedido.numero_sequencial}
+            </DialogTitle>
+            <DialogDescription>
+              Detalhes completos do pedido e histórico de movimentações
+            </DialogDescription>
+            <div className="flex items-center space-x-3 pt-2">
               <Badge 
                 variant={pedido.status.toLowerCase() as "default" | "secondary" | "destructive" | "outline"}
                 style={{ 
@@ -126,7 +131,7 @@ export function CardDetails({ pedido, open, onClose, onUpdate, userProfile }: Ca
                   GARANTIA
                 </Badge>
               )}
-            </DialogTitle>
+            </div>
           </DialogHeader>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

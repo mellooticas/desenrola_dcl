@@ -1,16 +1,28 @@
-// lib/types/database.ts - Tipos atualizados (APENAS OS AJUSTES NECESSÁRIOS)
+// lib/types/database.ts - Tipos para fluxo completo do Kanban
 
+/**
+ * Status do pedido - Fluxo operacional 8 colunas visíveis + gerenciais
+ * 
+ * PENDENTE → REGISTRADO → AG_PAGAMENTO → PAGO → PRODUCAO → PRONTO → ENVIADO → CHEGOU
+ *                                                                                  ↓
+ *                                                                              ENTREGUE
+ *                                                                                  ↓
+ *                                                                             FINALIZADO
+ * 
+ * CANCELADO (gerenciado separadamente)
+ */
 export type StatusPedido =
-  | 'PENDENTE'
-  | 'REGISTRADO'
-  | 'AG_PAGAMENTO'
-  | 'PAGO'
-  | 'PRODUCAO'
-  | 'PRONTO'
-  | 'ENVIADO'
-  | 'CHEGOU'
-  | 'ENTREGUE'
-  | 'CANCELADO'
+  | 'PENDENTE'      // Aguardando DCL escolher lente (do PDV futuro)
+  | 'REGISTRADO'    // Lente escolhida, aguardando pagamento
+  | 'AG_PAGAMENTO'  // Financeiro precisa pagar laboratório
+  | 'PAGO'          // Laboratório foi pago, pode produzir
+  | 'PRODUCAO'      // Em fabricação no laboratório
+  | 'PRONTO'        // Lab finalizou, lentes prontas
+  | 'ENVIADO'       // Saiu do lab, em trânsito
+  | 'CHEGOU'        // Chegou na loja, pronto para montagem
+  | 'ENTREGUE'      // Montagem finalizada (não aparece no Kanban)
+  | 'FINALIZADO'    // Processo completo (não aparece no Kanban)
+  | 'CANCELADO'     // Cancelado em qualquer etapa (não aparece no Kanban)
 
 export type PrioridadeLevel = 'BAIXA' | 'NORMAL' | 'ALTA' | 'URGENTE'
  
@@ -290,29 +302,31 @@ export interface Usuario {
 // ========== CONSTANTES ==========
 
 export const STATUS_COLORS: Record<StatusPedido, string> = {
-  'PENDENTE': '#CBD5E1', // Cinza claro para pendente
-  'REGISTRADO': '#94A3B8',
-  'AG_PAGAMENTO': '#F59E0B',
-  'PAGO': '#10B981',
-  'PRODUCAO': '#3B82F6',
-  'PRONTO': '#8B5CF6',
-  'ENVIADO': '#EF4444',
-  'CHEGOU': '#06B6D4',
-  'ENTREGUE': '#10B981',
-  'CANCELADO': '#6B7280'
+  'PENDENTE': '#94A3B8',      // Cinza - aguardando DCL
+  'REGISTRADO': '#8B5CF6',    // Roxo - registrado
+  'AG_PAGAMENTO': '#F59E0B',  // Laranja - aguardando pagamento
+  'PAGO': '#10B981',          // Verde - pago, pode produzir
+  'PRODUCAO': '#3B82F6',      // Azul - em produção
+  'PRONTO': '#14B8A6',        // Teal - pronto no lab
+  'ENVIADO': '#EC4899',       // Rosa - em trânsito
+  'CHEGOU': '#8B5CF6',        // Roxo - chegou na loja
+  'ENTREGUE': '#22C55E',      // Verde claro - montagem ok
+  'FINALIZADO': '#10B981',    // Verde - concluído
+  'CANCELADO': '#EF4444'      // Vermelho - cancelado
 }
 
 export const STATUS_LABELS: Record<StatusPedido, string> = {
-  'PENDENTE': 'Pendente',
-  'REGISTRADO': 'Registrado',
-  'AG_PAGAMENTO': 'Aguardando Pagamento',
-  'PAGO': 'Pago',
-  'PRODUCAO': 'Em Produção',
-  'PRONTO': 'Pronto',
-  'ENVIADO': 'Enviado',
-  'CHEGOU': 'Chegou na Loja',
-  'ENTREGUE': 'Entregue',
-  'CANCELADO': 'Cancelado'
+  'PENDENTE': '⏳ Pendente DCL',
+  'REGISTRADO': '📝 Registrado',
+  'AG_PAGAMENTO': '💰 Aguard. Pagamento',
+  'PAGO': '✅ Pago',
+  'PRODUCAO': '🏭 Em Produção',
+  'PRONTO': '✨ Pronto',
+  'ENVIADO': '🚚 Enviado',
+  'CHEGOU': '📦 Chegou',
+  'ENTREGUE': '🎯 Entregue',
+  'FINALIZADO': '✅ Finalizado',
+  'CANCELADO': '❌ Cancelado'
 }
 
 export const PRIORIDADE_LABELS: Record<PrioridadeLevel, string> = {

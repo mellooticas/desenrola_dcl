@@ -48,9 +48,7 @@ export const lentesClient = createClient(
     auth: {
       persistSession: false, // Não precisa de sessão (banco read-only)
     },
-    db: {
-      schema: 'public', // Sempre usa schema public (views)
-    },
+    // ⚡ Schema public é o padrão - views públicas estão lá
   }
 )
 
@@ -157,4 +155,153 @@ export type LenteCotacaoView = {
   ativo: boolean
   categoria: string
   grupo_canonico_id: string
+}
+
+// ============================================================
+// HELPERS: Filtros e Marcas
+// ============================================================
+
+/**
+ * Tipo para resposta de filtros disponíveis
+ */
+export type FiltroDisponivel = {
+  valor: string
+  total: number
+  preco_min: number
+  preco_max: number
+}
+
+export type FiltrosAgrupados = {
+  tipo_lente?: FiltroDisponivel[]
+  material?: FiltroDisponivel[]
+  indice_refracao?: FiltroDisponivel[]
+  [key: string]: FiltroDisponivel[] | undefined
+}
+
+/**
+ * Tipo para marcas de lentes
+ */
+export type MarcaLente = {
+  id: string
+  nome: string
+  slug: string
+  is_premium: boolean
+  logo_url?: string | null
+}
+
+/**
+ * Helper: Buscar filtros disponíveis dinamicamente
+ * Usa a view v_filtros_disponiveis que agrega tipo_lente, material, indice_refracao
+ * 
+ * @returns Filtros agrupados por categoria com contagens e faixas de preço
+ */
+export async function buscarFiltrosDisponiveis(): Promise<FiltrosAgrupados> {
+  try {
+    const { data, error } = await lentesClient
+      .from('v_filtros_disponiveis')
+      .select('*')
+      .order('filtro_nome', { ascending: true })
+      .order('total', { ascending: false })
+
+    if (error) {
+      console.error('[LENTES_CLIENT] Erro ao buscar filtros:', error)
+      throw error
+    }
+
+    // Agrupar por tipo de filtro
+    const agrupado = (data || []).reduce((acc, item) => {
+      if (!acc[item.filtro_nome]) {
+        acc[item.filtro_nome] = []
+      }
+      acc[item.filtro_nome].push({
+        valor: item.valor,
+        total: item.total,
+        preco_min: item.preco_min,
+        preco_max: item.preco_max
+      })
+      return acc
+    }, {} as FiltrosAgrupados)
+
+    console.log('[LENTES_CLIENT] ✅ Filtros carregados:', Object.keys(agrupado))
+    return agrupado
+
+  } catch (error) {
+    console.error('[LENTES_CLIENT] Erro crítico ao buscar filtros:', error)
+    return {}
+  }
+}
+
+/**
+ * Helper: Buscar marcas ativas
+ * 
+ * @returns Lista de marcas ordenadas por nome
+ */
+export async function buscarMarcas(): Promise<MarcaLente[]> {
+  try {
+    const { data, error } = await lentesClient
+      .from('marcas')
+      .select('id, nome, slug, is_premium, logo_url')
+      .eq('ativo', true)
+      .order('nome', { ascending: true })
+
+    if (error) {
+      console.error('[LENTES_CLIENT] Erro ao buscar marcas:', error)
+      throw error
+    }
+
+    console.log(`[LENTES_CLIENT] ✅ ${data?.length || 0} marcas carregadas`)
+    return data || []
+
+  } catch (error) {
+    console.error('[LENTES_CLIENT] Erro crítico ao buscar marcas:', error)
+    return []
+  }
+}
+
+/**
+ * Helper: Buscar grupos canônicos por receita do cliente
+ * Usa a view v_grupos_por_receita_cliente (quando disponível)
+ * 
+ * @param receita - Graus esférico, cilíndrico e adição
+ * @returns Grupos compatíveis com a receita
+ */
+export async function buscarGruposPorReceita({
+  esferico_od,
+  cilindrico_od,
+  adicao_od
+}: {
+  esferico_od: number
+  cilindrico_od: number
+  adicao_od?: number | null
+}): Promise<GrupoCanonicoView[]> {
+  try {
+    // TODO: Implementar quando view v_grupos_por_receita_cliente estiver disponível
+    // Por enquanto, buscar todos os grupos e filtrar no backend
+    
+    let query = lentesClient
+      .from('v_grupos_canonicos')
+      .select('*')
+      .eq('ativo', true)
+
+    // Se tem adição, filtrar apenas multifocais
+    if (adicao_od && adicao_od > 0) {
+      query = query.eq('tipo_lente', 'multifocal')
+    }
+
+    const { data, error } = await query
+      .order('peso', { ascending: false })
+      .limit(50)
+
+    if (error) {
+      console.error('[LENTES_CLIENT] Erro ao buscar grupos por receita:', error)
+      throw error
+    }
+
+    console.log(`[LENTES_CLIENT] ✅ ${data?.length || 0} grupos compatíveis com receita`)
+    return data || []
+
+  } catch (error) {
+    console.error('[LENTES_CLIENT] Erro crítico ao buscar grupos por receita:', error)
+    return []
+  }
 }
