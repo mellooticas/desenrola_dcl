@@ -1,32 +1,62 @@
 // src/lib/supabase/crm-erp-client.ts
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_CRM_ERP_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_CRM_ERP_SUPABASE_ANON_KEY
+const isDev = process.env.NODE_ENV === 'development'
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    '❌ ERRO: Configure CRM_ERP_SUPABASE_URL e CRM_ERP_SUPABASE_ANON_KEY no .env.local'
-  )
+function getCrmErpEnv(): { url: string; anonKey: string } | null {
+  const url =
+    process.env.CRM_ERP_SUPABASE_URL ??
+    process.env.NEXT_PUBLIC_CRM_ERP_SUPABASE_URL ??
+    null
+
+  const anonKey =
+    process.env.CRM_ERP_SUPABASE_ANON_KEY ??
+    process.env.NEXT_PUBLIC_CRM_ERP_SUPABASE_ANON_KEY ??
+    null
+
+  if (!url || !anonKey) return null
+  return { url, anonKey }
 }
+
+let cachedClient: SupabaseClient | null = null
 
 /**
  * Cliente Supabase para CRM_ERP (Produtos e Estoque)
- * 
+ *
+ * IMPORTANTE:
+ * - Não valide env em tempo de import. O `next build`/Netlify pode importar rotas
+ *   durante a fase de build sem ter todas as variáveis disponíveis.
+ * - Se faltar env em runtime, o handler deve responder 500/503, mas o build não deve falhar.
+ */
+export function getCrmErpClient(): SupabaseClient {
+  if (cachedClient) return cachedClient
+
+  const env = getCrmErpEnv()
+  if (!env) {
+    throw new Error(
+      '❌ ERRO: Configure CRM_ERP_SUPABASE_URL + CRM_ERP_SUPABASE_ANON_KEY (ou NEXT_PUBLIC_CRM_ERP_SUPABASE_URL + NEXT_PUBLIC_CRM_ERP_SUPABASE_ANON_KEY) nas variáveis de ambiente.'
+    )
+  }
+
+  cachedClient = createClient(env.url, env.anonKey, {
+    auth: {
+      persistSession: false, // Não precisa auth, apenas consultas
+      autoRefreshToken: false,
+    },
+    db: {
+      schema: 'public', // Produtos estão em public schema
+    },
+  })
+
+  return cachedClient
+}
+
+/**
  * IMPORTANTE: Este É O MESMO banco do sis_vendas!
  * - Acesso READ-ONLY para produtos
  * - NÃO dar baixa em estoque (apenas consultar)
  * - Views: vw_estoque_completo, vw_estoque_atual
  */
-export const crmErpClient = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: false, // Não precisa auth, apenas consultas
-    autoRefreshToken: false,
-  },
-  db: {
-    schema: 'public', // Produtos estão em public schema
-  },
-})
 
 /**
  * Helper: Buscar produtos por filtros
@@ -46,7 +76,18 @@ export async function buscarProdutos({
   loja_id?: string
   limite?: number
 }) {
-  console.log('[CRM_ERP] Buscando produtos com filtros:', { tipo, sku_visual, cod, nome, loja_id, limite })
+  const crmErpClient = getCrmErpClient()
+
+  if (isDev) {
+    console.log('[CRM_ERP] Buscando produtos com filtros:', {
+      tipo,
+      sku_visual,
+      cod,
+      nome,
+      loja_id,
+      limite,
+    })
+  }
   
   // Tentar primeiro com a view, se não existir, usar tabela produtos
   let query = crmErpClient
@@ -65,12 +106,14 @@ export async function buscarProdutos({
 
   if (error) {
     console.error('[CRM_ERP] Erro ao buscar produtos:', error)
-    console.error('[CRM_ERP] Código do erro:', error.code)
-    console.error('[CRM_ERP] Mensagem:', error.message)
+    if (isDev) {
+      console.error('[CRM_ERP] Código do erro:', (error as any)?.code)
+      console.error('[CRM_ERP] Mensagem:', (error as any)?.message)
+    }
     
     // Se view não existe, tentar tabela produtos diretamente
     if (error.code === '42P01' || error.message.includes('does not exist')) {
-      console.log('[CRM_ERP] View não encontrada, tentando tabela produtos...')
+      if (isDev) console.log('[CRM_ERP] View não encontrada, tentando tabela produtos...')
       
       let fallbackQuery = crmErpClient
         .from('produtos')
@@ -90,14 +133,14 @@ export async function buscarProdutos({
         throw fallbackError
       }
       
-      console.log('[CRM_ERP] Produtos encontrados (fallback):', fallbackData?.length)
+      if (isDev) console.log('[CRM_ERP] Produtos encontrados (fallback):', fallbackData?.length)
       return fallbackData || []
     }
     
     throw error
   }
 
-  console.log('[CRM_ERP] Produtos encontrados:', data?.length)
+  if (isDev) console.log('[CRM_ERP] Produtos encontrados:', data?.length)
   return data || []
 }
 
@@ -108,6 +151,8 @@ export async function buscarEstoqueProduto(
   produto_uuid: string,
   loja_id?: string
 ) {
+  const crmErpClient = getCrmErpClient()
+
   let query = crmErpClient
     .from('vw_estoque_atual')
     .select('*')

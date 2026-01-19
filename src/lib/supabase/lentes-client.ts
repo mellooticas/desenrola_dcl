@@ -26,14 +26,16 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_LENTES_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_LENTES_SUPABASE_ANON_KEY
 
+const isDev = process.env.NODE_ENV === 'development'
+
 // Não lançar erro no build time, apenas logar aviso
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('⚠️ Variáveis de ambiente do banco de lentes não configuradas')
-} else {
-  // DEBUG: Mostrar qual banco está sendo acessado
+  if (isDev) {
+    console.warn('⚠️ Variáveis de ambiente do banco de lentes não configuradas')
+  }
+} else if (isDev) {
   console.log('👓 Lentes Client inicializado com:', {
     url: supabaseUrl,
-    keyPrefix: supabaseAnonKey.substring(0, 10) + '...'
   })
 }
 
@@ -61,7 +63,9 @@ export const lentesAdminClient = (() => {
   const serviceRoleKey = process.env.LENTES_SUPABASE_SERVICE_ROLE_KEY
   
   if (!serviceRoleKey) {
-    console.warn('⚠️ LENTES_SUPABASE_SERVICE_ROLE_KEY não configurada')
+    if (isDev) {
+      console.warn('⚠️ LENTES_SUPABASE_SERVICE_ROLE_KEY não configurada')
+    }
     return null
   }
 

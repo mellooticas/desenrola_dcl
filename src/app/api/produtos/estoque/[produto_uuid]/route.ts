@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buscarEstoqueProduto } from '@/lib/supabase/crm-erp-client'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 /**
  * GET /api/produtos/estoque/[produto_uuid]
  * 
