@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -59,6 +59,9 @@ interface MetricasFinanceiras {
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("comando")
+  
+  // Estado para relógio (client-only para evitar hydration error)
+  const [currentTime, setCurrentTime] = useState<string>('')
   
   // Estado para filtros dinâmicos
   const [filters, setFilters] = useState<DashboardFilters>({
@@ -132,6 +135,19 @@ const DashboardPage = () => {
     carregarDadosComandoCenter()
     carregarLojas()
   }, [filters])
+
+  // Atualizar relógio apenas no cliente
+  useEffect(() => {
+    // Definir hora inicial
+    setCurrentTime(new Date().toLocaleTimeString('pt-BR'))
+    
+    // Atualizar a cada segundo
+    const interval = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString('pt-BR'))
+    }, 1000)
+    
+    return () => clearInterval(interval)
+  }, [])
 
   // Carregar lista de lojas
   const carregarLojas = async () => {
@@ -211,8 +227,8 @@ const DashboardPage = () => {
                 <Badge variant="outline" className="ml-2">Filtros Ativos</Badge>
               )}
             </div>
-            <span className="text-green-700 dark:text-green-400 text-sm">
-              Última atualização: {new Date().toLocaleTimeString('pt-BR')}
+            <span className="text-green-700 dark:text-green-400 text-sm" suppressHydrationWarning>
+              Última atualização: {currentTime || '—'}
             </span>
           </div>
 

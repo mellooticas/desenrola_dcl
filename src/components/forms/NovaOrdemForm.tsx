@@ -25,10 +25,28 @@ import { LenteSelector } from '../lentes/LenteSelector'
 
 interface NovaOrdemFormProps {
   onSuccess?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  showTrigger?: boolean
+  triggerLabel?: string
+  initialNumeroOsFisica?: string
 }
 
-export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
-  const [open, setOpen] = useState(false)
+export default function NovaOrdemForm({
+  onSuccess,
+  open: openProp,
+  onOpenChange,
+  showTrigger = true,
+  triggerLabel = 'Nova Ordem',
+  initialNumeroOsFisica
+}: NovaOrdemFormProps) {
+  const [openInternal, setOpenInternal] = useState(false)
+  const isControlled = typeof openProp === 'boolean'
+  const open = isControlled ? openProp : openInternal
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setOpenInternal(next)
+    onOpenChange?.(next)
+  }
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
   const [loadingData, setLoadingData] = useState(false)
@@ -64,6 +82,18 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
     nome_lente_selecionada: null as string | null,
     lente_slug_snapshot: null as string | null
   })
+
+  useEffect(() => {
+    if (!open) return
+    if (!initialNumeroOsFisica) return
+    setFormData(prev => {
+      if (prev.numero_os_fisica) return prev
+      return {
+        ...prev,
+        numero_os_fisica: initialNumeroOsFisica
+      }
+    })
+  }, [open, initialNumeroOsFisica])
 
   // Mapeamento de tipos para classes (memória)
   const mapTipoLenteToClasse = (tipo: string, classesDisponiveis: ClasseLente[]) => {
@@ -912,12 +942,14 @@ export default function NovaOrdemForm({ onSuccess }: NovaOrdemFormProps) {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Ordem
-          </Button>
-        </DialogTrigger>
+        {showTrigger && (
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              <Plus className="w-4 h-4 mr-2" />
+              {triggerLabel}
+            </Button>
+          </DialogTrigger>
+        )}
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 mx-4 w-[calc(100vw-2rem)] sm:w-full bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-xl border-white/20 shadow-2xl">
           <DialogHeader className="sticky top-0 bg-gradient-to-r from-white/90 to-gray-50/90 backdrop-blur-lg z-10 p-4 sm:p-6 pb-3 sm:pb-4 border-b border-white/30">
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">

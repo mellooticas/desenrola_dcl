@@ -18,8 +18,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { PedidoCompleto, StatusPedido, PrioridadeLevel, Montador } from '@/lib/types/database'
 import { STATUS_COLORS, STATUS_LABELS } from '@/lib/utils/constants'
 import { cn } from '@/lib/utils'
-import { CriarPedidoWizard } from '@/components/forms/CriarPedidoWizard'
-import { CriarPedidoWizardV2 } from '@/components/forms/CriarPedidoWizardV2'
+import NovaOrdemForm from '@/components/forms/NovaOrdemForm'
 import { KanbanCard } from '@/components/kanban/KanbanCard'
 import { KanbanCardModern } from '@/components/kanban/KanbanCardModern'
 import { KanbanColumnHeader } from '@/components/kanban/KanbanColumnHeader'
@@ -1157,14 +1156,17 @@ export default function KanbanBoard() {
 
   // ========== FILTROS ==========
   const filteredColumns = columns.map(column => {
+    const rawSearch = searchTerm.trim()
+    const searchLower = rawSearch.toLowerCase()
+
     let pedidosFiltrados = column.pedidos.filter(pedido =>
-      searchTerm === '' ||
-      pedido.numero_sequencial.toString().includes(searchTerm) ||
-      pedido.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pedido.loja_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pedido.laboratorio_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (pedido.numero_os_fisica && pedido.numero_os_fisica.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (pedido.numero_pedido_laboratorio && pedido.numero_pedido_laboratorio.toLowerCase().includes(searchTerm.toLowerCase()))
+      rawSearch === '' ||
+      pedido.numero_sequencial.toString().includes(rawSearch) ||
+      (pedido.cliente_nome ?? '').toLowerCase().includes(searchLower) ||
+      (pedido.loja_nome ?? '').toLowerCase().includes(searchLower) ||
+      (pedido.laboratorio_nome ?? '').toLowerCase().includes(searchLower) ||
+      (pedido.numero_os_fisica ?? '').toLowerCase().includes(searchLower) ||
+      (pedido.numero_pedido_laboratorio ?? '').toLowerCase().includes(searchLower)
     )
 
     // FILTRO DE URGÊNCIA (somente AG_PAGAMENTO - baseado em data prometida)
@@ -1564,10 +1566,11 @@ export default function KanbanBoard() {
             pedidoNumero={pendingMove?.pedido.numero_sequencial?.toString()}
           />
 
-          {/* ========== WIZARD DE CRIAÇÃO DE PEDIDO V2 (SIMPLIFICADO) ========== */}
-          <CriarPedidoWizardV2
+          {/* ========== CRIAÇÃO DE PEDIDO (PADRÃO) ========== */}
+          <NovaOrdemForm
             open={showCriarPedidoWizard}
-            onClose={() => setShowCriarPedidoWizard(false)}
+            onOpenChange={setShowCriarPedidoWizard}
+            showTrigger={false}
             onSuccess={() => {
               loadPedidos()
               setShowCriarPedidoWizard(false)

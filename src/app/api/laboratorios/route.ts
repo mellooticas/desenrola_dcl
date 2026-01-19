@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-  const supabase = getServerSupabase()
+    const supabase = getServerSupabase()
     
     // Buscar parâmetros da URL
     const { searchParams } = new URL(request.url)
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-  const supabase = getServerSupabase()
+    const supabase = getServerSupabase()
     const body = await request.json()
     
     // Validação básica
@@ -81,6 +81,63 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json(laboratorio, { status: 201 })
+  } catch (error) {
+    console.error('Erro interno:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = getServerSupabase()
+    const body = await request.json()
+
+    const id = body?.id as string | undefined
+    if (!id) {
+      return NextResponse.json(
+        { error: 'id é obrigatório' },
+        { status: 400 }
+      )
+    }
+
+    const updates: Partial<Laboratorio> = {}
+
+    if (typeof body.nome === 'string') updates.nome = body.nome
+    if (typeof body.codigo === 'string' || body.codigo === null) updates.codigo = body.codigo
+    if (typeof body.trabalha_sabado === 'boolean') updates.trabalha_sabado = body.trabalha_sabado
+    if (typeof body.ativo === 'boolean') updates.ativo = body.ativo
+    if (body.contato && typeof body.contato === 'object') updates.contato = body.contato
+
+    if (body.sla_padrao_dias !== undefined) {
+      const sla = typeof body.sla_padrao_dias === 'string'
+        ? parseInt(body.sla_padrao_dias)
+        : body.sla_padrao_dias
+
+      if (Number.isFinite(sla)) {
+        updates.sla_padrao_dias = sla
+      }
+    }
+
+    const { data: laboratorio, error } = await supabase
+      .from('laboratorios')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Erro ao atualizar laboratório:', error)
+      const debug = process.env.NEXT_PUBLIC_DEBUG === 'true' || process.env.NEXT_PUBLIC_DEBUG === '1'
+      return NextResponse.json(
+        debug ? { error: 'Erro ao atualizar laboratório', details: (error as any).message, code: (error as any).code, hint: (error as any).hint } : { error: 'Erro ao atualizar laboratório' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json(laboratorio)
   } catch (error) {
     console.error('Erro interno:', error)
     return NextResponse.json(

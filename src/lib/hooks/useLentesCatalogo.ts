@@ -194,7 +194,15 @@ export function useGruposCanonicos(filtros?: FiltrosLente) {
         throw error
       }
 
-      return data as GrupoCanonicoCompleto[]
+      // A view pública pode não ter todos os campos esperados pelo tipo
+      // (ex: fornecedores_disponiveis). Garantir defaults para não quebrar o UI.
+      const rows = (data ?? []) as Array<Partial<GrupoCanonicoCompleto> & { id: string }>
+      return rows.map((row) => ({
+        ...row,
+        fornecedores_disponiveis: Array.isArray(row.fornecedores_disponiveis)
+          ? row.fornecedores_disponiveis
+          : [],
+      })) as GrupoCanonicoCompleto[]
     },
     staleTime: 10 * 60 * 1000, // 10 minutos
     gcTime: 30 * 60 * 1000, // 30 minutos

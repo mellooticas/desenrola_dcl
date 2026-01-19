@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Plus, Edit, Phone, Mail, MapPin } from 'lucide-react'
-import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Laboratorio } from '@/lib/types/database'
 
@@ -50,12 +49,12 @@ export default function ConfigLaboratoriosPage() {
 
   const carregarLaboratorios = async () => {
     try {
-      const { data, error } = await supabase
-        .from('laboratorios')
-        .select('*')
-        .order('nome')
-
-      if (error) throw error
+      const res = await fetch('/api/laboratorios')
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.error || 'Erro ao carregar laboratórios')
+      }
+      const data = (await res.json()) as Laboratorio[]
       setLaboratorios(data || [])
     } catch (error) {
       console.error('Erro ao carregar laboratórios:', error)
@@ -75,19 +74,26 @@ export default function ConfigLaboratoriosPage() {
       }
 
       if (editingLab) {
-        const { error } = await supabase
-          .from('laboratorios')
-          .update(dadosParaSalvar)
-          .eq('id', editingLab.id)
-
-        if (error) throw error
+        const res = await fetch('/api/laboratorios', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingLab.id, ...dadosParaSalvar }),
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err?.error || 'Erro ao atualizar laboratório')
+        }
         toast.success('Laboratório atualizado com sucesso!')
       } else {
-        const { error } = await supabase
-          .from('laboratorios')
-          .insert([{ ...dadosParaSalvar, ativo: true }])
-
-        if (error) throw error
+        const res = await fetch('/api/laboratorios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...dadosParaSalvar, ativo: true }),
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err?.error || 'Erro ao criar laboratório')
+        }
         toast.success('Laboratório criado com sucesso!')
       }
 
@@ -118,12 +124,15 @@ export default function ConfigLaboratoriosPage() {
 
   const handleToggleAtivo = async (id: string, ativo: boolean) => {
     try {
-      const { error } = await supabase
-        .from('laboratorios')
-        .update({ ativo })
-        .eq('id', id)
-
-      if (error) throw error
+      const res = await fetch('/api/laboratorios', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ativo }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.error || 'Erro ao alterar status do laboratório')
+      }
       toast.success(`Laboratório ${ativo ? 'ativado' : 'desativado'} com sucesso!`)
       carregarLaboratorios()
     } catch (error) {

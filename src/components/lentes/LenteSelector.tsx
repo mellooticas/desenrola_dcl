@@ -10,7 +10,7 @@
 
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Search, Filter, X, Check, ChevronRight } from 'lucide-react'
 import { useGruposCanonicos, type GrupoCanonicoCompleto, type FiltrosLente, type LenteComLaboratorio } from '@/lib/hooks/useLentesCatalogo'
 import { cn } from '@/lib/utils'
@@ -51,11 +51,24 @@ interface LenteSelectorProps {
 
 export function LenteSelector({ onSelect, grupoSelecionadoId, className }: LenteSelectorProps) {
   const [filtros, setFiltros] = useState<FiltrosLente>({})
+  const [buscaInput, setBuscaInput] = useState('')
   const [busca, setBusca] = useState('')
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   
   // ⚡ Estado para modal de 2º passo
   const [grupoSelecionado, setGrupoSelecionado] = useState<GrupoCanonicoCompleto | null>(null)
+
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(() => {
+      setBusca(buscaInput.trim())
+    }, 350)
+
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    }
+  }, [buscaInput])
 
   const { data: grupos, isLoading, error } = useGruposCanonicos({ ...filtros, busca })
 
@@ -102,6 +115,7 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
 
   const limparFiltros = () => {
     setFiltros({})
+    setBuscaInput('')
     setBusca('')
   }
 
@@ -112,11 +126,25 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         <input
           type="text"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
+          value={buscaInput}
+          onChange={(e) => setBuscaInput(e.target.value)}
           placeholder="Buscar lente por nome..."
           className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
+
+        {buscaInput.trim().length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setBuscaInput('')
+              setBusca('')
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+            aria-label="Limpar busca"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Botão de Filtros */}
@@ -320,6 +348,10 @@ interface GrupoCardProps {
 }
 
 function GrupoCard({ grupo, isSelected, onSelect }: GrupoCardProps) {
+  const fornecedoresCount = Array.isArray((grupo as any).fornecedores_disponiveis)
+    ? (grupo as any).fornecedores_disponiveis.length
+    : 0
+
   return (
     <button
       onClick={onSelect}
@@ -371,7 +403,7 @@ function GrupoCard({ grupo, isSelected, onSelect }: GrupoCardProps) {
               {grupo.total_lentes} {grupo.total_lentes === 1 ? 'opção' : 'opções'}
             </span>
             <span>
-              {grupo.fornecedores_disponiveis.length} {grupo.fornecedores_disponiveis.length === 1 ? 'fornecedor' : 'fornecedores'}
+              {fornecedoresCount} {fornecedoresCount === 1 ? 'fornecedor' : 'fornecedores'}
             </span>
           </div>
         </div>
