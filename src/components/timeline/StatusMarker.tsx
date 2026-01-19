@@ -10,7 +10,7 @@ interface StatusMarkerProps {
 
 // Função para obter a cor do status
 const getStatusColor = (status: StatusPedido): string => {
-  const colors = {
+  const colors: Record<StatusPedido, string> = {
     'PENDENTE': 'bg-slate-400',
     'REGISTRADO': 'bg-gray-500',
     'AG_PAGAMENTO': 'bg-yellow-500', 
@@ -20,6 +20,7 @@ const getStatusColor = (status: StatusPedido): string => {
     'ENVIADO': 'bg-cyan-500',
     'CHEGOU': 'bg-orange-500',
     'ENTREGUE': 'bg-green-500',
+    'FINALIZADO': 'bg-emerald-600',
     'CANCELADO': 'bg-red-500'
   }
   return colors[status] || 'bg-gray-500'

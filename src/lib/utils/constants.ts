@@ -11,6 +11,7 @@ export const STATUS_COLORS: Record<StatusPedido, string> = {
   'ENVIADO': '#EF4444',         // Red 500
   'CHEGOU': '#06B6D4',          // Cyan 500
   'ENTREGUE': '#10B981',        // Emerald 500
+  'FINALIZADO': '#047857',      // Emerald 700
   'CANCELADO': '#6B7280'        // Gray 500
 }
 
@@ -25,6 +26,7 @@ export const STATUS_LABELS: Record<StatusPedido, string> = {
   'ENVIADO': 'Enviado',
   'CHEGOU': 'Chegou na Loja',
   'ENTREGUE': 'Entregue',
+  'FINALIZADO': 'Finalizado',
   'CANCELADO': 'Cancelado'
 }
 
@@ -54,7 +56,8 @@ export const KANBAN_COLUMNS: StatusPedido[] = [
   'PRONTO',
   'ENVIADO',
   'CHEGOU',
-  'ENTREGUE'
+  'ENTREGUE',
+  'FINALIZADO'
 ]
 
 // Status transitions allowed (for validation)
@@ -67,7 +70,8 @@ export const ALLOWED_TRANSITIONS: Record<StatusPedido, StatusPedido[]> = {
   'PRONTO': ['ENVIADO', 'CANCELADO'],
   'ENVIADO': ['CHEGOU'],
   'CHEGOU': ['ENTREGUE'],
-  'ENTREGUE': [],
+  'ENTREGUE': ['FINALIZADO'],
+  'FINALIZADO': [],
   'CANCELADO': []
 }
 

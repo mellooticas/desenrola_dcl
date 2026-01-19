@@ -400,6 +400,7 @@ export default function PedidoDetalhesPage() {
       'ENVIADO': 'bg-cyan-500',
       'CHEGOU': 'bg-orange-500',
       'ENTREGUE': 'bg-green-500',
+      'FINALIZADO': 'bg-emerald-700',
       'CANCELADO': 'bg-red-500'
     }
     return colors[status] || 'bg-gray-500'
@@ -416,6 +417,7 @@ export default function PedidoDetalhesPage() {
       'ENVIADO': 'Enviado para Loja',
       'CHEGOU': 'Chegou na Loja',
       'ENTREGUE': 'Entregue ao Cliente',
+      'FINALIZADO': 'Finalizado',
       'CANCELADO': 'Cancelado'
     }
     return labels[status] || status

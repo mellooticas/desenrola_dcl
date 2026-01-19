@@ -96,6 +96,7 @@ const DEFAULT_CONFIG: ConfiguracaoSistema = {
       'ENVIADO': '#EF4444',         // Vermelho
       'CHEGOU': '#06B6D4',          // Cyan
       'ENTREGUE': '#10B981',        // Verde
+      'FINALIZADO': '#047857',      // Verde escuro
       'CANCELADO': '#6B7280'        // Cinza escuro
     },
     prioridade: {

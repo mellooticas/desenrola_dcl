@@ -15,7 +15,8 @@ const FLUXO_STATUS: Record<StatusPedido, StatusPedido | null> = {
   'PRONTO': 'ENVIADO',
   'ENVIADO': 'CHEGOU',
   'CHEGOU': 'ENTREGUE',
-  'ENTREGUE': null, // Status final
+  'ENTREGUE': 'FINALIZADO',
+  'FINALIZADO': null, // Status final
   'CANCELADO': null  // Status final
 }
 

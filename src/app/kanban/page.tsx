@@ -86,6 +86,7 @@ const STATUS_ICONS: Record<StatusPedido, React.ComponentType<any>> = {
   'CHEGOU': MapPin,
   // Removidos ENTREGUE e CANCELADO - não aparecem no Kanban
   'ENTREGUE': CheckCircle, // Mantido para compatibilidade com modal
+  'FINALIZADO': CheckCircle, // Mantido para compatibilidade (fora do Kanban)
   'CANCELADO': X // Mantido para compatibilidade com modal
 }
 
@@ -100,6 +101,7 @@ const STATUS_GRADIENTS: Record<StatusPedido, string> = {
   'ENVIADO': 'from-indigo-500 to-blue-500',
   'CHEGOU': 'from-teal-500 to-cyan-500',
   'ENTREGUE': 'from-green-600 to-emerald-600',
+  'FINALIZADO': 'from-emerald-700 to-green-700',
   'CANCELADO': 'from-gray-500 to-slate-500'
 }
 
@@ -133,6 +135,7 @@ const ROLE_PERMISSIONS: Record<string, {
       'ENVIADO': ['PRONTO', 'CHEGOU', 'CANCELADO'],
       'CHEGOU': ['ENVIADO', 'ENTREGUE', 'CANCELADO'],
       'ENTREGUE': [],
+      'FINALIZADO': [],
       'CANCELADO': []
     },
     canViewFinancial: true,
@@ -153,6 +156,7 @@ const ROLE_PERMISSIONS: Record<string, {
       'ENVIADO': ['CHEGOU', 'CANCELADO'],
       'CHEGOU': ['ENTREGUE', 'CANCELADO'], // Move para fora do Kanban
       'ENTREGUE': [],
+      'FINALIZADO': [],
       'CANCELADO': []
     },
     canViewFinancial: true,
@@ -173,6 +177,7 @@ const ROLE_PERMISSIONS: Record<string, {
       'ENVIADO': ['CHEGOU', 'CANCELADO'],
       'CHEGOU': [], // Só visualiza, não pode mover (responsabilidade da loja)
       'ENTREGUE': [],
+      'FINALIZADO': [],
       'CANCELADO': []
     },
     canViewFinancial: false, // Pode ver AG_PAGAMENTO mas não dados financeiros sensíveis
@@ -193,6 +198,7 @@ const ROLE_PERMISSIONS: Record<string, {
       'ENVIADO': [],
       'CHEGOU': [],
       'ENTREGUE': [],
+      'FINALIZADO': [],
       'CANCELADO': []
     },
     canViewFinancial: true,
@@ -213,6 +219,7 @@ const ROLE_PERMISSIONS: Record<string, {
       'ENVIADO': [], // Só visualiza (aguardando chegada)
       'CHEGOU': ['ENTREGUE', 'CANCELADO'], // Move para ENTREGUE quando cliente busca
       'ENTREGUE': [],
+      'FINALIZADO': [],
       'CANCELADO': []
     },
     canViewFinancial: false,
@@ -232,6 +239,7 @@ const ROLE_PERMISSIONS: Record<string, {
       'ENVIADO': [],
       'CHEGOU': [],
       'ENTREGUE': [],
+      'FINALIZADO': [],
       'CANCELADO': []
     },
     canViewFinancial: false,
@@ -277,7 +285,8 @@ const useUserPermissions = (userRole: string): UserPermissions => {
         'PRONTO': 'ENVIADO',
         'ENVIADO': 'CHEGOU',
         'CHEGOU': 'ENTREGUE',
-        'ENTREGUE': null,
+        'ENTREGUE': 'FINALIZADO',
+        'FINALIZADO': null,
         'CANCELADO': null
       }
 
@@ -298,6 +307,7 @@ const useUserPermissions = (userRole: string): UserPermissions => {
         'ENVIADO': 'PRONTO',
         'CHEGOU': 'ENVIADO',
         'ENTREGUE': 'CHEGOU',
+        'FINALIZADO': 'ENTREGUE',
         'CANCELADO': null
       }
 
@@ -698,6 +708,7 @@ export default function KanbanBoard() {
       'ENVIADO': 'PRONTO',
       'CHEGOU': 'ENVIADO',
       'ENTREGUE': 'CHEGOU',
+      'FINALIZADO': 'ENTREGUE',
       'CANCELADO': null // Status final, não pode reverter
     };
 

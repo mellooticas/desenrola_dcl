@@ -26,7 +26,7 @@ interface TimelineEventProps {
 
 // Função para obter o label do status
 const getStatusLabel = (status: StatusPedido): string => {
-  const labels = {
+  const labels: Record<StatusPedido, string> = {
     'PENDENTE': 'Pendente - Análise DCL',
     'REGISTRADO': 'Registrado',
     'AG_PAGAMENTO': 'Aguardando Pagamento',
@@ -36,6 +36,7 @@ const getStatusLabel = (status: StatusPedido): string => {
     'ENVIADO': 'Enviado para Loja',
     'CHEGOU': 'Chegou na Loja',
     'ENTREGUE': 'Entregue ao Cliente',
+    'FINALIZADO': 'Finalizado',
     'CANCELADO': 'Cancelado'
   }
   return labels[status] || status

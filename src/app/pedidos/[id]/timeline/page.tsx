@@ -164,6 +164,13 @@ const STATUS_CONFIG: Record<StatusPedido, {
     icon: Check,
     label: 'Entregue'
   },
+  'FINALIZADO': {
+    color: '#047857',
+    bg: 'rgba(4, 120, 87, 0.1)',
+    border: 'rgba(4, 120, 87, 0.3)',
+    icon: CheckCircle,
+    label: 'Finalizado'
+  },
   'CANCELADO': { 
     color: '#6B7280', 
     bg: 'rgba(107, 114, 128, 0.1)', 

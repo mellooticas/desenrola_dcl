@@ -55,6 +55,7 @@ const STATUS_CONFIG: Record<StatusPedido, { color: string; label: string; icon: 
   'ENVIADO': { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Enviado', icon: TrendingUp },
   'CHEGOU': { color: 'bg-cyan-100 text-cyan-800 border-cyan-200', label: 'Chegou', icon: CheckCircle },
   'ENTREGUE': { color: 'bg-green-100 text-green-800 border-green-200', label: 'Entregue', icon: CheckCircle },
+  'FINALIZADO': { color: 'bg-emerald-100 text-emerald-900 border-emerald-300', label: 'Finalizado', icon: CheckCircle },
   'CANCELADO': { color: 'bg-red-100 text-red-800 border-red-200', label: 'Cancelado', icon: X }
 }
 
