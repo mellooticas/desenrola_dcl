@@ -96,7 +96,7 @@ export async function buscarProdutos({
     .eq('ativo', true)
     .limit(limite)
 
-  if (tipo) query = query.eq('tipo', tipo)
+  if (tipo) query = query.eq('tipo_produto', tipo) // Corrigido: campo é 'tipo_produto' na view
   if (sku_visual) query = query.ilike('sku_visual', `%${sku_visual}%`)
   if (cod) query = query.ilike('cod', `%${cod}%`)
   if (nome) query = query.ilike('descricao', `%${nome}%`)
@@ -179,7 +179,7 @@ export interface ProdutoCrmErp {
   sku_visual: string | null
   cod: string | null
   descricao: string
-  tipo: string
+  tipo_produto: string // Corrigido: campo correto da view
   categoria: string | null
   marca: string | null
   modelo: string | null
@@ -193,7 +193,10 @@ export interface ProdutoCrmErp {
   estoque_minimo: number | null
   estoque_maximo: number | null
   ativo: boolean
-  status_estoque: 'SEM_ESTOQUE' | 'CRITICO' | 'NORMAL'
+  status_estoque: 'SEM_ESTOQUE' | 'CRITICO' | 'NORMAL' // Uppercase conforme retorno da view
+  marca_nome?: string | null
+  categoria_nome?: string | null
+  modelo_nome?: string | null
 }
 
 export interface EstoqueProduto {
@@ -206,4 +209,118 @@ export interface EstoqueProduto {
   preco_venda: number | null
   quantidade_atual: number
   updated_at: string
+}
+
+/**
+ * 🛍️ ARMAÇÕES - Funções específicas para seleção de armações
+ */
+
+export interface ArmacaoFiltros {
+  loja_id?: string // ⚠️ Opcional: CRM_ERP é banco separado, nem todas lojas têm produtos
+  busca?: string // SKU, SKU Visual, ou nome
+  marca_id?: string
+  categoria_id?: string
+  apenas_em_estoque?: boolean
+  limite?: number
+}
+
+/**
+ * Buscar armações do estoque (tipo = 'armacao')
+ * Usa view: vw_estoque_completo
+ */
+export async function buscarArmacoes(filtros: ArmacaoFiltros) {
+  const crmErpClient = getCrmErpClient()
+  
+  const {
+    loja_id,
+    busca,
+    marca_id,
+    categoria_id,
+    apenas_em_estoque = false,
+    limite = 20
+  } = filtros
+
+  if (isDev) {
+    console.log('[CRM_ERP] 🛍️ Buscando armações:', filtros)
+  }
+
+  let query = crmErpClient
+    .from('vw_estoque_completo')
+    .select('*')
+    .eq('tipo_produto', 'armacao')
+    .order('descricao')
+    .limit(limite)
+
+  // ⚠️ IMPORTANTE: CRM_ERP é banco separado, nem todas as lojas têm produtos lá
+  // Se loja_id específica, tenta filtrar, mas permite buscar de outras lojas também
+  if (loja_id) {
+    // Usa OR: produtos da loja OU sem loja definida
+    query = query.or(`loja_id.eq.${loja_id},loja_id.is.null`)
+  }
+
+  // Filtro de busca genérica (SKU, nome, etc)
+  if (busca && busca.trim()) {
+    const termo = `%${busca.trim()}%`
+    query = query.or(`sku.ilike.${termo},sku_visual.ilike.${termo},descricao.ilike.${termo}`)
+  }
+
+  if (marca_id) {
+    query = query.eq('marca_id', marca_id)
+  }
+
+  if (categoria_id) {
+    query = query.eq('categoria_id', categoria_id)
+  }
+
+  if (apenas_em_estoque) {
+    query = query.gt('quantidade_atual', 0)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[CRM_ERP] ❌ Erro ao buscar armações:', error)
+    throw error
+  }
+
+  if (isDev) {
+    console.log('[CRM_ERP] ✅ Armações encontradas:', data?.length)
+  }
+
+  return (data || []) as ProdutoCrmErp[]
+}
+
+/**
+ * Buscar armação específica por SKU
+ */
+export async function buscarArmacaoPorSKU(sku: string, loja_id: string) {
+  const crmErpClient = getCrmErpClient()
+
+  if (isDev) {
+    console.log('[CRM_ERP] 🔍 Buscando armação por SKU:', { sku, loja_id })
+  }
+
+  const { data, error } = await crmErpClient
+    .from('vw_estoque_completo')
+    .select('*')
+    .eq('tipo_produto', 'armacao')
+    .eq('loja_id', loja_id)
+    .or(`sku.eq.${sku},sku_visual.eq.${sku}`)
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      // Nenhum resultado encontrado
+      if (isDev) console.log('[CRM_ERP] ⚠️ Armação não encontrada')
+      return null
+    }
+    console.error('[CRM_ERP] ❌ Erro ao buscar armação:', error)
+    throw error
+  }
+
+  if (isDev) {
+    console.log('[CRM_ERP] ✅ Armação encontrada:', data?.descricao)
+  }
+
+  return data as ProdutoCrmErp | null
 }

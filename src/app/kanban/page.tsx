@@ -18,7 +18,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { PedidoCompleto, StatusPedido, PrioridadeLevel, Montador } from '@/lib/types/database'
 import { STATUS_COLORS, STATUS_LABELS } from '@/lib/utils/constants'
 import { cn } from '@/lib/utils'
-import NovaOrdemForm from '@/components/forms/NovaOrdemForm'
+import { NovaOrdemWizard } from '@/components/forms'
 import { KanbanCard } from '@/components/kanban/KanbanCard'
 import { KanbanCardModern } from '@/components/kanban/KanbanCardModern'
 import { KanbanColumnHeader } from '@/components/kanban/KanbanColumnHeader'
@@ -1566,8 +1566,8 @@ export default function KanbanBoard() {
             pedidoNumero={pendingMove?.pedido.numero_sequencial?.toString()}
           />
 
-          {/* ========== CRIAÇÃO DE PEDIDO (PADRÃO) ========== */}
-          <NovaOrdemForm
+          {/* ========== CRIAÇÃO DE PEDIDO (WIZARD MULTIMODAL) ========== */}
+          <NovaOrdemWizard
             open={showCriarPedidoWizard}
             onOpenChange={setShowCriarPedidoWizard}
             showTrigger={false}

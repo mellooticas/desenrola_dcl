@@ -134,19 +134,30 @@ export function useGruposCanonicos(filtros?: FiltrosLente) {
         .select('*')
         .order('preco_medio', { ascending: true })
 
-      // Aplicar filtros
+      // ⚡ APLICAR FILTROS COM NORMALIZAÇÃO DE VALORES
+      
+      // Filtro: Tipo de Lente
       if (filtros?.tipo_lente) {
         query = query.eq('tipo_lente', filtros.tipo_lente)
       }
 
+      // Filtro: Material (normalizar para uppercase sem hífen)
+      // Ex: "CR-39" → "CR39", "policarbonato" → "POLICARBONATO"
       if (filtros?.material) {
-        query = query.eq('material', filtros.material)
+        const materialNormalizado = filtros.material.replace(/-/g, '').toUpperCase()
+        query = query.eq('material', materialNormalizado)
       }
 
+      // Filtro: Índice de Refração (forçar string com formato "1.XX")
+      // Ex: 1.5 → "1.50", 1.61 → "1.61"
       if (filtros?.indice_refracao) {
-        query = query.eq('indice_refracao', filtros.indice_refracao)
+        const indiceNormalizado = typeof filtros.indice_refracao === 'number'
+          ? filtros.indice_refracao.toFixed(2)
+          : filtros.indice_refracao
+        query = query.eq('indice_refracao', indiceNormalizado)
       }
 
+      // Filtro: Faixa de Preço
       if (filtros?.preco_min !== undefined) {
         query = query.gte('preco_medio', filtros.preco_min)
       }
@@ -155,15 +166,17 @@ export function useGruposCanonicos(filtros?: FiltrosLente) {
         query = query.lte('preco_medio', filtros.preco_max)
       }
 
+      // Filtro: Premium
       if (filtros?.is_premium !== undefined) {
         query = query.eq('is_premium', filtros.is_premium)
       }
 
+      // Filtro: Busca por Nome
       if (filtros?.busca) {
         query = query.ilike('nome_grupo', `%${filtros.busca}%`)
       }
 
-      // ⚡ NOVOS FILTROS: Tratamentos
+      // ⚡ FILTROS DE TRATAMENTOS (booleanos diretos)
       if (filtros?.tratamento_antirreflexo !== undefined) {
         query = query.eq('tratamento_antirreflexo', filtros.tratamento_antirreflexo)
       }
@@ -180,6 +193,7 @@ export function useGruposCanonicos(filtros?: FiltrosLente) {
         query = query.eq('tratamento_blue_light', filtros.tratamento_blue_light)
       }
 
+      // Filtro: Tratamentos Fotossensíveis (enum: 'nenhum' | 'fotocromático' | 'polarizado')
       if (filtros?.tratamento_fotossensiveis) {
         query = query.eq('tratamento_fotossensiveis', filtros.tratamento_fotossensiveis)
       }
@@ -221,20 +235,82 @@ export function useLentesDoGrupo(grupoCanonicoId: string | null) {
 
       console.log('[useLentesDoGrupo] Buscando lentes do grupo:', grupoCanonicoId)
 
-      const { data, error } = await lentesClient
-        .from('v_lentes_cotacao_compra')
+      // ⚠️ WORKAROUND: v_lentes_cotacao_compra precisa de RLS configurado no sis_lens
+      // Por enquanto, retornamos um mock baseado no grupo
+      // TODO: Pedir ao admin do sis_lens para configurar RLS public na view
+      
+      const { data: grupo, error: grupoError } = await lentesClient
+        .from('v_grupos_canonicos')
         .select('*')
-        .eq('grupo_canonico_id', grupoCanonicoId)
-        .eq('ativo', true)
-        .order('preco_custo', { ascending: true }) // Melhor custo primeiro
+        .eq('id', grupoCanonicoId)
+        .single()
 
-      if (error) {
-        console.error('[useLentesDoGrupo] Erro ao buscar lentes:', error)
-        throw error
+      if (grupoError) {
+        console.error('[useLentesDoGrupo] Erro ao buscar grupo:', grupoError)
+        throw grupoError
       }
 
-      console.log(`[useLentesDoGrupo] ✅ ${data?.length || 0} lentes encontradas`)
-      return data as LenteComLaboratorio[]
+      if (!grupo) return []
+
+      // Mock: Criar lentes fictícias baseadas no grupo
+      // (Na produção, virá da view v_lentes_cotacao_compra quando o RLS for configurado)
+      const lentesMock: LenteComLaboratorio[] = [
+        {
+          lente_id: `${grupoCanonicoId}-mock-1`,
+          lente_nome: `${grupo.material} ${grupo.indice_refracao} ${grupo.tipo_lente}`,
+          lente_slug: grupo.slug,
+          nome_canonizado: grupo.nome_grupo,
+          
+          grupo_canonico_id: grupoCanonicoId,
+          
+          tipo_lente: grupo.tipo_lente as 'visao_simples' | 'multifocal' | 'bifocal' | 'leitura' | 'ocupacional',
+          material: grupo.material,
+          indice_refracao: grupo.indice_refracao,
+          
+          // Mock de fornecedor (Best Lens Express)
+          fornecedor_id: 'mock-fornecedor-express',
+          fornecedor_nome: 'Best Lens Express',
+          
+          marca_id: null,
+          marca_nome: grupo.material === 'POLICARBONATO' ? 'POLYCARBONATE' : 'EXPRESS',
+          
+          preco_custo: grupo.preco_minimo,
+          prazo_dias: 7,
+          
+          ativo: true,
+          categoria: grupo.categoria_predominante || (grupo.is_premium ? 'premium' : 'economica')
+        }
+      ]
+
+      // Se houver range de preços, criar mais opções
+      if (grupo.preco_maximo > grupo.preco_minimo + 50) {
+        lentesMock.push({
+          ...lentesMock[0],
+          lente_id: `${grupoCanonicoId}-mock-2`,
+          fornecedor_id: 'mock-fornecedor-premium',
+          fornecedor_nome: 'Best Lens Premium',
+          marca_nome: 'PREMIUM',
+          preco_custo: grupo.preco_medio,
+          prazo_dias: 5,
+          categoria: 'intermediaria'
+        })
+      }
+
+      if (grupo.preco_maximo > grupo.preco_medio + 50) {
+        lentesMock.push({
+          ...lentesMock[0],
+          lente_id: `${grupoCanonicoId}-mock-3`,
+          fornecedor_id: 'mock-fornecedor-top',
+          fornecedor_nome: 'Best Lens TOP',
+          marca_nome: 'TOP LINE',
+          preco_custo: grupo.preco_maximo,
+          prazo_dias: 3,
+          categoria: 'premium'
+        })
+      }
+
+      console.log(`[useLentesDoGrupo] ✅ ${lentesMock.length} lentes mockadas (TEMPORÁRIO - aguardando RLS no sis_lens)`)
+      return lentesMock
     },
     enabled: !!grupoCanonicoId,
     staleTime: 5 * 60 * 1000,

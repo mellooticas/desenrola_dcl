@@ -198,6 +198,57 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
             </div>
           </div>
 
+          {/* Material - VALORES CORRIGIDOS (sem hífen) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Material
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: 'CR39', label: 'CR-39' },
+                { value: 'POLICARBONATO', label: 'Policarbonato' },
+                { value: 'TRIVEX', label: 'Trivex' },
+                { value: 'ALTO INDICE', label: 'Alto Índice' }
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setFiltros(prev => ({ ...prev, material: prev.material === value ? undefined : value }))}
+                  className={cn(
+                    'px-3 py-1.5 text-sm rounded-lg border transition-colors',
+                    filtros.material === value
+                      ? 'bg-blue-500 text-white border-blue-500'
+                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Índice de Refração */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Índice de Refração
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {['1.50', '1.56', '1.59', '1.61', '1.67', '1.74'].map((indice) => (
+                <button
+                  key={indice}
+                  onClick={() => setFiltros(prev => ({ ...prev, indice_refracao: prev.indice_refracao === indice ? undefined : indice }))}
+                  className={cn(
+                    'px-3 py-1.5 text-sm rounded-lg border transition-colors',
+                    filtros.indice_refracao === indice
+                      ? 'bg-blue-500 text-white border-blue-500'
+                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  )}
+                >
+                  {indice}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Faixa de Preço */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

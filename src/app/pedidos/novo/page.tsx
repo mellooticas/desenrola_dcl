@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
-import NovaOrdemForm from '@/components/forms/NovaOrdemForm'
+import { NovaOrdemWizard } from '@/components/forms'
 
 export default function NovaOrdemPage() {
   const router = useRouter()
@@ -12,7 +12,7 @@ export default function NovaOrdemPage() {
 
   return (
     <div className="min-h-[calc(100vh-80px)]">
-      <NovaOrdemForm
+      <NovaOrdemWizard
         open={open}
         onOpenChange={(next) => {
           setOpen(next)

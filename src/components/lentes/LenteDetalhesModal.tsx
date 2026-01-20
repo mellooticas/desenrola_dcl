@@ -134,6 +134,15 @@ export function LenteDetalhesModal({
         {/* Lista de Lentes */}
         <ScrollArea className="h-[500px] px-6">
           <div className="space-y-4 py-4">
+            {/* Aviso Temporário - Dados Mock */}
+            <Alert className="bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
+              <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+              <AlertDescription className="text-sm text-yellow-800 dark:text-yellow-200">
+                <strong>Modo de Demonstração:</strong> Os laboratórios exibidos são baseados nos dados do grupo. 
+                Para ver fornecedores reais, é necessário configurar permissões RLS na view <code className="text-xs bg-yellow-100 dark:bg-yellow-900/40 px-1 rounded">v_lentes_cotacao_compra</code> do banco sis_lens.
+              </AlertDescription>
+            </Alert>
+
             {/* Loading */}
             {isLoading && (
               <div className="text-center py-8 text-gray-500">
