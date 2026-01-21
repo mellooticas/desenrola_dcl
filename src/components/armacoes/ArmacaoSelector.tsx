@@ -38,11 +38,18 @@ export function ArmacaoSelector({
     return () => clearTimeout(timer)
   }, [busca])
 
-  const { data: armacoes, isLoading, error } = useArmacoes({
+  const { data: armacoesRaw, isLoading, error } = useArmacoes({
     loja_id: lojaId,
     busca: buscaDebounced || undefined,
     apenas_em_estoque: apenasEmEstoque,
   })
+
+  // Remover duplicatas baseado em produto_id (pode vir duplicado por OR na query)
+  const armacoes = armacoesRaw
+    ? Array.from(
+        new Map(armacoesRaw.map(item => [item.produto_id, item])).values()
+      )
+    : []
 
   const handleClienteTrouxeToggle = (checked: boolean) => {
     onClienteTrouxeChange?.(checked)

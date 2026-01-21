@@ -31,7 +31,7 @@ import { Step5ClienteSLA } from './wizard-steps/Step5ClienteSLA'
 import { Step6Revisao } from './wizard-steps/Step6Revisao'
 import { Step7Confirmacao } from './wizard-steps/Step7Confirmacao'
 
-export type TipoPedido = 'LENTES' | 'ARMACAO' | 'COMPLETO' | 'SERVICO'
+export type TipoPedido = 'LENTES' | 'ARMACAO' | 'COMPLETO' | 'SERVICO' | 'LENTES_CONTATO'
 
 export interface WizardData {
   // Step 1
@@ -48,7 +48,9 @@ export interface WizardData {
     sku: string
     sku_visual: string
     descricao: string
-    preco_venda: number
+    preco_custo?: number
+    preco_tabela: number
+    preco_venda_real?: number // Preço que realmente foi vendido (com desconto)
   }
   cliente_trouxe_armacao: boolean
   
@@ -60,14 +62,18 @@ export interface WizardData {
     fornecedor_id: string
     fornecedor_nome: string
     preco_custo: number
+    preco_tabela: number
+    preco_venda_real?: number // Preço que realmente foi vendido (com desconto)
     prazo_dias: number
   }
   grupo_canonico_id: string | null
   fornecedor_lente_id: string | null
+  classe_lente_id: string | null
   
   // Step 5
   cliente_nome: string
   cliente_telefone: string
+  cliente_cpf?: string
   sla_dias_lab: number
   sla_margem_cliente: number
   data_prometida_manual?: string
@@ -121,6 +127,7 @@ export function NovaOrdemWizard({
     lente_selecionada_id: null,
     grupo_canonico_id: null,
     fornecedor_lente_id: null,
+    classe_lente_id: null,
     cliente_nome: '',
     cliente_telefone: '',
     sla_dias_lab: 7,
@@ -208,7 +215,7 @@ export function NovaOrdemWizard({
         cliente_nome: data.cliente_nome,
         cliente_telefone: data.cliente_telefone,
         prioridade: data.prioridade,
-        status: 'rascunho',
+        status: 'REGISTRADO', // Pedidos manuais vão direto para REGISTRADO (PENDENTE é do PDV)
         
         // Campos gerais
         observacoes: data.observacoes,
@@ -224,12 +231,58 @@ export function NovaOrdemWizard({
       if (data.tipo_pedido === 'ARMACAO' || data.tipo_pedido === 'COMPLETO') {
         pedidoData.armacao_id = data.armacao_id
         pedidoData.origem_armacao = data.cliente_trouxe_armacao ? 'cliente_trouxe' : 'estoque'
+        
+        // Preços da armação
+        if (data.armacao_dados) {
+          pedidoData.preco_armacao = data.armacao_dados.preco_venda_real || data.armacao_dados.preco_tabela
+          pedidoData.custo_armacao = data.armacao_dados.preco_custo || 0
+        }
       }
 
       if (data.tipo_pedido === 'LENTES' || data.tipo_pedido === 'COMPLETO') {
         pedidoData.lente_selecionada_id = data.lente_selecionada_id
         pedidoData.grupo_canonico_id = data.grupo_canonico_id
-        pedidoData.fornecedor_lente_id = data.fornecedor_lente_id
+        
+        // 🔄 CONVERSÃO: fornecedor_id (SIS_LENS) → laboratorio_id (DESENROLA_DCL)
+        // UUIDs são DIFERENTES entre os bancos, precisa converter via função
+        const fornecedorIdSisLens = data.fornecedor_lente_id || data.lente_dados?.fornecedor_id
+        
+        if (fornecedorIdSisLens) {
+          // Chamar função PostgreSQL para converter UUID
+          const { data: resultado, error: erroConversao } = await supabase.rpc(
+            'converter_fornecedor_para_laboratorio',
+            { p_fornecedor_id_sis_lens: fornecedorIdSisLens }
+          )
+          
+          if (erroConversao) {
+            console.error('[NovaOrdemWizard] ❌ Erro ao converter fornecedor→laboratorio:', erroConversao)
+            throw new Error(`Erro ao converter laboratório: ${erroConversao.message}`)
+          }
+          
+          if (!resultado) {
+            console.error('[NovaOrdemWizard] ❌ Fornecedor não mapeado:', fornecedorIdSisLens)
+            throw new Error(`Laboratório não encontrado para o fornecedor selecionado`)
+          }
+          
+          pedidoData.laboratorio_id = resultado
+          console.log('[NovaOrdemWizard] ✅ Conversão:', { fornecedorIdSisLens, laboratorio_id: resultado })
+        } else if (data.fornecedor_lente_id) {
+          // Fallback: tentar conversão direto do fornecedor_lente_id
+          const { data: resultadoFallback, error: erroFallback } = await supabase.rpc(
+            'converter_fornecedor_para_laboratorio',
+            { p_fornecedor_id_sis_lens: data.fornecedor_lente_id }
+          )
+          if (!erroFallback && resultadoFallback) {
+            pedidoData.laboratorio_id = resultadoFallback
+          }
+        }
+        
+        // Valores/Preços das lentes
+        if (data.lente_dados) {
+          pedidoData.preco_lente = data.lente_dados.preco_venda_real || data.lente_dados.preco_tabela
+          pedidoData.custo_lente = data.lente_dados.preco_custo || 0
+        }
+        pedidoData.classe_lente_id = data.classe_lente_id
         
         // SLA baseado no prazo do laboratório
         const prazoLab = data.lente_dados?.prazo_dias || data.sla_dias_lab

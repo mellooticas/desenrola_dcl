@@ -648,8 +648,8 @@ export default function PedidosPage() {
                         </TableHeader>
                         <TableBody>
                           {pedidos.map((pedido) => {
-                            const statusConfig = STATUS_CONFIG[pedido.status]
-                            const prioridadeConfig = PRIORIDADE_CONFIG[pedido.prioridade]
+                            const statusConfig = STATUS_CONFIG[pedido.status] || STATUS_CONFIG['PENDENTE']
+                            const prioridadeConfig = PRIORIDADE_CONFIG[pedido.prioridade] || PRIORIDADE_CONFIG['NORMAL']
 
                             return (
                               <TableRow key={pedido.id} className="hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors duration-200 dark:border-gray-700">

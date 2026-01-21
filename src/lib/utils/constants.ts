@@ -2,7 +2,7 @@ import { StatusPedido, PrioridadeLevel } from '@/lib/types/database'
 
 // Status Colors (matching database design)
 export const STATUS_COLORS: Record<StatusPedido, string> = {
-  'PENDENTE': '#94a3b8',        // 🆕 Slate 400 - DCL analisa receita
+  'PENDENTE': '#94a3b8',        // Slate 400 - DCL analisa receita
   'REGISTRADO': '#94A3B8',      // Slate 400
   'AG_PAGAMENTO': '#F59E0B',    // Amber 500
   'PAGO': '#10B981',            // Emerald 500

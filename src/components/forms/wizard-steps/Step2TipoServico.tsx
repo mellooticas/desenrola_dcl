@@ -3,7 +3,7 @@
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Input } from '@/components/ui/input'
-import { Glasses, Frame, Package, Wrench } from 'lucide-react'
+import { Glasses, Frame, Package, Wrench, Contact } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { WizardData, TipoPedido } from '../NovaOrdemWizard'
 
@@ -18,6 +18,12 @@ const TIPOS_SERVICO = [
     label: 'Só Lentes',
     icon: Glasses,
     description: 'Pedido apenas de lentes (cliente já tem armação)',
+  },
+  {
+    value: 'LENTES_CONTATO' as TipoPedido,
+    label: 'Lentes de Contato',
+    icon: Contact,
+    description: 'Venda de lentes de contato',
   },
   {
     value: 'ARMACAO' as TipoPedido,

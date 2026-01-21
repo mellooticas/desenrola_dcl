@@ -60,7 +60,7 @@ export function Step6Revisao({ data }: Step6Props) {
                 <>
                   <p><strong>SKU:</strong> {data.armacao_dados.sku_visual}</p>
                   <p><strong>Descrição:</strong> {data.armacao_dados.descricao}</p>
-                  <p><strong>Valor:</strong> R$ {data.armacao_dados.preco_venda.toFixed(2)}</p>
+                  <p><strong>Valor:</strong> R$ {(data.armacao_dados.preco_venda_real || data.armacao_dados.preco_tabela || 0).toFixed(2)}</p>
                 </>
               ) : (
                 <p className="text-muted-foreground italic">Não selecionada</p>

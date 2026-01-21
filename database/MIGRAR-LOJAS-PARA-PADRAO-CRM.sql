@@ -6,9 +6,16 @@
 -- PROBLEMA: desenrola_dcl tem lojas DIFERENTES (IDs antigos)
 -- SOLUÇÃO: Substituir lojas do desenrola_dcl pelas do CRM_ERP
 -- ============================================================
+-- ⚠️ CONTEXTO IMPORTANTE:
+--    Este banco JÁ EXISTE e está operacional no Supabase
+--    Estrutura confirmada pela investigacao-resumo.md:
+--    - ✅ 2.948 pedidos em produção
+--    - ✅ 18 tabelas operacionais
+--    - ✅ 17 views funcionando
+-- ============================================================
 
 -- ============================================================
--- EXECUTAR NO BANCO: desenrola_dcl
+-- EXECUTAR NO BANCO: desenrola_dcl (Supabase SQL Editor)
 -- ============================================================
 
 -- PASSO 1: Backup das lojas antigas e mapeamento
@@ -64,6 +71,16 @@ SELECT
   nome_novo || ' (' || id_novo || ')' as loja_nova
 FROM mapeamento_lojas
 ORDER BY nome_antigo;
+
+| loja_antiga                                               | mapeamento | loja_nova                                                         |
+| --------------------------------------------------------- | ---------- | ----------------------------------------------------------------- |
+| Escritório Central (e974fc5d-ed39-4831-9e5e-4a5544489de6) |  →         | Mello Óticas - Escritório (534cba2b-932f-4d26-b003-ae1dcb903361)  |
+| Mauá (c1aa5124-bdec-4cd2-86ee-cba6eea5041d)               |  →         | Lancaster - Mauá (f8302fdd-615d-44c6-9dd2-233332937fe1)           |
+| Perus (f1dd8fe9-b783-46cd-ad26-56ad364a85d7)              |  →         | Mello Óticas - Perus (f03f5cc3-d2ed-4fa1-b8a8-d49f2b0ff59b)       |
+| Rio Pequeno (c2bb8806-91d1-4670-9ce2-a949b188f8ae)        |  →         | Mello Óticas - Rio Pequeno (069c77db-2502-4fa6-b714-51e76f9bc719) |
+| São Mateus (626c4397-72cd-46de-93ec-1a4255e21e44)         |  →         | Mello Óticas - São Mateus (f2a684b9-91b3-4650-b2c0-d64124d3a571)  |
+| Suzano (e5915ba4-fdb4-4fa7-b9d5-c71d3c704c55)             |  →         | Lancaster - Suzano (bab835bc-2df1-4f54-87c3-8151c61ec642)         |
+| Suzano Centro (cb8ebda2-deff-4d44-8488-672d63bc8bd7)      |  →         | Mello Óticas - Suzano II (f333a360-ee11-4a16-b98c-1d41961ca0bd)   |
 
 -- PASSO 3: Inserir lojas do padrão CRM_ERP PRIMEIRO
 -- ============================================================
@@ -131,6 +148,12 @@ SELECT
 FROM pedidos
 WHERE loja_id IN (SELECT id_antigo FROM mapeamento_lojas)
 GROUP BY loja_id;
+
+Success. No rows returned
+
+
+
+
 -- Deve retornar 0 linhas (nenhum pedido com ID antigo)
 
 -- PASSO 5: Atualizar outras tabelas que referenciam loja_id
@@ -150,14 +173,192 @@ BEGIN
   RAISE NOTICE '✅ Atualizados % usuários com novos IDs de loja', v_count;
 END $$;
 
--- 5.2: Verificar outras tabelas que podem ter loja_id
+-- 5.2: Atualizar COLABORADORES
+DO $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  UPDATE colaboradores c
+  SET loja_id = m.id_novo
+  FROM mapeamento_lojas m
+  WHERE c.loja_id = m.id_antigo;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RAISE NOTICE '✅ Atualizados % colaboradores com novos IDs de loja', v_count;
+END $$;
+
+-- 5.3: Atualizar ALERTAS
+DO $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  UPDATE alertas a
+  SET loja_id = m.id_novo
+  FROM mapeamento_lojas m
+  WHERE a.loja_id = m.id_antigo;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RAISE NOTICE '✅ Atualizados % alertas com novos IDs de loja', v_count;
+END $$;
+
+-- 5.4: Atualizar CONTROLE_OS (PRIMARY KEY composta: numero_os + loja_id)
+-- ⚠️ Precisa de tratamento especial para evitar duplicatas
+DO $$
+DECLARE
+  v_count INTEGER;
+  v_deleted INTEGER;
+BEGIN
+  -- Primeiro, deletar registros que já existem com o novo loja_id
+  -- (evita conflito de chave primária)
+  DELETE FROM controle_os co
+  WHERE EXISTS (
+    SELECT 1 
+    FROM controle_os co2
+    INNER JOIN mapeamento_lojas m ON co2.loja_id = m.id_novo
+    WHERE co2.numero_os = co.numero_os
+      AND co.loja_id IN (SELECT id_antigo FROM mapeamento_lojas)
+  );
+  
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+  RAISE NOTICE '⚠️ Removidos % registros duplicados de controle_os', v_deleted;
+  
+  -- Agora atualizar os IDs antigos para novos
+  UPDATE controle_os co
+  SET loja_id = m.id_novo
+  FROM mapeamento_lojas m
+  WHERE co.loja_id = m.id_antigo;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RAISE NOTICE '✅ Atualizados % registros de controle_os com novos IDs de loja', v_count;
+END $$;
+
+-- 5.5: Atualizar DESAFIOS_PARTICIPACAO
+DO $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  UPDATE desafios_participacao dp
+  SET loja_id = m.id_novo
+  FROM mapeamento_lojas m
+  WHERE dp.loja_id = m.id_antigo;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RAISE NOTICE '✅ Atualizados % registros de desafios_participacao com novos IDs de loja', v_count;
+END $$;
+
+-- 5.6: Atualizar LOJA_ACOES_CUSTOMIZADAS
+DO $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  UPDATE loja_acoes_customizadas lac
+  SET loja_id = m.id_novo
+  FROM mapeamento_lojas m
+  WHERE lac.loja_id = m.id_antigo;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RAISE NOTICE '✅ Atualizados % registros de loja_acoes_customizadas com novos IDs de loja', v_count;
+END $$;
+
+-- 5.7: Atualizar LOJA_CONFIGURACOES_HORARIO
+DO $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  UPDATE loja_configuracoes_horario lch
+  SET loja_id = m.id_novo
+  FROM mapeamento_lojas m
+  WHERE lch.loja_id = m.id_antigo;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RAISE NOTICE '✅ Atualizados % registros de loja_configuracoes_horario com novos IDs de loja', v_count;
+END $$;
+
+-- 5.8: Atualizar MISSOES_DIARIAS
+DO $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  UPDATE missoes_diarias md
+  SET loja_id = m.id_novo
+  FROM mapeamento_lojas m
+  WHERE md.loja_id = m.id_antigo;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RAISE NOTICE '✅ Atualizados % registros de missoes_diarias com novos IDs de loja', v_count;
+END $$;
+
+-- 5.9: Atualizar OS_NAO_LANCADAS
+DO $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  UPDATE os_nao_lancadas onl
+  SET loja_id = m.id_novo
+  FROM mapeamento_lojas m
+  WHERE onl.loja_id = m.id_antigo;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RAISE NOTICE '✅ Atualizados % registros de os_nao_lancadas com novos IDs de loja', v_count;
+END $$;
+
+-- 5.10: Atualizar OS_SEQUENCIA (pode ter constraint de unicidade também)
+DO $$
+DECLARE
+  v_count INTEGER;
+  v_deleted INTEGER;
+BEGIN
+  -- Verificar se há conflitos potenciais e remover duplicatas
+  DELETE FROM os_sequencia os
+  WHERE EXISTS (
+    SELECT 1 
+    FROM os_sequencia os2
+    INNER JOIN mapeamento_lojas m ON os2.loja_id = m.id_novo
+    WHERE os.loja_id IN (SELECT id_antigo FROM mapeamento_lojas)
+      AND os2.loja_id = m.id_novo
+  );
+  
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+  IF v_deleted > 0 THEN
+    RAISE NOTICE '⚠️ Removidos % registros duplicados de os_sequencia', v_deleted;
+  END IF;
+  
+  -- Atualizar os IDs
+  UPDATE os_sequencia os
+  SET loja_id = m.id_novo
+  FROM mapeamento_lojas m
+  WHERE os.loja_id = m.id_antigo;
+  
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RAISE NOTICE '✅ Atualizados % registros de os_sequencia com novos IDs de loja', v_count;
+END $$;
+
+-- 5.11: Verificar se há outras tabelas que podem ter loja_id
 SELECT 
   table_name,
   column_name
 FROM information_schema.columns
 WHERE column_name = 'loja_id'
   AND table_schema = 'public'
+  AND table_name NOT IN (
+    'pedidos', 'usuarios', 'colaboradores', 'alertas', 'controle_os',
+    'desafios_participacao', 'loja_acoes_customizadas', 'loja_configuracoes_horario',
+    'missoes_diarias', 'os_nao_lancadas', 'os_sequencia'
+  )
 ORDER BY table_name;
+
+| table_name                    | column_name |
+| ----------------------------- | ----------- |
+| v_missoes_timeline            | loja_id     |
+| v_pedidos_kanban              | loja_id     |
+| v_pedidos_montagem            | loja_id     |
+| view_controle_os_estatisticas | loja_id     |
+| view_controle_os_gaps         | loja_id     |
+| view_os_estatisticas          | loja_id     |
+| view_os_gaps                  | loja_id     |
+| view_relatorio_montagens      | loja_id     |
+
+
 
 -- PASSO 6: Remover lojas antigas (agora que tudo foi atualizado)
 -- ============================================================
@@ -177,6 +378,11 @@ SELECT
 FROM lojas_backup_migracao
 WHERE id NOT IN (SELECT id FROM lojas);
 
+
+| status                    | total_removidas |
+| ------------------------- | --------------- |
+| ✅ LOJAS ANTIGAS REMOVIDAS | 7               |
+
 -- PASSO 7: VERIFICAÇÕES FINAIS
 -- ============================================================
 
@@ -186,7 +392,24 @@ SELECT
   COUNT(*) as total
 FROM lojas;
 
+
+| status                | total |
+| --------------------- | ----- |
+| ✅ LOJAS APÓS MIGRAÇÃO | 7     |
+
+
 SELECT id, nome, ativo FROM lojas ORDER BY nome;
+
+| id                                   | nome                       | ativo |
+| ------------------------------------ | -------------------------- | ----- |
+| f8302fdd-615d-44c6-9dd2-233332937fe1 | Lancaster - Mauá           | true  |
+| bab835bc-2df1-4f54-87c3-8151c61ec642 | Lancaster - Suzano         | true  |
+| 534cba2b-932f-4d26-b003-ae1dcb903361 | Mello Óticas - Escritório  | true  |
+| f03f5cc3-d2ed-4fa1-b8a8-d49f2b0ff59b | Mello Óticas - Perus       | true  |
+| 069c77db-2502-4fa6-b714-51e76f9bc719 | Mello Óticas - Rio Pequeno | true  |
+| f2a684b9-91b3-4650-b2c0-d64124d3a571 | Mello Óticas - São Mateus  | true  |
+| f333a360-ee11-4a16-b98c-1d41961ca0bd | Mello Óticas - Suzano II   | true  |
+
 
 -- 7.2: Verificar pedidos (todos devem ter IDs novos)
 SELECT 
@@ -199,6 +422,17 @@ LEFT JOIN pedidos p ON p.loja_id = l.id
 GROUP BY l.id, l.nome, p.loja_id
 ORDER BY l.nome;
 
+| status                         | loja                       | total_pedidos | loja_id                              |
+| ------------------------------ | -------------------------- | ------------- | ------------------------------------ |
+| ✅ PEDIDOS POR LOJA (novos IDs) | Lancaster - Mauá           | 1             | f8302fdd-615d-44c6-9dd2-233332937fe1 |
+| ✅ PEDIDOS POR LOJA (novos IDs) | Lancaster - Suzano         | 591           | bab835bc-2df1-4f54-87c3-8151c61ec642 |
+| ✅ PEDIDOS POR LOJA (novos IDs) | Mello Óticas - Escritório  | 47            | 534cba2b-932f-4d26-b003-ae1dcb903361 |
+| ✅ PEDIDOS POR LOJA (novos IDs) | Mello Óticas - Perus       | 1             | f03f5cc3-d2ed-4fa1-b8a8-d49f2b0ff59b |
+| ✅ PEDIDOS POR LOJA (novos IDs) | Mello Óticas - Rio Pequeno | 0             | null                                 |
+| ✅ PEDIDOS POR LOJA (novos IDs) | Mello Óticas - São Mateus  | 0             | null                                 |
+| ✅ PEDIDOS POR LOJA (novos IDs) | Mello Óticas - Suzano II   | 0             | null                                 |
+
+
 -- 7.3: Verificar se ficou algum órfão
 SELECT 
   COUNT(*) as pedidos_orfaos,
@@ -208,12 +442,23 @@ WHERE NOT EXISTS (
   SELECT 1 FROM lojas l WHERE l.id = p.loja_id
 );
 
+| pedidos_orfaos | aviso                             |
+| -------------- | --------------------------------- |
+| 0              | ATENÇÃO: Pedidos sem loja válida! |
+
+
 -- 7.4: Comparar antes/depois
 SELECT 
   'RESUMO DA MIGRAÇÃO' as status,
   (SELECT COUNT(*) FROM lojas_backup_migracao) as lojas_antes,
   (SELECT COUNT(*) FROM lojas) as lojas_depois,
   (SELECT COUNT(DISTINCT loja_id) FROM pedidos) as lojas_em_uso;
+
+
+| status             | lojas_antes | lojas_depois | lojas_em_uso |
+| ------------------ | ----------- | ------------ | ------------ |
+| RESUMO DA MIGRAÇÃO | 7           | 7            | 4            |
+
 
 -- ============================================================
 -- PASSO 8: LIMPAR temporários (após confirmar que está OK)

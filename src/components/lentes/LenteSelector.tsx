@@ -295,8 +295,8 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={filtros.tratamento_antirreflexo || false}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, tratamento_antirreflexo: e.target.checked ? true : undefined }))}
+                  checked={filtros.tem_antirreflexo || false}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, tem_antirreflexo: e.target.checked ? true : undefined }))}
                   className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Antirreflexo</span>
@@ -305,8 +305,8 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={filtros.tratamento_antirrisco || false}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, tratamento_antirrisco: e.target.checked ? true : undefined }))}
+                  checked={filtros.tem_antirrisco || false}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, tem_antirrisco: e.target.checked ? true : undefined }))}
                   className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Antirrisco</span>
@@ -315,8 +315,8 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={filtros.tratamento_uv || false}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, tratamento_uv: e.target.checked ? true : undefined }))}
+                  checked={filtros.tem_uv || false}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, tem_uv: e.target.checked ? true : undefined }))}
                   className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Proteção UV</span>
@@ -325,8 +325,8 @@ export function LenteSelector({ onSelect, grupoSelecionadoId, className }: Lente
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={filtros.tratamento_blue_light || false}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, tratamento_blue_light: e.target.checked ? true : undefined }))}
+                  checked={filtros.tem_blue_light || false}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, tem_blue_light: e.target.checked ? true : undefined }))}
                   className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Blue Light (Luz Azul)</span>

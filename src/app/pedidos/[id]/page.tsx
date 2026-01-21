@@ -51,6 +51,7 @@ interface PedidoDetalhes {
   
   // Status e controle
   status: StatusPedido
+  tipo_pedido: 'ARMACAO' | 'LENTES' | 'COMPLETO' | 'MONTAGEM' | null
   prioridade: PrioridadeLevel
   pagamento_atrasado: boolean
   producao_atrasada: boolean
@@ -65,6 +66,16 @@ interface PedidoDetalhes {
   valor_pedido: number | null
   custo_lentes: number | null
   forma_pagamento: string | null
+  
+  // 💰 Preços e Margens - Armação
+  preco_armacao: number | null
+  custo_armacao: number | null
+  margem_armacao_percentual: number | null
+  
+  // 💰 Preços e Margens - Lente
+  preco_lente: number | null
+  custo_lente: number | null
+  margem_lente_percentual: number | null
   
   // Dados ópticos OD (Olho Direito)
   esferico_od: number | null
@@ -180,10 +191,15 @@ export default function PedidoDetalhesPage() {
     try {
       setLoading(true)
       
-      // Primeiro, tentar carregar o pedido da view (que tem permissões mais permissivas/corretas)
+      // Buscar pedido completo com dados de preço/margem
       const { data: pedidoData, error: pedidoError } = await supabase
-        .from('v_pedidos_kanban')
-        .select('*')
+        .from('pedidos')
+        .select(`
+          *,
+          loja:lojas(nome, codigo, endereco, telefone),
+          laboratorio:laboratorios(nome, codigo, sla_padrao_dias, trabalha_sabado),
+          classe:classes_lente(nome, codigo, categoria, sla_base_dias, cor_badge)
+        `)
         .eq('id', pedidoId)
         .single()
 
@@ -192,17 +208,20 @@ export default function PedidoDetalhesPage() {
         throw pedidoError
       }
 
-      // Carregar dados relacionados individualmente (mais seguro)
-      const [lojaData, labData, classeData] = await Promise.allSettled([
-        supabase.from('lojas').select('*').eq('id', pedidoData.loja_id).single(),
-        supabase.from('laboratorios').select('*').eq('id', pedidoData.laboratorio_id).single(),
-        supabase.from('classes_lente').select('*').eq('id', pedidoData.classe_lente_id).single()
-      ])
+      // Extrair dados relacionados da query
+      const loja = pedidoData.loja
+      const laboratorio = pedidoData.laboratorio
+      const classe = pedidoData.classe
 
-      // Extrair dados com fallbacks
-      const loja = lojaData.status === 'fulfilled' ? lojaData.value.data : null
-      const laboratorio = labData.status === 'fulfilled' ? labData.value.data : null
-      const classe = classeData.status === 'fulfilled' ? classeData.value.data : null
+      // 💰 Log dados financeiros
+      console.log('💰 Dados financeiros do pedido:', {
+        preco_armacao: pedidoData.preco_armacao,
+        custo_armacao: pedidoData.custo_armacao,
+        margem_armacao_percentual: pedidoData.margem_armacao_percentual,
+        preco_lente: pedidoData.preco_lente,
+        custo_lente: pedidoData.custo_lente,
+        margem_lente_percentual: pedidoData.margem_lente_percentual
+      })
 
       // Transformar dados para a interface esperada, com fallbacks seguros
       const pedidoCompleto: PedidoDetalhes = {
@@ -210,6 +229,7 @@ export default function PedidoDetalhesPage() {
         id: pedidoData.id,
         numero_sequencial: pedidoData.numero_sequencial,
         status: pedidoData.status,
+        tipo_pedido: pedidoData.tipo_pedido || null,
         prioridade: pedidoData.prioridade || 'NORMAL',
         cliente_nome: pedidoData.cliente_nome,
         created_at: pedidoData.created_at,
@@ -223,6 +243,16 @@ export default function PedidoDetalhesPage() {
         valor_pedido: pedidoData.valor_pedido || null,
         custo_lentes: pedidoData.custo_lentes || null,
         forma_pagamento: pedidoData.forma_pagamento || null,
+        
+        // 💰 Preços e Margens - Armação
+        preco_armacao: pedidoData.preco_armacao || null,
+        custo_armacao: pedidoData.custo_armacao || null,
+        margem_armacao_percentual: pedidoData.margem_armacao_percentual || null,
+        
+        // 💰 Preços e Margens - Lente
+        preco_lente: pedidoData.preco_lente || null,
+        custo_lente: pedidoData.custo_lente || null,
+        margem_lente_percentual: pedidoData.margem_lente_percentual || null,
         
         // Dados ópticos
         esferico_od: pedidoData.esferico_od || null,
@@ -525,48 +555,148 @@ export default function PedidoDetalhesPage() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="space-y-8">
-          {/* KPIs Expandidos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <KPICard 
-              title="Valor do Pedido"
-              value={pedido.valor_pedido || 0}
-              format="currency"
-              className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
-            />
-            <KPICard 
-              title="Custo das Lentes"
-              value={pedido.custo_lentes || 0}
-              format="currency"
-              className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
-            />
-            <KPICard 
-              title="Margem"
-              value={calcularMargem(pedido.valor_pedido, pedido.custo_lentes).valor}
-              format="currency"
-              className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
-            />
-            <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground dark:text-gray-400">Margem %</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold dark:text-white">
-                  {formatarPercentual(calcularMargem(pedido.valor_pedido, pedido.custo_lentes).percentual)}
+          {/* KPIs Expandidos - Armações e Lentes */}
+          <div className="space-y-4">
+            {/* Armações KPIs */}
+            {(pedido.tipo_pedido === 'ARMACAO' || pedido.tipo_pedido === 'COMPLETO') && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  Armação
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <KPICard 
+                    title="Preço Venda"
+                    value={pedido.preco_armacao || 0}
+                    format="currency"
+                    className="backdrop-blur-xl bg-green-50/30 dark:bg-green-950/20 border-green-200/50 dark:border-green-800/50 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  />
+                  <KPICard 
+                    title="Custo"
+                    value={pedido.custo_armacao || 0}
+                    format="currency"
+                    className="backdrop-blur-xl bg-orange-50/30 dark:bg-orange-950/20 border-orange-200/50 dark:border-orange-800/50 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  />
+                  <KPICard 
+                    title="Lucro"
+                    value={(pedido.preco_armacao || 0) - (pedido.custo_armacao || 0)}
+                    format="currency"
+                    className="backdrop-blur-xl bg-blue-50/30 dark:bg-blue-950/20 border-blue-200/50 dark:border-blue-800/50 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  />
+                  <Card className="backdrop-blur-xl bg-purple-50/30 dark:bg-purple-950/20 border-purple-200/50 dark:border-purple-800/50 shadow-xl hover:shadow-2xl transition-all duration-300">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground dark:text-gray-400 flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        Margem %
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                        {pedido.margem_armacao_percentual 
+                          ? formatarPercentual(pedido.margem_armacao_percentual)
+                          : calcularMargem(pedido.preco_armacao || 0, pedido.custo_armacao || 0).percentual > 0 
+                            ? formatarPercentual(calcularMargem(pedido.preco_armacao || 0, pedido.custo_armacao || 0).percentual)
+                            : '-'
+                        }
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-            <KPICard 
-              title="Dias no Sistema"
-              value={calcularDiasDesdePedido(pedido.data_pedido)}
-              format="number"
-              className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
-            />
-            <KPICard 
-              title="SLA Restante"
-              value={calcularSLARestante(pedido.data_prevista_pronto) || 0}
-              format="number"
-              className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
-            />
+              </div>
+            )}
+
+            {/* Lentes KPIs */}
+            {(pedido.tipo_pedido === 'LENTES' || pedido.tipo_pedido === 'COMPLETO') && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <Eye className="w-4 h-4" />
+                  Lentes
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <KPICard 
+                    title="Preço Venda"
+                    value={pedido.preco_lente || 0}
+                    format="currency"
+                    className="backdrop-blur-xl bg-green-50/30 dark:bg-green-950/20 border-green-200/50 dark:border-green-800/50 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  />
+                  <KPICard 
+                    title="Custo"
+                    value={pedido.custo_lente || 0}
+                    format="currency"
+                    className="backdrop-blur-xl bg-orange-50/30 dark:bg-orange-950/20 border-orange-200/50 dark:border-orange-800/50 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  />
+                  <KPICard 
+                    title="Lucro"
+                    value={(pedido.preco_lente || 0) - (pedido.custo_lente || 0)}
+                    format="currency"
+                    className="backdrop-blur-xl bg-blue-50/30 dark:bg-blue-950/20 border-blue-200/50 dark:border-blue-800/50 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  />
+                  <Card className="backdrop-blur-xl bg-purple-50/30 dark:bg-purple-950/20 border-purple-200/50 dark:border-purple-800/50 shadow-xl hover:shadow-2xl transition-all duration-300">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground dark:text-gray-400 flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        Margem %
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                        {pedido.margem_lente_percentual 
+                          ? formatarPercentual(pedido.margem_lente_percentual)
+                          : calcularMargem(pedido.preco_lente || 0, pedido.custo_lente || 0).percentual > 0
+                            ? formatarPercentual(calcularMargem(pedido.preco_lente || 0, pedido.custo_lente || 0).percentual)
+                            : '-'
+                        }
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* Total Consolidado */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Total Consolidado
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <KPICard 
+                  title="Valor Total"
+                  value={pedido.valor_pedido || (pedido.preco_armacao || 0) + (pedido.preco_lente || 0)}
+                  format="currency"
+                  className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
+                />
+                <KPICard 
+                  title="Custo Total"
+                  value={(pedido.custo_armacao || 0) + (pedido.custo_lente || 0)}
+                  format="currency"
+                  className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
+                />
+                <KPICard 
+                  title="Lucro Total"
+                  value={(pedido.valor_pedido || (pedido.preco_armacao || 0) + (pedido.preco_lente || 0)) - ((pedido.custo_armacao || 0) + (pedido.custo_lente || 0))}
+                  format="currency"
+                  className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
+                />
+                <Card className="backdrop-blur-xl bg-white/30 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground dark:text-gray-400 flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      Margem %
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold dark:text-white">
+                      {(() => {
+                        const valorTotal = pedido.valor_pedido || (pedido.preco_armacao || 0) + (pedido.preco_lente || 0)
+                        const custoTotal = (pedido.custo_armacao || 0) + (pedido.custo_lente || 0)
+                        return formatarPercentual(calcularMargem(valorTotal, custoTotal).percentual)
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
 
           {/* Layout Principal em 2 Colunas */}
