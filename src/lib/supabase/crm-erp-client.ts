@@ -225,8 +225,11 @@ export interface ArmacaoFiltros {
 }
 
 /**
- * Buscar armações do estoque (tipo = 'armacao')
+ * Buscar armações do estoque (tipo = 'armacao' ou filtrar por padrão de SKU)
  * Usa view: vw_estoque_completo
+ * 
+ * ⚠️ IMPORTANTE: Alguns registros têm tipo_produto = null
+ * Busca também por 'cod' (código da haste da armação) da tabela produtos
  */
 export async function buscarArmacoes(filtros: ArmacaoFiltros) {
   const crmErpClient = getCrmErpClient()
@@ -247,7 +250,8 @@ export async function buscarArmacoes(filtros: ArmacaoFiltros) {
   let query = crmErpClient
     .from('vw_estoque_completo')
     .select('*')
-    .eq('tipo_produto', 'armacao')
+    // 🔧 CORREÇÃO: Filtrar por tipo_produto OU tipo_produto IS NULL (para registros incompletos)
+    .or(`tipo_produto.eq.armacao,tipo_produto.is.null`)
     .order('descricao')
     .limit(limite)
 
@@ -258,10 +262,15 @@ export async function buscarArmacoes(filtros: ArmacaoFiltros) {
     query = query.or(`loja_id.eq.${loja_id},loja_id.is.null`)
   }
 
-  // Filtro de busca genérica (SKU, nome, etc)
+  // Filtro de busca genérica (SKU, SKU Visual, descrição)
+  // 🔧 CORREÇÃO: Usar sintaxe correta do PostgREST para múltiplos OR
   if (busca && busca.trim()) {
-    const termo = `%${busca.trim()}%`
-    query = query.or(`sku.ilike.${termo},sku_visual.ilike.${termo},descricao.ilike.${termo}`)
+    const termo = busca.trim()
+    // Construir múltiplas condições OR de forma segura
+    // Inclui: SKU, SKU Visual (MO056094), Descrição
+    query = query.or(
+      `sku.ilike.%${termo}%,sku_visual.ilike.%${termo}%,descricao.ilike.%${termo}%`
+    )
   }
 
   if (marca_id) {
@@ -283,11 +292,50 @@ export async function buscarArmacoes(filtros: ArmacaoFiltros) {
     throw error
   }
 
-  if (isDev) {
-    console.log('[CRM_ERP] ✅ Armações encontradas:', data?.length)
+  // 🔧 MELHORIA: Se há busca e nenhum resultado, tenta também na tabela produtos por 'cod'
+  let finalData = data || []
+  
+  if (busca && busca.trim() && finalData.length === 0) {
+    if (isDev) {
+      console.log('[CRM_ERP] 📝 Nenhum resultado em vw_estoque_completo, tentando buscar por cod em produtos...')
+    }
+    
+    try {
+      const termo = busca.trim()
+      // Busca na tabela produtos que tem a coluna 'cod'
+      const { data: produtosData, error: produtosError } = await crmErpClient
+        .from('produtos')
+        .select('id')  // Apenas ID para depois fazer JOIN com estoque
+        .or(`sku.ilike.%${termo}%,sku_visual.ilike.%${termo}%,descricao.ilike.%${termo}%,cod.ilike.%${termo}%`)
+        .limit(limite)
+      
+      if (!produtosError && produtosData?.length > 0) {
+        // Agora busca esses produtos na view com seus dados de estoque
+        const ids = produtosData.map(p => p.id)
+        const { data: estoqueData } = await crmErpClient
+          .from('vw_estoque_completo')
+          .select('*')
+          .in('produto_id', ids)
+          .or(`tipo_produto.eq.armacao,tipo_produto.is.null`)
+          .order('descricao')
+        
+        finalData = estoqueData || []
+        
+        if (isDev) {
+          console.log(`[CRM_ERP] ✅ Encontrados ${finalData.length} resultados por cod`)
+        }
+      }
+    } catch (err) {
+      console.warn('[CRM_ERP] ⚠️ Erro ao buscar por cod:', err)
+      // Continua com resultado vazio
+    }
   }
 
-  return (data || []) as ProdutoCrmErp[]
+  if (isDev) {
+    console.log('[CRM_ERP] ✅ Armações encontradas:', finalData.length)
+  }
+
+  return finalData as ProdutoCrmErp[]
 }
 
 /**
