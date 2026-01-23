@@ -7,11 +7,12 @@
 
 'use client'
 
-import { useState } from 'react'
-import { Glasses, Package, ArrowRight, DollarSign, Building2, Grid3x3 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Glasses, Package, ArrowRight, DollarSign, Building2, Grid3x3, Eye } from 'lucide-react'
 import { SeletorGruposLentes } from './components/SeletorGruposLentes'
 import { SeletorLentesDetalhadas } from './components/SeletorLentesDetalhadas'
 import { SeletorLaboratoriosDirecto } from './components/SeletorLaboratoriosDirecto'
+import { SeletorLentesContato } from './components/SeletorLentesContato'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -30,6 +31,16 @@ export function Step4Lentes({ data, onChange }: Step4Props) {
     data.grupo_canonico_id || null
   )
   const [nomeGrupoSelecionado, setNomeGrupoSelecionado] = useState<string>('')
+
+  // Auto-seleção: Se tipo_pedido é LENTES_CONTATO, já seta a fonte
+  useEffect(() => {
+    if (data.tipo_pedido === 'LENTES_CONTATO' && !data.tipo_fonte_lente) {
+      onChange({
+        ...data,
+        tipo_fonte_lente: 'LENTES_CONTATO',
+      })
+    }
+  }, [data.tipo_pedido])
 
   // Handler: seleção do grupo
   const handleSelecionarGrupo = (grupoId: string, nomeGrupo: string) => {
@@ -101,9 +112,13 @@ export function Step4Lentes({ data, onChange }: Step4Props) {
       {/* Header */}
       <div className="text-center pb-4">
         <Glasses className="w-12 h-12 mx-auto mb-3 text-primary" />
-        <h3 className="text-lg font-semibold">Selecionar Lentes</h3>
+        <h3 className="text-lg font-semibold">
+          {data.tipo_pedido === 'LENTES_CONTATO' ? 'Selecionar Lentes de Contato' : 'Selecionar Lentes'}
+        </h3>
         <p className="text-sm text-muted-foreground">
-          {!data.tipo_fonte_lente
+          {data.tipo_pedido === 'LENTES_CONTATO'
+            ? 'Escolha o fornecedor e o produto de lentes de contato'
+            : !data.tipo_fonte_lente
             ? 'Escolha como deseja buscar as lentes'
             : !grupoSelecionado
             ? 'Escolha o tipo de lente (premium ou genérica)'
@@ -112,8 +127,8 @@ export function Step4Lentes({ data, onChange }: Step4Props) {
       </div>
 
       {/* Seletor de Tipo de Fonte */}
-      {!data.tipo_fonte_lente && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {!data.tipo_fonte_lente && data.tipo_pedido !== 'LENTES_CONTATO' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card 
             className="cursor-pointer hover:border-primary transition-all hover:shadow-md"
             onClick={() => onChange({ ...data, tipo_fonte_lente: 'CANONICA' })}
@@ -149,11 +164,29 @@ export function Step4Lentes({ data, onChange }: Step4Props) {
               <Badge variant="outline" className="mt-2 bg-orange-50 text-orange-700 border-orange-200">Direto</Badge>
             </CardContent>
           </Card>
+
+          <Card 
+            className="cursor-pointer hover:border-primary transition-all hover:shadow-md"
+            onClick={() => onChange({ ...data, tipo_fonte_lente: 'LENTES_CONTATO' })}
+          >
+            <CardContent className="pt-6 pb-6 text-center space-y-3">
+              <div className="mx-auto w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <Eye className="h-6 w-6 text-blue-500" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-base mb-1">Lentes de Contato</h4>
+                <p className="text-sm text-muted-foreground">
+                  Catálogo de lentes de contato por fornecedor
+                </p>
+              </div>
+              <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">Contato</Badge>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {/* Botão para voltar ao seletor de fonte */}
-      {data.tipo_fonte_lente && !grupoSelecionado && (
+      {data.tipo_fonte_lente && !grupoSelecionado && data.tipo_pedido !== 'LENTES_CONTATO' && (
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -164,7 +197,11 @@ export function Step4Lentes({ data, onChange }: Step4Props) {
             ← Voltar para escolha de fonte
           </Button>
           <Badge variant="outline">
-            {data.tipo_fonte_lente === 'CANONICA' ? 'Grupos Canônicos' : 'Por Laboratório'}
+            {data.tipo_fonte_lente === 'CANONICA' 
+              ? 'Grupos Canônicos' 
+              : data.tipo_fonte_lente === 'LENTES_CONTATO'
+              ? 'Lentes de Contato'
+              : 'Por Laboratório'}
           </Badge>
         </div>
       )}
@@ -213,6 +250,14 @@ export function Step4Lentes({ data, onChange }: Step4Props) {
       {/* FLUXO LABORATÓRIO: Seleção Direta */}
       {data.tipo_fonte_lente === 'LABORATORIO' && (
         <SeletorLaboratoriosDirecto
+          lenteSelecionadaId={data.lente_selecionada_id}
+          onSelecionarLente={handleSelecionarLente}
+        />
+      )}
+
+      {/* FLUXO LENTES DE CONTATO: Catálogo Específico */}
+      {data.tipo_fonte_lente === 'LENTES_CONTATO' && (
+        <SeletorLentesContato
           lenteSelecionadaId={data.lente_selecionada_id}
           onSelecionarLente={handleSelecionarLente}
         />

@@ -6,9 +6,12 @@ import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { User, Phone, Calendar, AlertCircle } from 'lucide-react'
+import { User, Phone, Calendar, AlertCircle, Wrench, ShoppingBag } from 'lucide-react'
 import { calcularSLA } from '@/lib/utils/sla-calculator'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { SeletorServicos } from '@/components/pedidos/novo/SeletorServicos'
+import { SeletorAcessorios } from '@/components/pedidos/novo/SeletorAcessorios'
 import type { WizardData } from '../NovaOrdemWizard'
 
 interface Step5Props {
@@ -210,6 +213,67 @@ export function Step5ClienteSLA({ data, onChange }: Step5Props) {
           </div>
         )}
       </div>
+
+      {/* Serviços (opcional) */}
+      <Card className="p-4 border-2 border-dashed">
+        <div className="flex items-center gap-2 mb-4">
+          <Wrench className="w-5 h-5 text-primary" />
+          <h4 className="font-medium">Serviço Adicional (opcional)</h4>
+        </div>
+        <SeletorServicos
+          onServicoSelecionado={(servico) => {
+            onChange({ 
+              ...data, 
+              servico_selecionado: servico ? {
+                produto_id: servico.servico.produto_id,
+                sku_visual: servico.servico.sku_visual,
+                descricao: servico.servico.descricao,
+                preco_venda: servico.servico.preco_venda,
+                custo: servico.servico.custo,
+                preco_final: servico.preco_final,
+                desconto_percentual: servico.desconto_percentual
+              } : undefined
+            })
+          }}
+          lojaId={data.loja_id}
+        />
+        {data.servico_selecionado && data.servico_selecionado.descricao.toLowerCase().includes('montag') && (
+          <div className="mt-4">
+            <Label htmlFor="montador">Montador (opcional)</Label>
+            <Input
+              id="montador"
+              placeholder="Nome do montador"
+              value={data.montador_id || ''}
+              onChange={(e) => onChange({ ...data, montador_id: e.target.value })}
+            />
+          </div>
+        )}
+      </Card>
+
+      {/* Acessórios (opcional) */}
+      <Card className="p-4 border-2 border-dashed">
+        <div className="flex items-center gap-2 mb-4">
+          <ShoppingBag className="w-5 h-5 text-primary" />
+          <h4 className="font-medium">Acessórios (opcional)</h4>
+        </div>
+        <SeletorAcessorios
+          onAcessoriosSelecionados={(acessorios) => {
+            onChange({
+              ...data,
+              acessorios_selecionados: acessorios.map(a => ({
+                produto_id: a.acessorio.produto_id,
+                sku_visual: a.acessorio.sku_visual,
+                descricao: a.acessorio.descricao,
+                preco_venda: a.acessorio.preco_venda,
+                custo: a.acessorio.custo,
+                quantidade: a.quantidade,
+                subtotal: a.subtotal
+              }))
+            })
+          }}
+          lojaId={data.loja_id}
+        />
+      </Card>
 
       {/* Observações Gerais */}
       <div className="space-y-2">

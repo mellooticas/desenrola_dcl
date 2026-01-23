@@ -30,6 +30,8 @@ import { Step4Lentes } from './wizard-steps/Step4Lentes'
 import { Step5ClienteSLA } from './wizard-steps/Step5ClienteSLA'
 import { Step6Revisao } from './wizard-steps/Step6Revisao'
 import { Step7Confirmacao } from './wizard-steps/Step7Confirmacao'
+import { SeletorServicos } from '../pedidos/novo/SeletorServicos'
+import { SeletorAcessorios } from '../pedidos/novo/SeletorAcessorios'
 
 export type TipoPedido = 'LENTES' | 'ARMACAO' | 'COMPLETO' | 'SERVICO' | 'LENTES_CONTATO'
 
@@ -55,7 +57,7 @@ export interface WizardData {
   cliente_trouxe_armacao: boolean
   
   // Step 4 (condicional)
-  tipo_fonte_lente?: 'CANONICA' | 'LABORATORIO' // Escolha entre grupos canônicos ou laboratório direto
+  tipo_fonte_lente?: 'CANONICA' | 'LABORATORIO' | 'LENTES_CONTATO' // Escolha entre grupos canônicos, laboratório direto ou lentes de contato
   lente_selecionada_id: string | null
   lente_dados?: {
     nome_lente: string
@@ -79,6 +81,27 @@ export interface WizardData {
   sla_margem_cliente: number
   data_prometida_manual?: string
   prioridade: 'NORMAL' | 'URGENTE' | 'CRITICA'
+  
+  // Serviços e Acessórios (opcionais)
+  servico_selecionado?: {
+    produto_id: string
+    sku_visual: string
+    descricao: string
+    preco_venda: number
+    custo: number
+    preco_final: number
+    desconto_percentual: number
+  }
+  montador_id?: string // Quem fez a montagem
+  acessorios_selecionados?: Array<{
+    produto_id: string
+    sku_visual: string
+    descricao: string
+    preco_venda: number
+    custo: number
+    quantidade: number
+    subtotal: number
+  }>
   
   // Step 6 (revisão - sem campos, apenas exibe)
   
@@ -118,6 +141,7 @@ export function NovaOrdemWizard({
 
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [pedidoCriado, setPedidoCriado] = useState<any>(null) // Armazena pedido após criação
   
   const [data, setData] = useState<WizardData>({
     loja_id: '',
@@ -154,7 +178,7 @@ export function NovaOrdemWizard({
     if (data.tipo_pedido === 'ARMACAO' || data.tipo_pedido === 'COMPLETO') {
       conditionalSteps += 1 // Step 3
     }
-    if (data.tipo_pedido === 'LENTES' || data.tipo_pedido === 'COMPLETO') {
+    if (data.tipo_pedido === 'LENTES' || data.tipo_pedido === 'COMPLETO' || data.tipo_pedido === 'LENTES_CONTATO') {
       conditionalSteps += 1 // Step 4
     }
     
@@ -168,13 +192,13 @@ export function NovaOrdemWizard({
   const getNextStep = (current: number): number => {
     if (current === 2) {
       // Após escolher tipo, redireciona
-      if (data.tipo_pedido === 'LENTES') return 4 // Pula armação
+      if (data.tipo_pedido === 'LENTES' || data.tipo_pedido === 'LENTES_CONTATO') return 4 // Pula armação
       if (data.tipo_pedido === 'ARMACAO') return 3 // Vai p/ armação, pula lentes
       if (data.tipo_pedido === 'COMPLETO') return 3 // Armação primeiro
       if (data.tipo_pedido === 'SERVICO') return 5 // Pula ambos
     }
     if (current === 3 && data.tipo_pedido === 'ARMACAO') return 5 // Pula lentes
-    if (current === 4 && data.tipo_pedido === 'LENTES') return 5 // Vai direto p/ cliente
+    if (current === 4 && (data.tipo_pedido === 'LENTES' || data.tipo_pedido === 'LENTES_CONTATO')) return 5 // Vai direto p/ cliente
     
     return current + 1
   }
@@ -182,7 +206,7 @@ export function NovaOrdemWizard({
   const getPrevStep = (current: number): number => {
     if (current === 5) {
       if (data.tipo_pedido === 'SERVICO') return 2
-      if (data.tipo_pedido === 'LENTES') return 4
+      if (data.tipo_pedido === 'LENTES' || data.tipo_pedido === 'LENTES_CONTATO') return 4
       if (data.tipo_pedido === 'ARMACAO') return 3
       if (data.tipo_pedido === 'COMPLETO') return 4
     }
@@ -216,7 +240,12 @@ export function NovaOrdemWizard({
         cliente_nome: data.cliente_nome,
         cliente_telefone: data.cliente_telefone,
         prioridade: data.prioridade,
-        status: 'REGISTRADO', // Pedidos manuais vão direto para REGISTRADO (PENDENTE é do PDV)
+        
+        // Status: PRONTO (Lentes no DCL) para SERVICO e ARMACAO
+        // REGISTRADO para LENTES, COMPLETO e LENTES_CONTATO
+        status: (data.tipo_pedido === 'SERVICO' || data.tipo_pedido === 'ARMACAO')
+          ? 'PRONTO'      // 🔧 Vai para coluna "Lentes no DCL" (SERVICO e ARMACAO)
+          : 'REGISTRADO', // 📦 Vai para coluna "Registrado" (LENTES, COMPLETO, LENTES_CONTATO)
         
         // Campos gerais
         observacoes: data.observacoes,
@@ -315,6 +344,41 @@ export function NovaOrdemWizard({
         pedidoData.tipo_servico = data.tipo_servico
       }
 
+      // 🔧 SERVIÇOS ADICIONAIS (opcional para qualquer tipo de pedido)
+      if (data.servico_selecionado) {
+        console.log('[Wizard] 🔧 Salvando serviço:', data.servico_selecionado)
+        
+        pedidoData.servico_produto_id = data.servico_selecionado.produto_id
+        pedidoData.servico_sku_visual = data.servico_selecionado.sku_visual
+        pedidoData.servico_descricao = data.servico_selecionado.descricao
+        pedidoData.servico_preco_tabela = data.servico_selecionado.preco_venda
+        pedidoData.servico_desconto_percentual = data.servico_selecionado.desconto_percentual
+        pedidoData.servico_preco_final = data.servico_selecionado.preco_final
+        pedidoData.servico_custo = data.servico_selecionado.custo
+        
+        // Montador (se houver)
+        if (data.montador_id) {
+          pedidoData.montador_nome = data.montador_id // Por enquanto salva como texto
+          console.log('[Wizard] 👷 Montador:', data.montador_id)
+        }
+        
+        console.log('[Wizard] 💰 Preços serviço:', {
+          preco_tabela: data.servico_selecionado.preco_venda,
+          desconto: data.servico_selecionado.desconto_percentual + '%',
+          preco_final: data.servico_selecionado.preco_final,
+          custo: data.servico_selecionado.custo
+        })
+      }
+      
+      // Log do status definido
+      console.log('[Wizard] 📍 Status definido:', {
+        status: pedidoData.status,
+        tipo_pedido: data.tipo_pedido,
+        motivo: pedidoData.status === 'PRONTO' 
+          ? '🔧 SERVICO ou ARMACAO - vai para "Lentes no DCL"' 
+          : '📦 LENTES/COMPLETO/LENTES_CONTATO - vai para "Registrado"'
+      })
+
       console.log('[NovaOrdemWizard] Dados preparados para insert:', pedidoData)
 
       const { data: pedido, error } = await supabase
@@ -329,6 +393,7 @@ export function NovaOrdemWizard({
       }
 
       console.log('[NovaOrdemWizard] ✅ Pedido criado:', pedido)
+      setPedidoCriado(pedido) // Armazena pedido criado
       setCurrentStep(7) // Vai para confirmação
       onSuccess?.()
     } catch (error: any) {
@@ -354,7 +419,7 @@ export function NovaOrdemWizard({
       case 6:
         return <Step6Revisao data={data} />
       case 7:
-        return <Step7Confirmacao onClose={() => setOpen(false)} />
+        return <Step7Confirmacao pedido={pedidoCriado} onClose={() => setOpen(false)} />
       default:
         return null
     }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Printer, Loader2, Eye, X } from 'lucide-react'
+import { Printer, Loader2, Eye, X, Wifi, Download, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -19,6 +19,14 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Slider } from '@/components/ui/slider'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  gerarComandoThermal, 
+  imprimirViaWebSerial, 
+  downloadComandoPRN,
+  imprimirViaBridge,
+  type ThermalPrintConfig 
+} from '@/lib/utils/thermal-printer'
 
 interface PrintOrderButtonProps {
   pedido: PedidoCompleto | null
@@ -36,7 +44,10 @@ interface PrintConfig {
   incluirSLA: boolean
   incluirOSLoja: boolean
   incluirOSLab: boolean
+  incluirQRCode: boolean
+  abrirGaveta: boolean
   tamanhoFonte: 'pequeno' | 'medio' | 'grande'
+  numeroCopias: number
 }
 
 // Mapeamento de tamanhos de fonte
@@ -56,6 +67,7 @@ export function PrintOrderButton({
   const [printing, setPrinting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [tipoImpressao, setTipoImpressao] = useState<'normal' | 'termica'>('normal')
   const [printConfig, setPrintConfig] = useState<PrintConfig>({
     incluirObservacoes: true,
     incluirValores: true,
@@ -64,7 +76,10 @@ export function PrintOrderButton({
     incluirSLA: true,
     incluirOSLoja: true,
     incluirOSLab: true,
+    incluirQRCode: false,
+    abrirGaveta: false,
     tamanhoFonte: 'medio',
+    numeroCopias: 1,
   })
 
   // Converter tamanho para valor do slider (0, 1, 2)
@@ -75,6 +90,61 @@ export function PrintOrderButton({
   // Converter valor do slider para tamanho
   const sliderParaTamanho = (valor: number): 'pequeno' | 'medio' | 'grande' => {
     return valor === 0 ? 'pequeno' : valor === 1 ? 'medio' : 'grande'
+  }
+
+  // Impressão térmica ESC/POS
+  const handleThermalPrint = async (metodo: 'usb' | 'download' | 'bridge') => {
+    if (!pedido) return
+
+    setPrinting(true)
+
+    try {
+      // Gera comando ESC/POS
+      const thermalConfig: ThermalPrintConfig = {
+        ...printConfig,
+        incluirQRCode: printConfig.incluirQRCode,
+        abrirGaveta: printConfig.abrirGaveta,
+        numeroCopias: printConfig.numeroCopias,
+      }
+
+      const comando = gerarComandoThermal(pedido, thermalConfig)
+
+      // Imprime múltiplas cópias se configurado
+      for (let copia = 1; copia <= printConfig.numeroCopias; copia++) {
+        if (printConfig.numeroCopias > 1) {
+          toast.info(`Imprimindo cópia ${copia} de ${printConfig.numeroCopias}...`)
+        }
+
+        switch (metodo) {
+          case 'usb':
+            await imprimirViaWebSerial(comando)
+            toast.success(`Cópia ${copia} impressa com sucesso!`)
+            break
+
+          case 'download':
+            downloadComandoPRN(comando, `pedido-${pedido.numero_sequencial}`)
+            toast.success(`Arquivo .prn gerado! Envie para a impressora.`)
+            break
+
+          case 'bridge':
+            await imprimirViaBridge(comando)
+            toast.success(`Cópia ${copia} enviada para impressora!`)
+            break
+        }
+
+        // Pequeno delay entre cópias
+        if (copia < printConfig.numeroCopias) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+      }
+
+      setDialogOpen(false)
+    } catch (error) {
+      console.error('Erro na impressão térmica:', error)
+      toast.error((error as Error).message || 'Erro ao imprimir')
+    } finally {
+      setPrinting(false)
+    }
   }
 
   const handlePrint = () => {
@@ -258,11 +328,26 @@ export function PrintOrderButton({
               Preview de Impressão - Pedido #{pedido.numero_sequencial}
             </DialogTitle>
             <DialogDescription>
-              Configure o que deseja imprimir e visualize como ficará antes de enviar para a impressora
+              Configure o que deseja imprimir e escolha o tipo de impressora
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Tabs: Normal vs Térmica */}
+          <Tabs value={tipoImpressao} onValueChange={(v) => setTipoImpressao(v as 'normal' | 'termica')} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="normal" className="flex items-center gap-2">
+                <Printer className="w-4 h-4" />
+                Impressora Normal (A4)
+              </TabsTrigger>
+              <TabsTrigger value="termica" className="flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                Impressora Térmica (80mm)
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Conteúdo Normal */}
+            <TabsContent value="normal" className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Coluna Esquerda: Configurações */}
             <div className="space-y-4">
               <div>
@@ -516,7 +601,226 @@ export function PrintOrderButton({
               </ScrollArea>
             </div>
           </div>
+            </TabsContent>
 
+            {/* Conteúdo Térmica */}
+            <TabsContent value="termica" className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Coluna Esquerda: Configurações Térmicas */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-sm mb-3">Configurações Específicas</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="qrcode"
+                          checked={printConfig.incluirQRCode}
+                          onCheckedChange={(checked) =>
+                            setPrintConfig(prev => ({ ...prev, incluirQRCode: checked as boolean }))
+                          }
+                        />
+                        <Label htmlFor="qrcode" className="text-sm cursor-pointer">
+                          QR Code do Pedido
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="gaveta"
+                          checked={printConfig.abrirGaveta}
+                          onCheckedChange={(checked) =>
+                            setPrintConfig(prev => ({ ...prev, abrirGaveta: checked as boolean }))
+                          }
+                        />
+                        <Label htmlFor="gaveta" className="text-sm cursor-pointer">
+                          Abrir Gaveta de Dinheiro
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-sm mb-3">Número de Cópias</h3>
+                    <div className="space-y-2">
+                      <Slider
+                        value={[printConfig.numeroCopias]}
+                        onValueChange={(value: number[]) =>
+                          setPrintConfig(prev => ({ ...prev, numeroCopias: value[0] }))
+                        }
+                        min={1}
+                        max={5}
+                        step={1}
+                        className="w-full"
+                      />
+                      <div className="text-center text-sm font-semibold">
+                        {printConfig.numeroCopias} {printConfig.numeroCopias === 1 ? 'cópia' : 'cópias'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-sm mb-3">O que Imprimir</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="termica-os-loja"
+                          checked={printConfig.incluirOSLoja}
+                          onCheckedChange={(checked) =>
+                            setPrintConfig(prev => ({ ...prev, incluirOSLoja: checked as boolean }))
+                          }
+                        />
+                        <Label htmlFor="termica-os-loja" className="text-sm cursor-pointer">
+                          OS da Loja
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="termica-os-lab"
+                          checked={printConfig.incluirOSLab}
+                          onCheckedChange={(checked) =>
+                            setPrintConfig(prev => ({ ...prev, incluirOSLab: checked as boolean }))
+                          }
+                        />
+                        <Label htmlFor="termica-os-lab" className="text-sm cursor-pointer">
+                          OS do Laboratório
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="termica-telefone"
+                          checked={printConfig.incluirTelefone}
+                          onCheckedChange={(checked) =>
+                            setPrintConfig(prev => ({ ...prev, incluirTelefone: checked as boolean }))
+                          }
+                        />
+                        <Label htmlFor="termica-telefone" className="text-sm cursor-pointer">
+                          Telefone do Cliente
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="termica-sla"
+                          checked={printConfig.incluirSLA}
+                          onCheckedChange={(checked) =>
+                            setPrintConfig(prev => ({ ...prev, incluirSLA: checked as boolean }))
+                          }
+                        />
+                        <Label htmlFor="termica-sla" className="text-sm cursor-pointer">
+                          Informações de SLA
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="termica-valores"
+                          checked={printConfig.incluirValores}
+                          onCheckedChange={(checked) =>
+                            setPrintConfig(prev => ({ ...prev, incluirValores: checked as boolean }))
+                          }
+                        />
+                        <Label htmlFor="termica-valores" className="text-sm cursor-pointer">
+                          Valores (Total/Custo)
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="termica-observacoes"
+                          checked={printConfig.incluirObservacoes}
+                          onCheckedChange={(checked) =>
+                            setPrintConfig(prev => ({ ...prev, incluirObservacoes: checked as boolean }))
+                          }
+                        />
+                        <Label htmlFor="termica-observacoes" className="text-sm cursor-pointer">
+                          Observações
+                        </Label>
+                      </div>
+
+                      {pedido.eh_garantia && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="termica-garantia"
+                            checked={printConfig.incluirGarantia}
+                            onCheckedChange={(checked) =>
+                              setPrintConfig(prev => ({ ...prev, incluirGarantia: checked as boolean }))
+                            }
+                          />
+                          <Label htmlFor="termica-garantia" className="text-sm cursor-pointer">
+                            Informações de Garantia
+                          </Label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coluna Direita: Info */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="p-6 border rounded-lg bg-blue-50 dark:bg-blue-950">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Zap className="w-5 h-5" />
+                      Impressoras Térmicas Compatíveis
+                    </h3>
+                    <ul className="space-y-2 text-sm">
+                      <li>✅ <strong>Epson i9</strong> - Conexão USB</li>
+                      <li>✅ <strong>Sweda</strong> - Todas as séries ESC/POS</li>
+                      <li>✅ <strong>Bematech MP-4200 TH</strong></li>
+                      <li>✅ <strong>Daruma DR800</strong></li>
+                      <li>✅ <strong>Elgin i9</strong></li>
+                      <li>✅ Qualquer impressora térmica <strong>ESC/POS 80mm</strong></li>
+                    </ul>
+                  </div>
+
+                  <div className="p-6 border rounded-lg bg-amber-50 dark:bg-amber-950">
+                    <h3 className="font-semibold mb-3">Métodos de Impressão</h3>
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <Wifi className="w-4 h-4" />
+                          Conexão Direta USB
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Imprime direto via Web Serial API (Chrome/Edge). Seleciona a porta USB da impressora.
+                        </p>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <Download className="w-4 h-4" />
+                          Download .PRN
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Baixa arquivo com comandos ESC/POS. Envie para impressora via software de gestão.
+                        </p>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <Printer className="w-4 h-4" />
+                          Servidor Local
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Envia para servidor bridge rodando na porta 9100 (requer configuração).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground">
+                      💡 <strong>Dica:</strong> Para primeira impressão, use "Download .PRN" para testar. 
+                      Após configurar, use "Conexão USB" para impressão rápida.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Botões de ação (muda conforme tipo) */}
           <div className="flex gap-3 pt-4 border-t">
             <Button
               variant="outline"
@@ -526,23 +830,67 @@ export function PrintOrderButton({
               <X className="w-4 h-4 mr-2" />
               Cancelar
             </Button>
-            <Button
-              onClick={handlePrint}
-              disabled={printing}
-              className="flex-1"
-            >
-              {printing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Imprimindo...
-                </>
-              ) : (
-                <>
+
+            {tipoImpressao === 'normal' ? (
+              <Button
+                onClick={handlePrint}
+                disabled={printing}
+                className="flex-1"
+              >
+                {printing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Imprimindo...
+                  </>
+                ) : (
+                  <>
+                    <Printer className="w-4 h-4 mr-2" />
+                    Imprimir (A4)
+                  </>
+                )}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={() => handleThermalPrint('usb')}
+                  disabled={printing}
+                  variant="default"
+                  className="flex-1"
+                >
+                  {printing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Imprimindo...
+                    </>
+                  ) : (
+                    <>
+                      <Wifi className="w-4 h-4 mr-2" />
+                      USB Direto
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={() => handleThermalPrint('download')}
+                  disabled={printing}
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download .PRN
+                </Button>
+
+                <Button
+                  onClick={() => handleThermalPrint('bridge')}
+                  disabled={printing}
+                  variant="outline"
+                  className="flex-1"
+                >
                   <Printer className="w-4 h-4 mr-2" />
-                  Confirmar e Imprimir
-                </>
-              )}
-            </Button>
+                  Servidor Local
+                </Button>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>

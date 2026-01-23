@@ -119,6 +119,67 @@ export function Step6Revisao({ data }: Step6Props) {
         </div>
       </div>
 
+      {/* Serviços (condicional) */}
+      {data.servico_selecionado && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm">Serviço Adicional</h4>
+            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded text-sm space-y-1">
+              <p><strong>Serviço:</strong> {data.servico_selecionado.descricao}</p>
+              <p><strong>SKU:</strong> {data.servico_selecionado.sku_visual}</p>
+              <div className="flex gap-4 mt-2">
+                <p><strong>Tabela:</strong> R$ {data.servico_selecionado.preco_venda.toFixed(2)}</p>
+                {data.servico_selecionado.desconto_percentual > 0 && (
+                  <p className="text-green-600">
+                    <strong>Desconto:</strong> {data.servico_selecionado.desconto_percentual}%
+                  </p>
+                )}
+                <p><strong>Final:</strong> R$ {data.servico_selecionado.preco_final.toFixed(2)}</p>
+              </div>
+              {data.montador_id && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  👷 Montador: {data.montador_id}
+                </p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Acessórios (condicional) */}
+      {data.acessorios_selecionados && data.acessorios_selecionados.length > 0 && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm">
+              Acessórios ({data.acessorios_selecionados.length})
+            </h4>
+            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded text-sm space-y-2">
+              {data.acessorios_selecionados.map((acessorio, idx) => (
+                <div key={idx} className="flex justify-between items-center pb-2 border-b border-purple-500/10 last:border-0 last:pb-0">
+                  <div>
+                    <p className="font-medium">{acessorio.descricao}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {acessorio.quantidade}x R$ {acessorio.preco_venda.toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="font-bold">
+                    R$ {acessorio.subtotal.toFixed(2)}
+                  </p>
+                </div>
+              ))}
+              <div className="flex justify-between items-center pt-2 border-t border-purple-500/20">
+                <p className="font-bold">Total Acessórios:</p>
+                <p className="font-bold text-lg">
+                  R$ {data.acessorios_selecionados.reduce((acc, a) => acc + a.subtotal, 0).toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Garantia */}
       {data.eh_garantia && (
         <>
