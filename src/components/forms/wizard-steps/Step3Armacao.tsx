@@ -44,6 +44,12 @@ export function Step3Armacao({ data, onChange }: Step3Props) {
 
       if (resultado) {
         console.log('[Step3Armacao] ✅ Dados encontrados:', resultado)
+        console.log('[Step3Armacao] 📦 Atualizando wizard com:', {
+          armacao_id: armacaoId,
+          sku: resultado.sku,
+          preco_custo: resultado.custo,
+          preco_tabela: resultado.preco_venda
+        })
         
         onChange({
           ...data,
@@ -57,6 +63,8 @@ export function Step3Armacao({ data, onChange }: Step3Props) {
             preco_venda_real: resultado.preco_venda || 0 // 🎯 Inicializa com preço tabela
           }
         })
+        
+        console.log('[Step3Armacao] ✅ Wizard atualizado com sucesso')
       }
     } catch (error) {
       console.error('[Step3Armacao] ❌ Erro ao buscar dados da armação:', error)
@@ -80,16 +88,19 @@ export function Step3Armacao({ data, onChange }: Step3Props) {
         armacaoSelecionada={data.armacao_id}
         clienteTrouxeArmacao={data.cliente_trouxe_armacao}
         onArmacaoSelect={(armacaoId) => {
+          console.log('[Step3] 🎯 Armação selecionada:', armacaoId)
           if (armacaoId) {
             // Limpa dados antigos e busca novos
             onChange({ ...data, armacao_id: armacaoId, armacao_dados: undefined })
             buscarDadosArmacao(armacaoId)
           } else {
             // Se desmarcou, limpa tudo
+            console.log('[Step3] 🗑️ Armação desmarcada')
             onChange({ ...data, armacao_id: null, armacao_dados: undefined })
           }
         }}
         onClienteTrouxeChange={(trouxe) => {
+          console.log('[Step3] 👤 Cliente trouxe armação:', trouxe)
           onChange({ 
             ...data, 
             cliente_trouxe_armacao: trouxe, 

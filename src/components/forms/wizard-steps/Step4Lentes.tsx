@@ -52,10 +52,11 @@ export function Step4Lentes({ data, onChange }: Step4Props) {
     precoTabela: number,
     prazo: number,
     nomeLente: string,
-    fornecedorNome: string
+    fornecedorNome: string,
+    precoVendaReal?: number
   ) => {
     console.log('[Step4Lentes] Lente selecionada:', { 
-      lenteId, fornecedorId, precoCusto, precoTabela, prazo 
+      lenteId, fornecedorId, precoCusto, precoTabela, prazo, precoVendaReal 
     })
     
     onChange({
@@ -70,7 +71,7 @@ export function Step4Lentes({ data, onChange }: Step4Props) {
         fornecedor_nome: fornecedorNome,
         preco_custo: precoCusto,
         preco_tabela: precoTabela,
-        preco_venda_real: precoTabela, // Inicializa com preço tabela
+        preco_venda_real: precoVendaReal ?? precoTabela, // Usa o preço informado ou tabela
         prazo_dias: prazo,
       },
     })

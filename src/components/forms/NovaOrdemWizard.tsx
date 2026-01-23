@@ -230,6 +230,12 @@ export function NovaOrdemWizard({
 
       // Campos condicionais por tipo de pedido
       if (data.tipo_pedido === 'ARMACAO' || data.tipo_pedido === 'COMPLETO') {
+        console.log('[Wizard] 🛍️ Salvando armação:', {
+          armacao_id: data.armacao_id,
+          cliente_trouxe: data.cliente_trouxe_armacao,
+          armacao_dados: data.armacao_dados
+        })
+        
         pedidoData.armacao_id = data.armacao_id
         pedidoData.origem_armacao = data.cliente_trouxe_armacao ? 'cliente_trouxe' : 'estoque'
         
@@ -237,6 +243,15 @@ export function NovaOrdemWizard({
         if (data.armacao_dados) {
           pedidoData.preco_armacao = data.armacao_dados.preco_venda_real || data.armacao_dados.preco_tabela
           pedidoData.custo_armacao = data.armacao_dados.preco_custo || 0
+          
+          console.log('[Wizard] 💰 Preços armação:', {
+            preco_venda_real: data.armacao_dados.preco_venda_real,
+            preco_tabela: data.armacao_dados.preco_tabela,
+            custo: data.armacao_dados.preco_custo,
+            salvando_preco: pedidoData.preco_armacao
+          })
+        } else {
+          console.warn('[Wizard] ⚠️ armacao_dados está undefined!')
         }
       }
 

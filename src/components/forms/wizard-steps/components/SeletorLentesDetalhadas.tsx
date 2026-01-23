@@ -28,7 +28,8 @@ interface SeletorLentesDetalhadasProps {
     precoTabela: number,
     prazo: number,
     nomeLente: string,
-    fornecedorNome: string
+    fornecedorNome: string,
+    precoVendaReal?: number
   ) => void
   className?: string
 }

@@ -57,7 +57,8 @@ interface SeletorLaboratoriosDirectoProps {
     precoTabela: number,
     prazo: number,
     nomeLente: string,
-    fornecedorNome: string
+    fornecedorNome: string,
+    precoVendaReal: number
   ) => void
   lenteSelecionadaId?: string | null
   className?: string
@@ -75,6 +76,8 @@ export function SeletorLaboratoriosDirecto({
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([])
   const [fornecedorSelecionado, setFornecedorSelecionado] = useState<Fornecedor | null>(null)
   const [lentes, setLentes] = useState<LenteFornecedor[]>([])
+  const [lenteSelecionada, setLenteSelecionada] = useState<LenteFornecedor | null>(null)
+  const [precoVendaReal, setPrecoVendaReal] = useState<number>(0)
   const [isLoadingFornecedores, setIsLoadingFornecedores] = useState(true)
   const [isLoadingLentes, setIsLoadingLentes] = useState(false)
   const [busca, setBusca] = useState('')
@@ -359,19 +362,12 @@ export function SeletorLaboratoriosDirecto({
                   key={lente.id}
                   className={cn(
                     'cursor-pointer hover:border-primary transition-all',
-                    lenteSelecionadaId === lente.id && 'border-primary bg-primary/5'
+                    lenteSelecionada?.id === lente.id && 'border-primary bg-primary/5'
                   )}
-                  onClick={() =>
-                    onSelecionarLente(
-                      lente.id,
-                      fornecedorSelecionado.id,
-                      lente.preco_custo,
-                      lente.preco_venda_sugerido,
-                      lente.prazo_dias,
-                      lente.nome_lente || lente.nome_comercial,
-                      fornecedorSelecionado.nome_fantasia
-                    )
-                  }
+                  onClick={() => {
+                    setLenteSelecionada(lente)
+                    setPrecoVendaReal(lente.preco_venda_sugerido)
+                  }}
                 >
                   <CardContent className="py-4">
                     <div className="space-y-2">
@@ -407,7 +403,7 @@ export function SeletorLaboratoriosDirecto({
                             )}
                           </div>
                         </div>
-                        {lenteSelecionadaId === lente.id && (
+                        {lenteSelecionada?.id === lente.id && (
                           <Badge className="ml-2">✓ Selecionada</Badge>
                         )}
                       </div>
@@ -445,6 +441,110 @@ export function SeletorLaboratoriosDirecto({
                 </Card>
               ))}
             </div>
+          )}
+
+          {/* FASE 3: Configuração de Preços */}
+          {lenteSelecionada && (
+            <Card className="border-primary">
+              <CardHeader>
+                <CardTitle className="text-base">Configurar Preço de Venda</CardTitle>
+                <CardDescription>
+                  {lenteSelecionada.nome_lente || lenteSelecionada.nome_comercial}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Grid de Preços */}
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Preço de Custo */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Preço de Custo</Label>
+                    <div className="mt-1 p-3 bg-orange-50 rounded-md border border-orange-200">
+                      <p className="text-sm font-semibold text-orange-700">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(lenteSelecionada.preco_custo)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Preço Tabela */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Preço Tabela</Label>
+                    <div className="mt-1 p-3 bg-blue-50 rounded-md border border-blue-200">
+                      <p className="text-sm font-semibold text-blue-700">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(lenteSelecionada.preco_venda_sugerido)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Preço de Venda Real */}
+                  <div>
+                    <Label htmlFor="preco-venda-real" className="text-xs text-muted-foreground">
+                      Preço de Venda Real *
+                    </Label>
+                    <Input
+                      id="preco-venda-real"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={precoVendaReal}
+                      onChange={(e) => setPrecoVendaReal(parseFloat(e.target.value) || 0)}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+
+                {/* Cálculos de Margem e Lucro */}
+                {precoVendaReal > 0 && (
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Margem de Lucro</Label>
+                      <p className="text-lg font-bold text-green-600">
+                        {precoVendaReal > 0
+                          ? (((precoVendaReal - lenteSelecionada.preco_custo) / precoVendaReal) * 100).toFixed(1)
+                          : '0.0'}
+                        %
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Lucro Bruto</Label>
+                      <p className="text-lg font-bold text-green-600">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(precoVendaReal - lenteSelecionada.preco_custo)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Botão Confirmar */}
+                <Button
+                  onClick={() => {
+                    if (lenteSelecionada && fornecedorSelecionado) {
+                      onSelecionarLente(
+                        lenteSelecionada.id,
+                        fornecedorSelecionado.id,
+                        lenteSelecionada.preco_custo,
+                        lenteSelecionada.preco_venda_sugerido,
+                        lenteSelecionada.prazo_dias,
+                        lenteSelecionada.nome_lente || lenteSelecionada.nome_comercial,
+                        fornecedorSelecionado.nome_fantasia,
+                        precoVendaReal
+                      )
+                    }
+                  }}
+                  className="w-full"
+                  disabled={precoVendaReal <= 0}
+                >
+                  Confirmar Seleção
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </div>
       )}
