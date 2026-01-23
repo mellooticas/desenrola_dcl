@@ -8,13 +8,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Glasses, Package, ArrowRight, DollarSign } from 'lucide-react'
+import { Glasses, Package, ArrowRight, DollarSign, Building2, Grid3x3 } from 'lucide-react'
 import { SeletorGruposLentes } from './components/SeletorGruposLentes'
 import { SeletorLentesDetalhadas } from './components/SeletorLentesDetalhadas'
+import { SeletorLaboratoriosDirecto } from './components/SeletorLaboratoriosDirecto'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Card, CardContent } from '@/components/ui/card'
 import type { WizardData } from '../NovaOrdemWizard'
 
 interface Step4Props {
@@ -100,14 +102,74 @@ export function Step4Lentes({ data, onChange }: Step4Props) {
         <Glasses className="w-12 h-12 mx-auto mb-3 text-primary" />
         <h3 className="text-lg font-semibold">Selecionar Lentes</h3>
         <p className="text-sm text-muted-foreground">
-          {!grupoSelecionado
+          {!data.tipo_fonte_lente
+            ? 'Escolha como deseja buscar as lentes'
+            : !grupoSelecionado
             ? 'Escolha o tipo de lente (premium ou genérica)'
             : 'Selecione o fornecedor e prazo de entrega'}
         </p>
       </div>
 
+      {/* Seletor de Tipo de Fonte */}
+      {!data.tipo_fonte_lente && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card 
+            className="cursor-pointer hover:border-primary transition-all hover:shadow-md"
+            onClick={() => onChange({ ...data, tipo_fonte_lente: 'CANONICA' })}
+          >
+            <CardContent className="pt-6 pb-6 text-center space-y-3">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Grid3x3 className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-base mb-1">Grupos Canônicos</h4>
+                <p className="text-sm text-muted-foreground">
+                  Buscar por tipo de lente (premium ou genérica)
+                </p>
+              </div>
+              <Badge variant="outline" className="mt-2">Recomendado</Badge>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="cursor-pointer hover:border-primary transition-all hover:shadow-md"
+            onClick={() => onChange({ ...data, tipo_fonte_lente: 'LABORATORIO' })}
+          >
+            <CardContent className="pt-6 pb-6 text-center space-y-3">
+              <div className="mx-auto w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-orange-500" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-base mb-1">Por Laboratório</h4>
+                <p className="text-sm text-muted-foreground">
+                  Escolher diretamente do catálogo do fornecedor
+                </p>
+              </div>
+              <Badge variant="outline" className="mt-2 bg-orange-50 text-orange-700 border-orange-200">Direto</Badge>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Botão para voltar ao seletor de fonte */}
+      {data.tipo_fonte_lente && !grupoSelecionado && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange({ ...data, tipo_fonte_lente: undefined })}
+            className="h-auto py-1 px-2"
+          >
+            ← Voltar para escolha de fonte
+          </Button>
+          <Badge variant="outline">
+            {data.tipo_fonte_lente === 'CANONICA' ? 'Grupos Canônicos' : 'Por Laboratório'}
+          </Badge>
+        </div>
+      )}
+
       {/* Breadcrumb de navegação */}
-      {grupoSelecionado && (
+      {grupoSelecionado && data.tipo_fonte_lente === 'CANONICA' && (
         <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
           <Button
             variant="ghost"
@@ -125,18 +187,31 @@ export function Step4Lentes({ data, onChange }: Step4Props) {
         </div>
       )}
 
-      {/* FASE 1: Seleção de Grupo Canônico */}
-      {!grupoSelecionado && (
-        <SeletorGruposLentes
-          onSelecionarGrupo={handleSelecionarGrupo}
-          grupoSelecionadoId={grupoSelecionado}
-        />
+      {/* FLUXO CANÔNICAS: Grupos + Lentes */}
+      {data.tipo_fonte_lente === 'CANONICA' && (
+        <>
+          {/* FASE 1: Seleção de Grupo Canônico */}
+          {!grupoSelecionado && (
+            <SeletorGruposLentes
+              onSelecionarGrupo={handleSelecionarGrupo}
+              grupoSelecionadoId={grupoSelecionado}
+            />
+          )}
+
+          {/* FASE 2: Seleção de Lente Específica */}
+          {grupoSelecionado && (
+            <SeletorLentesDetalhadas
+              grupoCanonicoId={grupoSelecionado}
+              lenteSelecionadaId={data.lente_selecionada_id}
+              onSelecionarLente={handleSelecionarLente}
+            />
+          )}
+        </>
       )}
 
-      {/* FASE 2: Seleção de Lente Específica */}
-      {grupoSelecionado && (
-        <SeletorLentesDetalhadas
-          grupoCanonicoId={grupoSelecionado}
+      {/* FLUXO LABORATÓRIO: Seleção Direta */}
+      {data.tipo_fonte_lente === 'LABORATORIO' && (
+        <SeletorLaboratoriosDirecto
           lenteSelecionadaId={data.lente_selecionada_id}
           onSelecionarLente={handleSelecionarLente}
         />

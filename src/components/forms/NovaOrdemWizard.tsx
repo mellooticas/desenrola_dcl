@@ -55,6 +55,7 @@ export interface WizardData {
   cliente_trouxe_armacao: boolean
   
   // Step 4 (condicional)
+  tipo_fonte_lente?: 'CANONICA' | 'LABORATORIO' // Escolha entre grupos canônicos ou laboratório direto
   lente_selecionada_id: string | null
   lente_dados?: {
     nome_lente: string
