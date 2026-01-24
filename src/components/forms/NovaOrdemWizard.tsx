@@ -90,6 +90,7 @@ export interface WizardData {
     preco_venda: number
     custo: number
     preco_final: number
+    preco_real: number
     desconto_percentual: number
   }
   montador_id?: string // Quem fez a montagem
@@ -100,8 +101,12 @@ export interface WizardData {
     preco_venda: number
     custo: number
     quantidade: number
+    preco_real_unitario: number
     subtotal: number
   }>
+  
+  // Número de pedido do laboratório (lentes e lentes de contato)
+  numero_pedido_laboratorio?: string
   
   // Step 6 (revisão - sem campos, apenas exibe)
   
@@ -109,7 +114,6 @@ export interface WizardData {
   observacoes?: string
   eh_garantia: boolean
   observacoes_garantia?: string
-  numero_pedido_laboratorio?: string
 }
 
 interface NovaOrdemWizardProps {
@@ -352,6 +356,7 @@ export function NovaOrdemWizard({
         pedidoData.servico_sku_visual = data.servico_selecionado.sku_visual
         pedidoData.servico_descricao = data.servico_selecionado.descricao
         pedidoData.servico_preco_tabela = data.servico_selecionado.preco_venda
+        pedidoData.servico_preco_real = data.servico_selecionado.preco_real || data.servico_selecionado.preco_final
         pedidoData.servico_desconto_percentual = data.servico_selecionado.desconto_percentual
         pedidoData.servico_preco_final = data.servico_selecionado.preco_final
         pedidoData.servico_custo = data.servico_selecionado.custo
@@ -364,10 +369,40 @@ export function NovaOrdemWizard({
         
         console.log('[Wizard] 💰 Preços serviço:', {
           preco_tabela: data.servico_selecionado.preco_venda,
+          preco_real: data.servico_selecionado.preco_real || data.servico_selecionado.preco_final,
           desconto: data.servico_selecionado.desconto_percentual + '%',
           preco_final: data.servico_selecionado.preco_final,
           custo: data.servico_selecionado.custo
         })
+      }
+      
+      // 🛍️ ACESSÓRIOS (opcional - salvar primeiro item se houver)
+      // TODO: Implementar array de acessórios, por ora salvamos apenas o primeiro
+      if (data.acessorios_selecionados && data.acessorios_selecionados.length > 0) {
+        const primeiroAcessorio = data.acessorios_selecionados[0]
+        console.log('[Wizard] 🛍️ Salvando acessório:', primeiroAcessorio)
+        
+        pedidoData.acessorio_produto_id = primeiroAcessorio.produto_id
+        pedidoData.acessorio_sku_visual = primeiroAcessorio.sku_visual
+        pedidoData.acessorio_descricao = primeiroAcessorio.descricao
+        pedidoData.acessorio_preco_tabela = primeiroAcessorio.preco_venda
+        pedidoData.acessorio_preco_real_unitario = primeiroAcessorio.preco_real_unitario
+        pedidoData.acessorio_quantidade = primeiroAcessorio.quantidade
+        pedidoData.acessorio_subtotal = primeiroAcessorio.subtotal
+        pedidoData.acessorio_custo_unitario = primeiroAcessorio.custo
+        
+        console.log('[Wizard] 💰 Acessório:', {
+          preco_tabela: primeiroAcessorio.preco_venda,
+          preco_real_unitario: primeiroAcessorio.preco_real_unitario,
+          quantidade: primeiroAcessorio.quantidade,
+          subtotal: primeiroAcessorio.subtotal
+        })
+      }
+      
+      // 📋 NÚMERO DE PEDIDO DO LABORATÓRIO (lentes/lentes contato)
+      if (data.numero_pedido_laboratorio) {
+        pedidoData.numero_pedido_laboratorio = data.numero_pedido_laboratorio
+        console.log('[Wizard] 🔢 Número pedido laboratório:', data.numero_pedido_laboratorio)
       }
       
       // Log do status definido

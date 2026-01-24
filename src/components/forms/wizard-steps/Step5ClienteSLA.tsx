@@ -110,6 +110,28 @@ export function Step5ClienteSLA({ data, onChange }: Step5Props) {
           </div>
         )}
 
+        {/* Campo de número de pedido do laboratório */}
+        {(data.tipo_pedido === 'LENTES' || data.tipo_pedido === 'LENTES_CONTATO' || data.tipo_pedido === 'COMPLETO') && (
+          <div className="space-y-2">
+            <Label htmlFor="numero-pedido-lab">
+              Número do Pedido no Laboratório *
+              {data.tipo_pedido === 'LENTES_CONTATO' && (
+                <span className="text-xs text-muted-foreground ml-2">(Imprescindível para rastreamento)</span>
+              )}
+            </Label>
+            <Input
+              id="numero-pedido-lab"
+              value={data.numero_pedido_laboratorio || ''}
+              onChange={(e) => onChange({ ...data, numero_pedido_laboratorio: e.target.value })}
+              placeholder="Ex: LAB-2024-12345"
+              className="font-mono"
+            />
+            <p className="text-xs text-muted-foreground">
+              Número fornecido pelo laboratório para rastreamento do pedido
+            </p>
+          </div>
+        )}
+
         <div className="space-y-2">
           <Label htmlFor="margem">Margem de Segurança (dias úteis)</Label>
           <Input
@@ -231,6 +253,7 @@ export function Step5ClienteSLA({ data, onChange }: Step5Props) {
                 preco_venda: servico.servico.preco_venda,
                 custo: servico.servico.custo,
                 preco_final: servico.preco_final,
+                preco_real: servico.preco_real,
                 desconto_percentual: servico.desconto_percentual
               } : undefined
             })
@@ -267,6 +290,7 @@ export function Step5ClienteSLA({ data, onChange }: Step5Props) {
                 preco_venda: a.acessorio.preco_venda,
                 custo: a.acessorio.custo,
                 quantidade: a.quantidade,
+                preco_real_unitario: a.preco_real_unitario,
                 subtotal: a.subtotal
               }))
             })

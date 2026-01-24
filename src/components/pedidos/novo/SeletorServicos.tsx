@@ -22,6 +22,7 @@ interface Servico {
 interface ServicoSelecionado {
   servico: Servico
   preco_final: number
+  preco_real: number // Preço real de venda (pode ter desconto ou acréscimo)
   desconto_percentual: number
 }
 
@@ -40,6 +41,9 @@ export function SeletorServicos({
   const [servicosFiltrados, setServicosFiltrados] = useState<Servico[]>([])
   const [servicoSelecionado, setServicoSelecionado] = useState<Servico | null>(
     servicoInicial?.servico || null
+  )
+  const [precoReal, setPrecoReal] = useState<number>(
+    servicoInicial?.preco_real || servicoInicial?.servico?.preco_venda || 0
   )
   const [descontoPercentual, setDescontoPercentual] = useState<number>(
     servicoInicial?.desconto_percentual || 0
@@ -67,24 +71,25 @@ export function SeletorServicos({
     setServicosFiltrados(filtrados)
   }, [buscaTexto, servicos])
 
-  // Atualizar dados quando servico/desconto mudam
+  // Atualizar dados quando servico/preco_real/desconto mudam
   useEffect(() => {
     if (!servicoSelecionado) {
       onServicoSelecionado(null)
       return
     }
 
-    const preco_final = calcularPrecoFinal(
-      servicoSelecionado.preco_venda,
-      descontoPercentual
-    )
+    // Se precoReal foi alterado manualmente, calcular desconto baseado nele
+    const descontoCalculado = servicoSelecionado.preco_venda > 0
+      ? ((servicoSelecionado.preco_venda - precoReal) / servicoSelecionado.preco_venda * 100)
+      : 0
 
     onServicoSelecionado({
       servico: servicoSelecionado,
-      preco_final,
-      desconto_percentual: descontoPercentual
+      preco_final: precoReal,
+      preco_real: precoReal,
+      desconto_percentual: Number(descontoCalculado.toFixed(2))
     })
-  }, [servicoSelecionado, descontoPercentual])
+  }, [servicoSelecionado, precoReal])
 
   async function buscarServicos() {
     try {
@@ -117,12 +122,23 @@ export function SeletorServicos({
 
   function selecionarServico(servico: Servico) {
     setServicoSelecionado(servico)
+    setPrecoReal(servico.preco_venda) // Inicia com preço de tabela
+    setDescontoPercentual(0)
   }
 
   function limparSelecao() {
     setServicoSelecionado(null)
+    setPrecoReal(0)
     setDescontoPercentual(0)
     setBuscaTexto('')
+  }
+  
+  // Atualizar preço real quando desconto percentual muda
+  function atualizarDesconto(novoDesconto: number) {
+    if (!servicoSelecionado) return
+    setDescontoPercentual(novoDesconto)
+    const novoPrecoReal = calcularPrecoFinal(servicoSelecionado.preco_venda, novoDesconto)
+    setPrecoReal(novoPrecoReal)
   }
 
   if (carregando) {
@@ -179,61 +195,71 @@ export function SeletorServicos({
               </p>
             </div>
 
-            {/* Campo de Desconto */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Campos de Preço Real e Desconto */}
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="desconto">Desconto (%)</Label>
+                <Label htmlFor="preco-tabela">Preço Tabela</Label>
+                <div className="h-10 flex items-center px-3 bg-muted rounded-md">
+                  <span className="font-medium text-sm">
+                    R$ {servicoSelecionado.preco_venda.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="preco-real">Preço Real *</Label>
+                <Input
+                  id="preco-real"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={precoReal}
+                  onChange={(e) => {
+                    const novoPrecoReal = Number(e.target.value)
+                    setPrecoReal(novoPrecoReal)
+                    // Recalcular desconto baseado no preço real
+                    if (servicoSelecionado) {
+                      const descCalc = ((servicoSelecionado.preco_venda - novoPrecoReal) / servicoSelecionado.preco_venda * 100)
+                      setDescontoPercentual(Number(descCalc.toFixed(2)))
+                    }
+                  }}
+                  placeholder="0.00"
+                  className="font-bold"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Valor cobrado do cliente
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="desconto">Desconto/Acréscimo (%)</Label>
                 <Input
                   id="desconto"
                   type="number"
-                  min="0"
-                  max="100"
                   step="0.01"
                   value={descontoPercentual}
-                  onChange={(e) => setDescontoPercentual(Number(e.target.value))}
+                  onChange={(e) => atualizarDesconto(Number(e.target.value))}
                   placeholder="0"
                 />
-              </div>
-
-              <div>
-                <Label>Preço Final</Label>
-                <div className="h-10 flex items-center px-3 bg-muted rounded-md">
-                  <span className="font-bold text-lg">
-                    R$ {calcularPrecoFinal(
-                      servicoSelecionado.preco_venda,
-                      descontoPercentual
-                    ).toFixed(2)}
-                  </span>
-                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {descontoPercentual > 0 ? '🔽 Desconto' : descontoPercentual < 0 ? '🔼 Acréscimo' : '➖ Sem alteração'}
+                </p>
               </div>
             </div>
 
-            {/* Info de Preços */}
-            <div className="flex gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Preço Tabela: </span>
-                <span className="font-medium">
-                  R$ {servicoSelecionado.preco_venda.toFixed(2)}
-                </span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Custo: </span>
-                <span className="font-medium">
-                  R$ {servicoSelecionado.custo.toFixed(2)}
-                </span>
-              </div>
-              {descontoPercentual > 0 && (
-                <div>
-                  <span className="text-muted-foreground">Economia: </span>
-                  <span className="font-medium text-green-600">
-                    R$ {(servicoSelecionado.preco_venda - calcularPrecoFinal(
-                      servicoSelecionado.preco_venda,
-                      descontoPercentual
-                    )).toFixed(2)}
+            {/* Info de Economia/Acréscimo */}
+            {descontoPercentual !== 0 && (
+              <div className={`p-3 rounded-lg ${descontoPercentual > 0 ? 'bg-green-500/10 border border-green-500/20' : 'bg-orange-500/10 border border-orange-500/20'}`}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">
+                    {descontoPercentual > 0 ? '💰 Economia para o cliente:' : '💵 Acréscimo cobrado:'}
+                  </span>
+                  <span className={`font-bold ${descontoPercentual > 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                    R$ {Math.abs(servicoSelecionado.preco_venda - precoReal).toFixed(2)}
                   </span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <Button
               variant="outline"

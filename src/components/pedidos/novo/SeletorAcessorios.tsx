@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
 import { getCrmErpClient } from '@/lib/supabase/crm-erp-client'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -21,7 +22,8 @@ interface Acessorio {
 interface AcessorioSelecionado {
   acessorio: Acessorio
   quantidade: number
-  subtotal: number
+  preco_real_unitario: number // Preço real unitário (pode ter desconto ou acréscimo)
+  subtotal: number // preco_real_unitario * quantidade
 }
 
 interface SeletorAcessoriosProps {
@@ -103,17 +105,18 @@ export function SeletorAcessorios({
           ? {
               ...s,
               quantidade: s.quantidade + 1,
-              subtotal: (s.quantidade + 1) * s.acessorio.preco_venda
+              subtotal: (s.quantidade + 1) * s.preco_real_unitario
             }
           : s
       ))
     } else {
-      // Adicionar novo
+      // Adicionar novo com preço real = preço tabela inicialmente
       setSelecionados(prev => [
         ...prev,
         {
           acessorio,
           quantidade: 1,
+          preco_real_unitario: acessorio.preco_venda,
           subtotal: acessorio.preco_venda
         }
       ])
@@ -135,7 +138,19 @@ export function SeletorAcessorios({
         ? {
             ...s,
             quantidade,
-            subtotal: quantidade * s.acessorio.preco_venda
+            subtotal: quantidade * s.preco_real_unitario
+          }
+        : s
+    ))
+  }
+  
+  function atualizarPrecoRealUnitario(produtoId: string, precoReal: number) {
+    setSelecionados(prev => prev.map(s =>
+      s.acessorio.produto_id === produtoId
+        ? {
+            ...s,
+            preco_real_unitario: precoReal,
+            subtotal: s.quantidade * precoReal
           }
         : s
     ))
@@ -197,64 +212,117 @@ export function SeletorAcessorios({
       {selecionados.length > 0 && (
         <Card className="border-primary/50">
           <CardContent className="p-4">
-            <div className="space-y-2">
-              {selecionados.map((item) => (
-                <div
-                  key={item.acessorio.produto_id}
-                  className="flex items-center justify-between gap-4 p-2 rounded-lg bg-muted/50"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {item.acessorio.descricao}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      R$ {item.acessorio.preco_venda.toFixed(2)} cada
-                    </p>
-                  </div>
+            <div className="space-y-3">
+              {selecionados.map((item) => {
+                const descontoPercentual = item.acessorio.preco_venda > 0
+                  ? ((item.acessorio.preco_venda - item.preco_real_unitario) / item.acessorio.preco_venda * 100)
+                  : 0
+                
+                return (
+                  <div
+                    key={item.acessorio.produto_id}
+                    className="p-3 rounded-lg bg-muted/50 space-y-2"
+                  >
+                    {/* Linha 1: Nome e remover */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {item.acessorio.descricao}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          SKU: {item.acessorio.sku_visual}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removerAcessorio(item.acessorio.produto_id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => atualizarQuantidade(
-                        item.acessorio.produto_id,
-                        item.quantidade - 1
-                      )}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="w-8 text-center font-medium">
-                      {item.quantidade}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => atualizarQuantidade(
-                        item.acessorio.produto_id,
-                        item.quantidade + 1
-                      )}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
+                    {/* Linha 2: Preços e quantidade */}
+                    <div className="grid grid-cols-4 gap-2 items-end">
+                      <div>
+                        <Label htmlFor={`preco-tabela-${item.acessorio.produto_id}`} className="text-xs">
+                          Tabela
+                        </Label>
+                        <div className="h-8 flex items-center px-2 bg-background rounded text-xs font-medium">
+                          R$ {item.acessorio.preco_venda.toFixed(2)}
+                        </div>
+                      </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm w-20 text-right">
-                      R$ {item.subtotal.toFixed(2)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => removerAcessorio(item.acessorio.produto_id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                      <div>
+                        <Label htmlFor={`preco-real-${item.acessorio.produto_id}`} className="text-xs">
+                          Preço Real *
+                        </Label>
+                        <Input
+                          id={`preco-real-${item.acessorio.produto_id}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.preco_real_unitario}
+                          onChange={(e) => atualizarPrecoRealUnitario(
+                            item.acessorio.produto_id,
+                            Number(e.target.value)
+                          )}
+                          className="h-8 text-xs font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-xs">Qtd.</Label>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => atualizarQuantidade(
+                              item.acessorio.produto_id,
+                              item.quantidade - 1
+                            )}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="w-8 text-center text-xs font-medium">
+                            {item.quantidade}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => atualizarQuantidade(
+                              item.acessorio.produto_id,
+                              item.quantidade + 1
+                            )}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs">Subtotal</Label>
+                        <div className="h-8 flex items-center justify-end px-2 bg-primary/10 rounded">
+                          <span className="font-bold text-sm text-primary">
+                            R$ {item.subtotal.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Linha 3: Indicador de desconto/acréscimo */}
+                    {descontoPercentual !== 0 && (
+                      <div className={`text-xs px-2 py-1 rounded ${descontoPercentual > 0 ? 'bg-green-500/10 text-green-700' : 'bg-orange-500/10 text-orange-700'}`}>
+                        {descontoPercentual > 0 ? '🔽' : '🔼'} {Math.abs(descontoPercentual).toFixed(1)}% 
+                        {descontoPercentual > 0 ? ' de desconto' : ' de acréscimo'}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
