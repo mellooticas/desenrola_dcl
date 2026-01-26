@@ -162,6 +162,12 @@ WHERE table_name = 'pedidos'
   AND column_name = 'numero_pedido_laboratorio'
 ORDER BY column_name;
 
+| campo                     | column_name               | data_type         | is_nullable | column_default |
+| ------------------------- | ------------------------- | ----------------- | ----------- | -------------- |
+| numero_pedido_laboratorio | numero_pedido_laboratorio | character varying | YES         | null           |
+
+
+
 -- 4.2. Verificar campos de serviços (incluindo novos)
 SELECT 
     'servicos' as categoria,
@@ -173,6 +179,19 @@ FROM information_schema.columns
 WHERE table_name = 'pedidos'
   AND column_name LIKE 'servico%'
 ORDER BY column_name;
+
+
+| categoria | column_name                 | data_type | is_nullable | column_default |
+| --------- | --------------------------- | --------- | ----------- | -------------- |
+| servicos  | servico_custo               | numeric   | YES         | null           |
+| servicos  | servico_desconto_percentual | numeric   | YES         | 0              |
+| servicos  | servico_descricao           | text      | YES         | null           |
+| servicos  | servico_preco_final         | numeric   | YES         | null           |
+| servicos  | servico_preco_real          | numeric   | YES         | null           |
+| servicos  | servico_preco_tabela        | numeric   | YES         | null           |
+| servicos  | servico_produto_id          | uuid      | YES         | null           |
+| servicos  | servico_sku_visual          | text      | YES         | null           |
+
 
 -- 4.3. Verificar campos de acessórios (incluindo novos)
 SELECT 
@@ -186,6 +205,19 @@ WHERE table_name = 'pedidos'
   AND column_name LIKE 'acessorio%'
 ORDER BY column_name;
 
+
+| categoria  | column_name                   | data_type | is_nullable | column_default |
+| ---------- | ----------------------------- | --------- | ----------- | -------------- |
+| acessorios | acessorio_custo_unitario      | numeric   | YES         | null           |
+| acessorios | acessorio_descricao           | text      | YES         | null           |
+| acessorios | acessorio_preco_real_unitario | numeric   | YES         | null           |
+| acessorios | acessorio_preco_tabela        | numeric   | YES         | null           |
+| acessorios | acessorio_produto_id          | uuid      | YES         | null           |
+| acessorios | acessorio_quantidade          | integer   | YES         | 1              |
+| acessorios | acessorio_sku_visual          | text      | YES         | null           |
+| acessorios | acessorio_subtotal            | numeric   | YES         | null           |
+
+
 -- 4.4. Verificar campos de margem
 SELECT 
     'margens' as categoria,
@@ -198,6 +230,16 @@ WHERE table_name = 'pedidos'
   AND column_name LIKE '%margem%'
 ORDER BY column_name;
 
+| categoria | column_name                 | data_type | is_nullable | column_default |
+| --------- | --------------------------- | --------- | ----------- | -------------- |
+| margens   | margem_acessorio_percentual | numeric   | YES         | null           |
+| margens   | margem_armacao_percentual   | numeric   | YES         | null           |
+| margens   | margem_cliente_dias         | integer   | YES         | 2              |
+| margens   | margem_lente_percentual     | numeric   | YES         | null           |
+| margens   | margem_servico_percentual   | numeric   | YES         | null           |
+
+
+
 -- 4.5. Verificar triggers criados
 SELECT 
     trigger_name,
@@ -207,6 +249,15 @@ FROM information_schema.triggers
 WHERE event_object_table = 'pedidos'
   AND trigger_name IN ('trigger_calcular_margem_servico', 'trigger_calcular_valores_acessorio')
 ORDER BY trigger_name;
+
+
+| trigger_name                       | event_manipulation | action_statement                              |
+| ---------------------------------- | ------------------ | --------------------------------------------- |
+| trigger_calcular_margem_servico    | INSERT             | EXECUTE FUNCTION calcular_margem_servico()    |
+| trigger_calcular_margem_servico    | UPDATE             | EXECUTE FUNCTION calcular_margem_servico()    |
+| trigger_calcular_valores_acessorio | INSERT             | EXECUTE FUNCTION calcular_valores_acessorio() |
+| trigger_calcular_valores_acessorio | UPDATE             | EXECUTE FUNCTION calcular_valores_acessorio() |
+
 
 -- ============================================================================
 -- RESUMO DAS MELHORIAS
@@ -220,6 +271,11 @@ SELECT
     '4_margens_automaticas', 'Cálculo automático de margens via triggers',
     '5_indices', 'Índices criados para performance'
   ) as detalhes;
+
+| status                  | detalhes                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MELHORIAS IMPLEMENTADAS | {"5_indices":"Índices criados para performance","1_numero_pedido_lab":"Campo numero_pedido_laboratorio adicionado (imprescindível para rastreamento)","2_servico_preco_real":"Preço real de serviço com desconto/acréscimo (igual armações/lentes)","4_margens_automaticas":"Cálculo automático de margens via triggers","3_acessorio_preco_real":"Preço real de acessório com desconto/acréscimo (igual armações/lentes)"} |
+
 
 -- ============================================================================
 -- PRÓXIMOS PASSOS (FRONTEND)

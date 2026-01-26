@@ -338,9 +338,11 @@ export function NovaOrdemWizard({
         pedidoData.prazo_laboratorio_dias = prazoLab
         pedidoData.margem_cliente_dias = data.sla_margem_cliente
         
-        // Calcular data prometida se não foi manual
+        // ✅ CORRIGIDO: Data de previsão de entrega (campo editável)
+        // Salvar em data_previsao_entrega (não data_prometida que é calculado por trigger)
+        pedidoData.data_previsao_entrega = data.data_prometida_manual || null
         if (data.data_prometida_manual) {
-          pedidoData.data_prometida = data.data_prometida_manual
+          console.log('[Wizard] 📅 Data previsão entrega manual:', data.data_prometida_manual)
         }
       }
 
@@ -400,8 +402,9 @@ export function NovaOrdemWizard({
       }
       
       // 📋 NÚMERO DE PEDIDO DO LABORATÓRIO (lentes/lentes contato)
+      // ✅ SEMPRE enviar (mesmo que null) - usuário pode preencher depois
+      pedidoData.numero_pedido_laboratorio = data.numero_pedido_laboratorio || null
       if (data.numero_pedido_laboratorio) {
-        pedidoData.numero_pedido_laboratorio = data.numero_pedido_laboratorio
         console.log('[Wizard] 🔢 Número pedido laboratório:', data.numero_pedido_laboratorio)
       }
       
